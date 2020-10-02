@@ -1,0 +1,60 @@
+INCLUDES = -Iinclude
+SRC_DIR = src
+OBJECTS_DIR = build
+LIB_PATH = $(SRC_DIR)/lib
+BIN_PATH = bin
+TEST_PATH = test
+TEST_SRC = $(wildcard $(TEST_PATH)/src/*.c)
+SRC = $(wildcard $(SRC_DIR)/lib/*.c)
+OBJS = $(patsubst $(SRC_DIR)/%.c, $(OBJECTS_DIR)/%.o, $(SRC))
+TEST_OBJS = $(patsubst $(TEST_PATH)/src/%.c, $(OBJECTS_DIR)/test/src/%.o, $(TEST_SRC))
+CC = gcc-4.8
+CCFLAGS = -std=c99 -Wall -Werror
+
+.PHONY: release debug mkdir clean test
+
+$(OBJECTS_DIR)/%.o: $(SRC_DIR)/%.c
+	$(CC) $(CCFLAGS) -c $< -o $@  $(INCLUDES)  -D__FILENAME__='"$<"'
+
+$(OBJECTS_DIR)/lib/%.o: $(SRC_DIR)/lib/%.c
+	$(CC) $(CCFLAGS) -c $< -o $@  $(INCLUDES)  -D__FILENAME__='"$<"'
+
+$(OBJECTS_DIR)/test/%.o: $(TEST_PATH)/%.c
+	$(CC) $(CCFLAGS) -c $< -o $@  $(INCLUDES)  -D__FILENAME__='"$<"'
+
+$(OBJECTS_DIR)/test/src/%.o: $(TEST_PATH)/src/%.c
+	$(CC) $(CCFLAGS) -c $< -o $@ $(INCLUDES)  -D__FILENAME__='"$<"'
+
+all: debug test
+
+release: $(BIN_PATH)/server.out
+
+debug: CCFLAGS += -DDEBUG -g
+debug: $(BIN_PATH)/server.out
+
+test: CCFLAGS += -DDEBUG -g
+test: INCLUDES += -I$(TEST_PATH)/include
+test: $(TEST_OBJS) $(BIN_PATH)/libserver.a
+	$(CC) $(CCFLAGS) $(INCLUDES) $(TEST_PATH)/main.c $(TEST_OBJS) -L$(BIN_PATH) -lserver  -lcunit -o $(BIN_PATH)/test.out
+
+
+echo: $(OBJS)
+	echo $<
+
+
+$(BIN_PATH)/libserver.a: $(OBJS)
+	ar rc $@ $(OBJS)
+
+$(BIN_PATH)/server.out: $(OBJECTS_DIR)/main.o $(BIN_PATH)/libserver.a
+	$(CC) $(CCFLAGS) $(INCLUDES) $< -L$(BIN_PATH) -lserver -lpthread -o $@
+
+mkdir:
+	mkdir -p $(OBJECTS_DIR)/lib
+	mkdir -p $(OBJECTS_DIR)/test/src
+	mkdir -p $(BIN_PATH)
+
+$(OBJECTS_DIR)/main.o: $(SRC_DIR)/main.c
+	$(CC) $(CCFLAGS) $< -c $(INCLUDES) -o $@  -D__FILENAME__='"$@"'
+
+clean:
+	rm -rf $(OBJS) $(TEST_OBJS) $(OBJECTS_DIR)/main.o
