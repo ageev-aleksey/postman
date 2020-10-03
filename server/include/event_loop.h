@@ -32,9 +32,13 @@ typedef  void (*sock_write_handler)(event_loop*, int socket, int size, async_err
 typedef void (*sock_timer_handler)(event_loop*, int socket, unsigned int time, async_error);
 typedef void (*buff_deleter)(void *buffer, int bsize);
 
-typedef struct _event_t {
+typedef struct _sock_event {
     event_type type;
     int socket;
+} sock_event;
+
+typedef struct _event_t {
+    sock_event  event;
 } event_t;
 
 typedef struct _event_sock_accept {
@@ -84,8 +88,7 @@ typedef struct _registered_events_queue registered_events_queue;
 
 
 typedef struct _occurred_event {
-    event_t event;
-
+    event_t *event;
 } occurred_event;
 
 typedef struct _occurred_event_entry {
@@ -98,6 +101,7 @@ typedef struct _event_queue_t event_queue_t;
 
 typedef struct _sockets_entry {
     int socket;
+    sock_accept_handler handler;
     TAILQ_ENTRY(_sockets_entry) entries;
 } socket_entry;
 
@@ -106,6 +110,7 @@ typedef struct _sockets_queue sockets_queue;
 
 typedef struct _event_loop {
     sockets_queue *_sockets_accepts; // Список сокетов ожидающих принятия подключения
+    int _index_acepptors_start; // Индекс в pollfd[] с которого начинаются сокеты-приемщики
     registered_events_queue *_sock_events; // Зарегистрированные обработчики событий
     event_queue_t *_event_queue; // Произошедшие события
     pthread_t _thread; // поток менеджера событий

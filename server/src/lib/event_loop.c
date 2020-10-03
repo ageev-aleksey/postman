@@ -26,11 +26,21 @@ int loop_is_started(event_loop* loop) {
     return res;
 }
 
+
+#define QUEUE_SIZE(entry_type, queue, field, res) \
+     do {                                    \
+        int i = 0;                           \
+        entry_type *__ptr__ = NULL;              \
+         TAILQ_FOREACH(__ptr__, queue, field) {  \
+            i = i + 1;                                    \
+         }                                        \
+        *res = i;                                             \
+     } while(0)\
+
 int queue_length_req(registered_events_queue *queue) {
     int i = 0;
-    for(registered_events_entry *ptr = queue->tqh_first;
-        ptr != NULL;
-        ptr = ptr->entries.tqe_next) {
+    registered_events_entry *ptr = NULL;
+    TAILQ_FOREACH(ptr, queue, entries) {
         i = i + 1;
     }
     return i;
@@ -51,44 +61,65 @@ void *loop_thread(void *args) {
 //    int timeout = 500; // 0.5 sec
     loop->_is_run = true;
     while (loop_is_started(loop)) {
-
+        // TODO (ageev) использовать флаг для определния, что зарегистрированне события не изменились
+        //  и следовательно перестроение pollfd[] не требуется.
         /////////Псотроение массива pollfd//////////////////////
         pthread_mutex_lock(&loop->_mutex_sock_events);
 
-        int length = queue_length_req(loop->_sock_events);
-        struct pollfd *fd_array = malloc(sizeof(struct pollfd)*length);
-        int i = 0;
-        for (registered_events_entry *events_ptr = loop->_sock_events->tqh_first;
-                events_ptr != NULL;
-                events_ptr = events_ptr->entries.tqe_next)
-        {
-            memset(&fd_array[i], 0, sizeof(length));
-            fd_array[i].fd = events_ptr->sock_events.sock;
-            for (events_entry *sock_event = events_ptr->sock_events.events->tqh_first;
-                sock_event != NULL;
-                sock_event = sock_event->entries.tqe_next)
-            {
-                event_t *event = sock_event->event;
+        // Определяем количество зарегестрированных событий
+        int number_reg_sockets = 0; // число зарегистрированных сокетов
+        QUEUE_SIZE(registered_events_entry, loop->_sock_events,
+                   entries, &number_reg_sockets);
+        int number_acceptors = 0; // число зарегистриованных приемщиков
+        QUEUE_SIZE(socket_entry, loop->_sockets_accepts,
+                   entries, &number_acceptors);
 
-                if (event->type == SOCK_ACCEPT) {
-                    // TODO(ageev) socket bind!
+        int number_events = 0;
+        registered_events_entry *ptr = NULL;
+        TAILQ_FOREACH(ptr, loop->_sock_events, entries) {
+            int tmp = 0;
+            QUEUE_SIZE(registered_events_entry, loop->_sock_events, entries, &tmp);
+            number_events += tmp;
+        }
+
+        int size = number_events+number_acceptors; // Общее число зарегистрированных событий
+        struct pollfd *fd_array = malloc(sizeof(struct pollfd)*(size));
+        int i = 0;
+        registered_events_entry  *events_ptr = NULL;
+        TAILQ_FOREACH(events_ptr, loop->_sock_events, entries) {
+            memset(&fd_array[i], 0, size);
+            fd_array[i].fd = events_ptr->sock_events.sock;
+
+            // Заполнение pollfd событиями чтения и записи
+            events_entry *sock_event = NULL;
+            TAILQ_FOREACH(sock_event, events_ptr->sock_events.events, entries) {
+                event_t *event = sock_event->event;
+               if (event->event.type == SOCK_READ) {
                     fd_array[i].events |= POLLIN;
-                } else if (event->type == SOCK_READ) {
-                    fd_array[i].events |= POLLIN;
-                } else if (event->type == SOCK_WRITE) {
+                } else if (event->event.type == SOCK_WRITE) {
                     // TODO(ageev) создать событие на запись. И положить в очередь событий.
                     //  Данное событие должно быть извлечено из очереди событий очередным вызовом функции run
                     //  События на отправку данных регистрировать не надо. Необходимо сразу создавать событие
                     //  И класть его в очередь.
                 }
+                i = i + 1;
             }
-            i = i + 1;
+            // Приемщики записываем в опследний момет, и запоминаем с какого индекса они начианются.
+            // Таким образом мы може определить, что события  POLLIN необходимо выполнить приняте подключения а не
+            // чтение данных
+            loop->_index_acepptors_start = i;
+            socket_entry *se_ptr = NULL;
+            TAILQ_FOREACH(se_ptr, loop->_sockets_accepts, entries) {
+                fd_array[i].fd = se_ptr->socket;
+                fd_array[i].events |= POLLIN;
+                i = i + 1;
+            }
         }
 
         pthread_mutex_unlock(&loop->_mutex_sock_events);
         /////////////////////////////////////////////////////////
 
-        int poll_res = poll(fd_array, length, -1);
+        int poll_res = poll(fd_array, size, -1); // TODO (ageev) установить таймаут. Тайматут должен браться из конфигурации
         if (poll_res == POLL_TIMEOUT) {
             continue;
         }
@@ -96,25 +127,47 @@ void *loop_thread(void *args) {
             // TODO (ageev) сделать обработку ошибки через callback
             exit(-1);
         }
-        for(int index = 0; index < length; index++) {
+        for(int index = 0; index < size; index++) {
             if (fd_array[index].revents == POLLIN) {
+                fd_array[index].revents |= POLLIN;
+                occurred_event_entry *occurred = malloc(sizeof(events_entry));
                 // ПРоверка: Ожидает ли сокет подключения
-                socket_entry *el = NULL;
-                int is_accept = 0;
-                TAILQ_FOREACH(el, loop->_sockets_accepts, entries) {
-                    if (el->socket == fd_array[index].fd) {
-                        is_accept = 1;
-                        break;
-                    }
-                }
-                if (is_accept) {
+                if (index >= loop->_index_acepptors_start) {
                     // TODO дописать создание события подключения клиента
-                    struct _occurred_event_entry *e = malloc(sizeof(events_entry));
-                    e->element.event. = fd_array[index].fd;
-                    e->event->type = SOCK_ACCEPT;
-                    TAILQ_INSERT_TAIL(loop->_event_queue, e, entries);
+                    occurred->element.event = (event_t*)malloc(sizeof(event_sock_accept));
+                    occurred->element.event->event.socket = fd_array[index].fd;
+                    occurred->element.event->event.socket = SOCK_ACCEPT;
+                    socket_entry *se_ptr = NULL;
+                    TAILQ_FOREACH(se_ptr, loop->_sockets_accepts, entries) {
+                        if (se_ptr->socket == fd_array[index].fd) {
+                            break;
+                        }
+                    }
+                    ((event_sock_accept*)occurred->element.event)->handler = se_ptr->handler;
+                    TAILQ_INSERT_TAIL(loop->_event_queue, occurred, entries);
                 } else {
-                    // TODO (ageev) событыие чтенеи данных из сокета
+                    event_sock_read *e= (event_sock_read*)malloc(sizeof(event_sock_read));
+                    e->event.event.type = SOCK_READ;
+                    e->event.event.socket = fd_array[index].fd;
+                    // TODO (ageev) заменить список на динамический массив!
+                    registered_events_entry *re_ptr = NULL; // поиск группы событий для сокета
+                    TAILQ_FOREACH(re_ptr, loop->_sock_events, entries) {
+                        if (re_ptr->sock_events.sock == fd_array[index].fd) {
+                            break;
+                        }
+                    }
+                    // поиск зарегистрированного события для сокета
+                    events_entry *ee_ptr = NULL;
+                    TAILQ_FOREACH(ee_ptr, re_ptr->sock_events.events, entries) {
+                        if (ee_ptr->event->event.type == SOCK_READ) {
+                            break;
+                        }
+                    }
+                    e->handler = ((event_sock_read*)ee_ptr)->handler;
+                    e->size = ((event_sock_read*)ee_ptr)->size;
+                    occurred->element.event = (event_t*)e;
+
+                    TAILQ_INSERT_TAIL(loop->_event_queue, occurred, entries);
                 }
             }
         }
@@ -166,15 +219,15 @@ bool el_run(event_loop* el) {
 
     pthread_mutex_unlock(&el->_mutex_event_queue);
 
-    if (etype.element.event.type == SOCK_WRITE) {
+    if (etype.element.event->event.type == SOCK_WRITE) {
         event_sock_write *e = (event_sock_write*) &etype.element.event;
-        int res = send(e->event.socket, &e->buffer[e->offset], e->size - e->offset, 0);
+        int res = send(e->event.event.socket, &e->buffer[e->offset], e->size - e->offset, 0);
         if (res == -1) {
             // Ошибка отправки буфера
             async_error error;
             error.is = ERROR;
             error.message = ERROR_MESSAGE_WRITE_ERROR;
-            e->handler(el, e->event.socket, e->offset, error);
+            e->handler(el, e->event.event.socket, e->offset, error);
             e->deleter(e->buffer, e->size);
         } else if (res < (e->size - e->offset)) {
             // TODO(ageev) отправка произведена не полностью
@@ -184,17 +237,17 @@ bool el_run(event_loop* el) {
             async_error error;
             error.is = NO_ERROR;
             error.message = ERROR_MESSAGE_NO_ERROR;
-            e->handler(el, e->event.socket, e->size, error);
+            e->handler(el, e->event.event.socket, e->size, error);
             e->deleter(e->buffer, e->size);
         }
-    } else if (etype.element.event.type == SOCK_READ) {
+    } else if (etype.element.event->event.type == SOCK_READ) {
         event_sock_read *e = (event_sock_read*)&etype.element.event;
         bf_queue *bf = malloc(sizeof(bf_queue));
         TAILQ_INIT(bf);
         bf_queue_entry  *element = malloc(sizeof(bf_queue_entry));
         int res = 0;
         int offset = 0;
-        while((res = recv(e->event.socket, element->buffer, BUFFERED_QUEUE_BUFFER_SIZE, 0)) != -1) {
+        while((res = recv(e->event.event.socket, element->buffer, BUFFERED_QUEUE_BUFFER_SIZE, 0)) != -1) {
             TAILQ_INSERT_TAIL(bf, element, entries);
             if (res == 0) {
                 // мы все счиатли из сокета
@@ -214,7 +267,7 @@ bool el_run(event_loop* el) {
                 async_error error;
                 error.is = NO_ERROR;
                 error.message = ERROR_MESSAGE_NO_ERROR;
-                e->handler(el, e->event.socket, buffer, error);
+                e->handler(el, e->event.event.socket, buffer, error);
                 // TODO (ageev) как удалить из памяти очередь?
                 free(buffer);
             }
@@ -227,19 +280,19 @@ bool el_run(event_loop* el) {
             // TODO (ageev) _el_async_read(el, e)
         }
 
-    } else if (etype.element.event.type == SOCK_ACCEPT) {
+    } else if (etype.element.event->event.type == SOCK_ACCEPT) {
         // подключение клиента
         event_sock_accept *e = (event_sock_accept*)&etype.element.event;
         struct sockaddr_in client_addr;
         memset(&client_addr, 0, sizeof(struct sockaddr_in));
         socklen_t addr_len = sizeof(struct sockaddr_in);
         // TODO (ageev) Обработка ошибко принятия подключений
-        int slave = accept(etype.element.event.socket, (struct sockaddr*)&client_addr, &addr_len);
+        int slave = accept(etype.element.event->event.socket, (struct sockaddr*)&client_addr, &addr_len);
         async_error error;
         error.is = NO_ERROR;
         error.message = ERROR_MESSAGE_NO_ERROR;
         e->handler(el, slave, error);
-    } else if (etype.element.event.type == SOCK_TIMER) {
+    } else if (etype.element.event->event.type == SOCK_TIMER) {
         // TODO (ageev) вызов обработчика для конкретного сокета по таймеру.(?!)
     }
     return 1;
@@ -255,34 +308,36 @@ void el_async_accept(event_loop* loop, int sock, sock_accept_handler handler) {
 
 void _el_async_accept(event_loop* loop, int sock, sock_accept_handler handler) {
     // Зарегистрирован ли данный сокет в цилке событий
-    registered_events *event = NULL;
-    for (registered_events_entry *ptr = loop->_sock_events->tqh_first;
-        ptr != NULL;
-        ptr = ptr->entries.tqe_next)
-    {
-        if (ptr->sock_events.sock == sock) {
-            event = &ptr->sock_events;
-            break;
-        }
-    }
-    // если нет то регистрируем сокет
-    if (!event) {
-        registered_events_entry  *registered_event = malloc(sizeof(registered_events_entry));
-        registered_event->sock_events.sock = sock;
-        registered_event->sock_events.events = malloc(sizeof(events_queue));
-        TAILQ_INIT(registered_event->sock_events.events);
-        event = &registered_event->sock_events;
-        TAILQ_INSERT_TAIL(loop->_sock_events, registered_event, entries);
-    }
-
-    //регистрируем событие для сокета
-    event_sock_accept *accept_event = malloc(sizeof(event_sock_accept));
-    accept_event->event.type = SOCK_ACCEPT;
-    accept_event->event.socket = sock;
-    accept_event->handler = handler;
-    events_entry *e = malloc(sizeof(events_entry));
-    e->event = (event_t*)accept_event;
-    TAILQ_INSERT_TAIL(event->events, e, entries);
+    // Соект, который выполняет прием соединений находится отдельно от остальных собыйтий и не удаляется
+    // пока явно не будет запрос на отключение приемника
+//    registered_events *event = NULL;
+//    for (registered_events_entry *ptr = loop->_sock_events->tqh_first;
+//        ptr != NULL;
+//        ptr = ptr->entries.tqe_next)
+//    {
+//        if (ptr->sock_events.sock == sock) {
+//            event = &ptr->sock_events;
+//            break;
+//        }
+//    }
+//    // если нет то регистрируем сокет
+//    if (!event) {
+//        registered_events_entry  *registered_event = malloc(sizeof(registered_events_entry));
+//        registered_event->sock_events.sock = sock;
+//        registered_event->sock_events.events = malloc(sizeof(events_queue));
+//        TAILQ_INIT(registered_event->sock_events.events);
+//        event = &registered_event->sock_events;
+//        TAILQ_INSERT_TAIL(loop->_sock_events, registered_event, entries);
+//    }
+//
+//    //регистрируем событие для сокета
+//    event_sock_accept *accept_event = malloc(sizeof(event_sock_accept));
+//    accept_event->event.type = SOCK_ACCEPT;
+//    accept_event->event.socket = sock;
+//    accept_event->handler = handler;
+//    events_entry *e = malloc(sizeof(events_entry));
+//    e->event = (event_t*)accept_event;
+//    TAILQ_INSERT_TAIL(event->events, e, entries);
     // добавление сокета в список сокетов ожидающиз подключения
     socket_entry *se = malloc(sizeof(socket_entry));
     TAILQ_INSERT_TAIL(loop->_sockets_accepts, se, entries);
