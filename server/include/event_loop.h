@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <sys/queue.h>
 #include <pthread.h>
+#include <poll.h>
 
 typedef enum _event_type {
     SOCK_ACCEPT,
@@ -95,8 +96,16 @@ typedef struct _occurred_event_entry {
 TAILQ_HEAD(_event_queue_t, _occurred_event_entry);
 typedef struct _event_queue_t event_queue_t;
 
+typedef struct _sockets_entry {
+    int socket;
+    TAILQ_ENTRY(_sockets_entry) entries;
+} socket_entry;
+
+TAILQ_HEAD(_sockets_queue, _sockets_entry);
+typedef struct _sockets_queue sockets_queue;
 
 typedef struct _event_loop {
+    sockets_queue *_sockets_accepts; // Список сокетов ожидающих принятия подключения
     registered_events_queue *_sock_events; // Зарегистрированные обработчики событий
     event_queue_t *_event_queue; // Произошедшие события
     pthread_t _thread; // поток менеджера событий

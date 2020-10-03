@@ -34,11 +34,12 @@ int main() {
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(struct sockaddr_in));
     addr.sin_family = AF_INET;
-    addr.sin_port = htonl(8080);
+    addr.sin_port = htons(8080);
     int res = inet_aton("127.0.0.1", &addr.sin_addr);
     PRINT_ERROR_EXIT(res);
-    listen(sock, 0);
     res = bind(sock, (struct sockaddr*)&addr, sizeof(struct sockaddr_in));
+    PRINT_ERROR_EXIT(res);
+    res = listen(sock, 1);
     PRINT_ERROR_EXIT(res);
     el_async_accept(&loop, sock, accept_handler);
     el_open(&loop, true);
