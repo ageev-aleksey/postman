@@ -17,6 +17,9 @@ static const char ERROR_MESSAGE_NO_ERROR[] = "Successful";
 static const char ERROR_MESSAGE_WRITE_ERROR[] = "Error write data in socket";
 
 void _el_async_accept(event_loop* loop, int sock, sock_accept_handler handler);
+void _socket_read(event_loop *loop, occurred_event_entry *occurred);
+void _el_async_read(event_loop *loop, occurred_event_entry *occurred);
+void _socket_accept(event_loop *loop, occurred_event_entry *occurred);
 
 int loop_is_started(event_loop* loop) {
     int res = 0;
@@ -241,57 +244,9 @@ bool el_run(event_loop* el) {
             e->deleter(e->buffer, e->size);
         }
     } else if (etype.element.event->event.type == SOCK_READ) {
-        event_sock_read *e = (event_sock_read*)&etype.element.event;
-        bf_queue *bf = malloc(sizeof(bf_queue));
-        TAILQ_INIT(bf);
-        bf_queue_entry  *element = malloc(sizeof(bf_queue_entry));
-        int res = 0;
-        int offset = 0;
-        while((res = recv(e->event.event.socket, element->buffer, BUFFERED_QUEUE_BUFFER_SIZE, 0)) != -1) {
-            TAILQ_INSERT_TAIL(bf, element, entries);
-            if (res == 0) {
-                // мы все счиатли из сокета
-                // перенос buff_queue в array
-                unsigned int len = queue_length_bf(bf);
-                char *buffer = malloc(len*BUFFERED_QUEUE_BUFFER_SIZE);
-                int index_buffer = 0;
-                int index_bf = 0;
-                for (bf_queue_entry *ptr = bf->tqh_first; ptr != NULL; ptr = ptr->entries.tqe_next) {
-                    buffer[index_buffer] = ptr->buffer[index_bf];
-                    ++index_bf;
-                    ++index_buffer;
-                    if (index_bf == BUFFERED_QUEUE_BUFFER_SIZE) {
-                        index_bf = 0;
-                    }
-                }
-                async_error error;
-                error.is = NO_ERROR;
-                error.message = ERROR_MESSAGE_NO_ERROR;
-                e->handler(el, e->event.event.socket, buffer, error);
-                // TODO (ageev) как удалить из памяти очередь?
-                free(buffer);
-            }
-            element = malloc(sizeof(bf_queue_entry));
-            offset += res;
-        }
-        if (errno == EAGAIN) {
-            e->buffer = bf;
-            e->offset = offset;
-            // TODO (ageev) _el_async_read(el, e)
-        }
-
+        _socket_read(el, &etype);
     } else if (etype.element.event->event.type == SOCK_ACCEPT) {
-        // подключение клиента
-        event_sock_accept *e = (event_sock_accept*)&etype.element.event;
-        struct sockaddr_in client_addr;
-        memset(&client_addr, 0, sizeof(struct sockaddr_in));
-        socklen_t addr_len = sizeof(struct sockaddr_in);
-        // TODO (ageev) Обработка ошибко принятия подключений
-        int slave = accept(etype.element.event->event.socket, (struct sockaddr*)&client_addr, &addr_len);
-        async_error error;
-        error.is = NO_ERROR;
-        error.message = ERROR_MESSAGE_NO_ERROR;
-        e->handler(el, slave, error);
+        _socket_accept(el, &etype);
     } else if (etype.element.event->event.type == SOCK_TIMER) {
         // TODO (ageev) вызов обработчика для конкретного сокета по таймеру.(?!)
     }
@@ -305,7 +260,7 @@ void el_async_accept(event_loop* loop, int sock, sock_accept_handler handler) {
     pthread_mutex_unlock(&loop->_mutex_sock_events);
 }
 
-
+// TODO (ageev) перепроверить реализацию функции
 void _el_async_accept(event_loop* loop, int sock, sock_accept_handler handler) {
     // Зарегистрирован ли данный сокет в цилке событий
     // Соект, который выполняет прием соединений находится отдельно от остальных собыйтий и не удаляется
@@ -341,4 +296,61 @@ void _el_async_accept(event_loop* loop, int sock, sock_accept_handler handler) {
     // добавление сокета в список сокетов ожидающиз подключения
     socket_entry *se = malloc(sizeof(socket_entry));
     TAILQ_INSERT_TAIL(loop->_sockets_accepts, se, entries);
+}
+
+void el_async_read(event_loop* loop, int sock, char *buffer, int size, sock_read_handler handler) {
+    event_sock_read  *event = (event_sock_read*)malloc(sizeof(event_sock_read));
+    event->event.event.socket = sock;
+    event->event.event.type = SOCK_READ;
+    event->size = size;
+    event->buffer = buffer;
+    event->handler = handler;
+    event->offset = 0;
+
+    occurred_event_entry *occurred = malloc(sizeof(occurred_event_entry));
+    occurred->element.event = (event_t*) event;
+    _el_async_read(loop, occurred);
+
+}
+
+void _el_async_read(event_loop *loop, occurred_event_entry *occurred) {
+    pthread_mutex_lock(&loop->_mutex_event_queue);
+
+    TAILQ_INSERT_TAIL(loop->_event_queue, occurred, entries);
+
+    pthread_mutex_unlock(&loop->_mutex_event_queue);
+}
+
+
+void _socket_read(event_loop *loop, occurred_event_entry *occurred) {
+    // TODO (ageev) обновить логику чтения из сокета. Читать из буфера, котороый предоставлен пользователем.
+    event_sock_read *e = (event_sock_read*)occurred->element.event;
+    int res = 0;
+    while((res = recv(e->event.event.socket, e->buffer + e->offset, e->size - e->offset, MSG_NOSIGNAL)) != -1) {
+        if (res == 0) {
+            async_error error;
+            error.is = NO_ERROR;
+            error.message = ERROR_MESSAGE_NO_ERROR;
+            e->handler(loop, e->event.event.socket, e->buffer, e->offset, error);
+        }
+        e->offset += res;
+    }
+    if (errno == EAGAIN) {
+        _el_async_read(loop, occurred);
+    }
+
+}
+
+void _socket_accept(event_loop *loop, occurred_event_entry *occurred) {
+    // подключение клиента
+    event_sock_accept *e = (event_sock_accept*)occurred->element.event;
+    struct sockaddr_in client_addr;
+    memset(&client_addr, 0, sizeof(struct sockaddr_in));
+    socklen_t addr_len = sizeof(struct sockaddr_in);
+    // TODO (ageev) Обработка ошибко принятия подключений
+    int slave = accept(e->event.event.socket, (struct sockaddr*)&client_addr, &addr_len);
+    async_error error;
+    error.is = NO_ERROR;
+    error.message = ERROR_MESSAGE_NO_ERROR;
+    e->handler(loop, e->event.event.socket, slave, client_addr, error);
 }

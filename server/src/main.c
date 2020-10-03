@@ -1,5 +1,6 @@
 #include "event_loop.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 #define __USE_MISC
 #include <sys/types.h>
@@ -17,13 +18,23 @@ do { \
     } \
 } while(0);
 
+void read_handler(event_loop* loop, int socket, char *buffer, int size, async_error error) {
+    printf("%s", buffer);
+    free(buffer);
+}
 
 
-void accept_handler(event_loop *loop, int socket, async_error error) {
+
+void accept_handler(event_loop *loop, int master_socket, int client_socket, struct sockaddr_in client_addr, async_error error) {
     if (error.is != NO_ERROR) {
         printf("error");
     }
-    printf("accept %d", socket);
+    char ip[12] = {'\0'};
+    inet_ntop(AF_INET, &client_addr.sin_addr, ip, 12);
+    int port = ntohs(client_addr.sin_port);
+    printf("accept connection from: %s:%d", ip, port);
+    char *buffer = (char*) malloc(sizeof(char)*500);
+    el_async_read(loop, client_socket, buffer, 500, read_handler);
 }
 
 int main() {

@@ -7,6 +7,7 @@
 #include <sys/queue.h>
 #include <pthread.h>
 #include <poll.h>
+#include <netinet/in.h>
 
 typedef enum _event_type {
     SOCK_ACCEPT,
@@ -26,8 +27,8 @@ typedef struct _async_error {
 } async_error;
 
 typedef struct _event_loop event_loop;
-typedef  void (*sock_accept_handler)(event_loop*, int socket, async_error);
-typedef  void (*sock_read_handler)(event_loop*, int socket, char *buffer, async_error);
+typedef  void (*sock_accept_handler)(event_loop*, int acceptro, int client_socket, struct sockaddr_in client_addr, async_error);
+typedef  void (*sock_read_handler)(event_loop* loop, int socket, char *buffer, int size, async_error error);
 typedef  void (*sock_write_handler)(event_loop*, int socket, int size, async_error);
 typedef void (*sock_timer_handler)(event_loop*, int socket, unsigned int time, async_error);
 typedef void (*buff_deleter)(void *buffer, int bsize);
@@ -49,7 +50,7 @@ typedef struct _event_sock_accept {
 typedef struct _event_sock_read {
     event_t event;
     sock_read_handler handler;
-    bf_queue  *buffer;
+    char *buffer;
     int size;
     int offset;
 } event_sock_read;
@@ -108,7 +109,7 @@ typedef struct _sockets_entry {
 TAILQ_HEAD(_sockets_queue, _sockets_entry);
 typedef struct _sockets_queue sockets_queue;
 
-typedef struct _event_loop {
+struct _event_loop {
     sockets_queue *_sockets_accepts; // Список сокетов ожидающих принятия подключения
     int _index_acepptors_start; // Индекс в pollfd[] с которого начинаются сокеты-приемщики
     registered_events_queue *_sock_events; // Зарегистрированные обработчики событий
@@ -118,7 +119,7 @@ typedef struct _event_loop {
     pthread_mutex_t _mutex_sock_events; // Защита списка зарегистрированных обработчиков событий
     pthread_mutex_t _mutex_is_run; // Защита флага is_run
     int _is_run; // флаг работы менеджера. Если 1 то менеджер работает.
-} event_loop;
+};
 
 
 void el_init(event_loop*);
@@ -135,7 +136,7 @@ int el_open(event_loop*, bool is_in_thread);
 void el_close(event_loop*);
 bool el_run(event_loop*);
 void el_async_accept(event_loop* loop, int sock, sock_accept_handler);
-void el_async_read(event_loop* loop, int sock, sock_read_handler);
+void el_async_read(event_loop* loop, int sock, char *buffer, int size, sock_read_handler);
 void el_async_write(event_loop* loop, int sock, void *output_buffer, unsigned int bsize, buff_deleter, sock_read_handler);
 void el_timer(event_loop* loop, int sock, unsigned int ms, sock_timer_handler);
 #endif //SMTP_EVENT_LOOP_H
