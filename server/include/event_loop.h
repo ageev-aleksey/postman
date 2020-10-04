@@ -121,6 +121,7 @@ struct _event_loop {
     int _is_run; // флаг работы менеджера. Если 1 то менеджер работает.
 };
 
+//PUBLIC
 
 void el_init(event_loop*);
 /**
@@ -139,4 +140,25 @@ void el_async_accept(event_loop* loop, int sock, sock_accept_handler);
 void el_async_read(event_loop* loop, int sock, char *buffer, int size, sock_read_handler);
 void el_async_write(event_loop* loop, int sock, void *output_buffer, unsigned int bsize, buff_deleter, sock_read_handler);
 void el_timer(event_loop* loop, int sock, unsigned int ms, sock_timer_handler);
+
+// PRIVATE
+void _el_async_accept(event_loop* loop, int sock, sock_accept_handler handler);
+void _socket_read(event_loop *loop, occurred_event_entry *occurred);
+void _el_async_read(event_loop *loop, occurred_event_entry *occurred);
+void _socket_accept(event_loop *loop, occurred_event_entry *occurred);
+void _create_pollfd(event_loop* loop, struct pollfd **fd_array, int *size);
+void _create_pollin_event(event_loop *loop, struct pollfd *fd_array, int index, int size);
+void _create_pollout_event(event_loop *loop, struct pollfd *fd_array, int index, int size);
+
+
+#define QUEUE_SIZE(entry_type, queue, field, res) \
+     do {                                    \
+        int i = 0;                           \
+        entry_type *__ptr__ = NULL;              \
+         TAILQ_FOREACH(__ptr__, queue, field) {  \
+            i = i + 1;                                    \
+         }                                        \
+        *res = i;                                             \
+     } while(0)\
+
 #endif //SMTP_EVENT_LOOP_H

@@ -56,13 +56,12 @@ void testFREAD(void)
 int main()
 {
     CU_pSuite pSuite = NULL;
-    test_init();
     /* initialize the CUnit test registry */
     if (CUE_SUCCESS != CU_initialize_registry())
         return CU_get_error();
 
     /* add a suite to the registry */
-    pSuite = CU_add_suite("Suite_1", init_suite1, clean_suite1);
+    pSuite = CU_add_suite("Event Loop", event_loop_test_init, event_loop_test_clean);
     if (NULL == pSuite) {
         CU_cleanup_registry();
         return CU_get_error();
@@ -70,8 +69,24 @@ int main()
 
     /* add the tests to the suite */
     /* NOTE - ORDER IS IMPORTANT - MUST TEST fread() AFTER fprintf() */
-    if ((NULL == CU_add_test(pSuite, "test of fprintf()", testFPRINTF)) ||
-        (NULL == CU_add_test(pSuite, "test of fread()", testFREAD)))
+    if ((NULL == CU_add_test(pSuite,
+                             "test of creating pollfd array from list of registered events",
+                             create_pollfd_array_test)) ||
+        NULL == CU_add_test(pSuite,
+                            "test of adding in queue info about pollin event",
+                            create_pollin_occurred_events_test) ||
+        NULL == CU_add_test(pSuite,
+                            "test of adding in queue info about pollout event",
+                            create_pollout_occurred_events_test) ||
+        NULL == CU_add_test(pSuite,
+                            "test of processing of sock read event",
+                            process_sock_read_event_test) ||
+        NULL == CU_add_test(pSuite,
+                            "test of processing of sock write event",
+                            process_sock_write_event_test) ||
+        NULL == CU_add_test(pSuite,
+                            "test of processing of sock accept event",
+                            process_sock_accept_event_test))
     {
         CU_cleanup_registry();
         return CU_get_error();

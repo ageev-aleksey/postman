@@ -10,16 +10,15 @@
 #include <errno.h>
 #include <netinet/in.h>
 
+#include <assert.h>
+
 #define POLL_TIMEOUT 0
 
 
 static const char ERROR_MESSAGE_NO_ERROR[] = "Successful";
 static const char ERROR_MESSAGE_WRITE_ERROR[] = "Error write data in socket";
 
-void _el_async_accept(event_loop* loop, int sock, sock_accept_handler handler);
-void _socket_read(event_loop *loop, occurred_event_entry *occurred);
-void _el_async_read(event_loop *loop, occurred_event_entry *occurred);
-void _socket_accept(event_loop *loop, occurred_event_entry *occurred);
+
 
 int loop_is_started(event_loop* loop) {
     int res = 0;
@@ -30,15 +29,6 @@ int loop_is_started(event_loop* loop) {
 }
 
 
-#define QUEUE_SIZE(entry_type, queue, field, res) \
-     do {                                    \
-        int i = 0;                           \
-        entry_type *__ptr__ = NULL;              \
-         TAILQ_FOREACH(__ptr__, queue, field) {  \
-            i = i + 1;                                    \
-         }                                        \
-        *res = i;                                             \
-     } while(0)\
 
 int queue_length_req(registered_events_queue *queue) {
     int i = 0;
@@ -67,116 +57,30 @@ void *loop_thread(void *args) {
         // TODO (ageev) использовать флаг для определния, что зарегистрированне события не изменились
         //  и следовательно перестроение pollfd[] не требуется.
         /////////Псотроение массива pollfd//////////////////////
-        pthread_mutex_lock(&loop->_mutex_sock_events);
-
-        // Определяем количество зарегестрированных событий
-        int number_reg_sockets = 0; // число зарегистрированных сокетов
-        QUEUE_SIZE(registered_events_entry, loop->_sock_events,
-                   entries, &number_reg_sockets);
-        int number_acceptors = 0; // число зарегистриованных приемщиков
-        QUEUE_SIZE(socket_entry, loop->_sockets_accepts,
-                   entries, &number_acceptors);
-
-        int number_events = 0;
-        registered_events_entry *ptr = NULL;
-        TAILQ_FOREACH(ptr, loop->_sock_events, entries) {
-            int tmp = 0;
-            QUEUE_SIZE(registered_events_entry, loop->_sock_events, entries, &tmp);
-            number_events += tmp;
-        }
-
-        int size = number_events+number_acceptors; // Общее число зарегистрированных событий
-        struct pollfd *fd_array = malloc(sizeof(struct pollfd)*(size));
-        int i = 0;
-        registered_events_entry  *events_ptr = NULL;
-        TAILQ_FOREACH(events_ptr, loop->_sock_events, entries) {
-            memset(&fd_array[i], 0, size);
-            fd_array[i].fd = events_ptr->sock_events.sock;
-
-            // Заполнение pollfd событиями чтения и записи
-            events_entry *sock_event = NULL;
-            TAILQ_FOREACH(sock_event, events_ptr->sock_events.events, entries) {
-                event_t *event = sock_event->event;
-               if (event->event.type == SOCK_READ) {
-                    fd_array[i].events |= POLLIN;
-                } else if (event->event.type == SOCK_WRITE) {
-                    // TODO(ageev) создать событие на запись. И положить в очередь событий.
-                    //  Данное событие должно быть извлечено из очереди событий очередным вызовом функции run
-                    //  События на отправку данных регистрировать не надо. Необходимо сразу создавать событие
-                    //  И класть его в очередь.
-                }
-                i = i + 1;
-            }
-            // Приемщики записываем в опследний момет, и запоминаем с какого индекса они начианются.
-            // Таким образом мы може определить, что события  POLLIN необходимо выполнить приняте подключения а не
-            // чтение данных
-            loop->_index_acepptors_start = i;
-            socket_entry *se_ptr = NULL;
-            TAILQ_FOREACH(se_ptr, loop->_sockets_accepts, entries) {
-                fd_array[i].fd = se_ptr->socket;
-                fd_array[i].events |= POLLIN;
-                i = i + 1;
-            }
-        }
-
-        pthread_mutex_unlock(&loop->_mutex_sock_events);
+        struct pollfd *fd_array = NULL;
+        int size = 0;
+        _create_pollfd(loop, &fd_array, &size);
         /////////////////////////////////////////////////////////
 
         int poll_res = poll(fd_array, size, -1); // TODO (ageev) установить таймаут. Тайматут должен браться из конфигурации
         if (poll_res == POLL_TIMEOUT) {
             continue;
         }
+
         if (poll_res < 0) {
             // TODO (ageev) сделать обработку ошибки через callback
             exit(-1);
         }
+
         for(int index = 0; index < size; index++) {
             if (fd_array[index].revents == POLLIN) {
-                fd_array[index].revents |= POLLIN;
-                occurred_event_entry *occurred = malloc(sizeof(events_entry));
-                // ПРоверка: Ожидает ли сокет подключения
-                if (index >= loop->_index_acepptors_start) {
-                    // TODO дописать создание события подключения клиента
-                    occurred->element.event = (event_t*)malloc(sizeof(event_sock_accept));
-                    occurred->element.event->event.socket = fd_array[index].fd;
-                    occurred->element.event->event.socket = SOCK_ACCEPT;
-                    socket_entry *se_ptr = NULL;
-                    TAILQ_FOREACH(se_ptr, loop->_sockets_accepts, entries) {
-                        if (se_ptr->socket == fd_array[index].fd) {
-                            break;
-                        }
-                    }
-                    ((event_sock_accept*)occurred->element.event)->handler = se_ptr->handler;
-                    TAILQ_INSERT_TAIL(loop->_event_queue, occurred, entries);
-                } else {
-                    event_sock_read *e= (event_sock_read*)malloc(sizeof(event_sock_read));
-                    e->event.event.type = SOCK_READ;
-                    e->event.event.socket = fd_array[index].fd;
-                    // TODO (ageev) заменить список на динамический массив!
-                    registered_events_entry *re_ptr = NULL; // поиск группы событий для сокета
-                    TAILQ_FOREACH(re_ptr, loop->_sock_events, entries) {
-                        if (re_ptr->sock_events.sock == fd_array[index].fd) {
-                            break;
-                        }
-                    }
-                    // поиск зарегистрированного события для сокета
-                    events_entry *ee_ptr = NULL;
-                    TAILQ_FOREACH(ee_ptr, re_ptr->sock_events.events, entries) {
-                        if (ee_ptr->event->event.type == SOCK_READ) {
-                            break;
-                        }
-                    }
-                    e->handler = ((event_sock_read*)ee_ptr)->handler;
-                    e->size = ((event_sock_read*)ee_ptr)->size;
-                    occurred->element.event = (event_t*)e;
-
-                    TAILQ_INSERT_TAIL(loop->_event_queue, occurred, entries);
-                }
+                _create_pollin_event(loop, fd_array, index, size);
+            } else if (fd_array[index].revents == POLLOUT) {
+                _create_pollout_event(loop, fd_array, index, size);
             }
         }
 
     }
-
     return NULL;
 }
 
@@ -204,26 +108,53 @@ int el_open(event_loop* el, bool is_in_thread) {
 
 
 void el_close(event_loop *el) {
-    pthread_mutex_lock(&el->_mutex_is_run);
+    registered_events_entry *ptr = NULL;
+    TAILQ_FOREACH(ptr, el->_sock_events, entries) {
+        while(!TAILQ_EMPTY(ptr->sock_events.events)) {
+            events_entry *septr = TAILQ_FIRST(ptr->sock_events.events);
+            TAILQ_REMOVE(ptr->sock_events.events, septr, entries);
+            free(septr->event);
+            free(septr);
+        }
+        free(ptr->sock_events.events);
+    }
 
-    el->_is_run = false;
-
-    pthread_mutex_unlock(&el->_mutex_is_run);
-
-    pthread_join(el->_thread, NULL);
+    while(!TAILQ_EMPTY(el->_sock_events)) {
+        registered_events_entry *re_ptr = TAILQ_FIRST(el->_sock_events);
+        TAILQ_REMOVE(el->_sock_events, re_ptr, entries);
+        free(re_ptr);
+    }
+    while (!TAILQ_EMPTY(el->_sockets_accepts)) {
+        socket_entry *se_ptr = TAILQ_FIRST(el->_sockets_accepts);
+        TAILQ_REMOVE(el->_sockets_accepts, se_ptr, entries);
+        free(se_ptr);
+    }
+    free(el->_sockets_accepts);
+    free(el->_event_queue);
+    free(el->_sock_events);
+    pthread_mutex_destroy(&el->_mutex_sock_events);
+    pthread_mutex_destroy(&el->_mutex_event_queue);
+    pthread_mutex_destroy(&el->_mutex_is_run);
+//    pthread_mutex_lock(&el->_mutex_is_run);
+//
+//    el->_is_run = false;
+//
+//    pthread_mutex_unlock(&el->_mutex_is_run);
+//
+//    pthread_join(el->_thread, NULL);
 
 }
 
 bool el_run(event_loop* el) {
     pthread_mutex_lock(&el->_mutex_event_queue);
 
-    occurred_event_entry  etype = **el->_event_queue->tqh_last;
-    TAILQ_REMOVE(el->_event_queue,*el->_event_queue->tqh_last, entries);
+    occurred_event_entry  *etype = *el->_event_queue->tqh_last;
+    TAILQ_REMOVE(el->_event_queue, etype, entries);
 
     pthread_mutex_unlock(&el->_mutex_event_queue);
 
-    if (etype.element.event->event.type == SOCK_WRITE) {
-        event_sock_write *e = (event_sock_write*) &etype.element.event;
+    if (etype->element.event->event.type == SOCK_WRITE) {
+        event_sock_write *e = (event_sock_write*) etype->element.event;
         int res = send(e->event.event.socket, &e->buffer[e->offset], e->size - e->offset, 0);
         if (res == -1) {
             // Ошибка отправки буфера
@@ -243,13 +174,14 @@ bool el_run(event_loop* el) {
             e->handler(el, e->event.event.socket, e->size, error);
             e->deleter(e->buffer, e->size);
         }
-    } else if (etype.element.event->event.type == SOCK_READ) {
-        _socket_read(el, &etype);
-    } else if (etype.element.event->event.type == SOCK_ACCEPT) {
-        _socket_accept(el, &etype);
-    } else if (etype.element.event->event.type == SOCK_TIMER) {
+    } else if (etype->element.event->event.type == SOCK_READ) {
+        _socket_read(el, etype);
+    } else if (etype->element.event->event.type == SOCK_ACCEPT) {
+        _socket_accept(el, etype);
+    } else if (etype->element.event->event.type == SOCK_TIMER) {
         // TODO (ageev) вызов обработчика для конкретного сокета по таймеру.(?!)
     }
+    free(etype);
     return 1;
 }
 
@@ -323,7 +255,6 @@ void _el_async_read(event_loop *loop, occurred_event_entry *occurred) {
 
 
 void _socket_read(event_loop *loop, occurred_event_entry *occurred) {
-    // TODO (ageev) обновить логику чтения из сокета. Читать из буфера, котороый предоставлен пользователем.
     event_sock_read *e = (event_sock_read*)occurred->element.event;
     int res = 0;
     while((res = recv(e->event.event.socket, e->buffer + e->offset, e->size - e->offset, MSG_NOSIGNAL)) != -1) {
@@ -353,4 +284,139 @@ void _socket_accept(event_loop *loop, occurred_event_entry *occurred) {
     error.is = NO_ERROR;
     error.message = ERROR_MESSAGE_NO_ERROR;
     e->handler(loop, e->event.event.socket, slave, client_addr, error);
+    socket_entry *s_entry = malloc(sizeof(socket_entry));
+    s_entry->socket = e->event.event.socket;
+    s_entry->handler = e->handler;
+    TAILQ_INSERT_TAIL(loop->_sockets_accepts, s_entry, entries);
+}
+
+void _create_pollfd(event_loop* loop, struct pollfd **fd_array, int *size) {
+    pthread_mutex_lock(&loop->_mutex_sock_events);
+
+    // Определяем количество зарегестрированных событий
+    int number_reg_sockets = 0; // число зарегистрированных сокетов
+    QUEUE_SIZE(registered_events_entry, loop->_sock_events,
+               entries, &number_reg_sockets);
+    int number_acceptors = 0; // число зарегистриованных приемщиков
+    QUEUE_SIZE(socket_entry, loop->_sockets_accepts,
+               entries, &number_acceptors);
+
+//    // проходим по сокетам и определяем количество событий для каждого сокета
+//    int number_events = 0;
+//    registered_events_entry *ptr = NULL;
+//    TAILQ_FOREACH(ptr, loop->_sock_events, entries) {
+//        int tmp = 0;
+//        QUEUE_SIZE(registered_events_entry, loop->_sock_events, entries, &tmp);
+//        number_events += tmp;
+//    } <-- этот цикл не нужен поскольку один элемнет массива fd_array предназначен для регисрации всех событий
+//          для одного сокета
+
+    *size = number_reg_sockets+number_acceptors; // Общее число зарегистрированных событий
+    *fd_array = malloc(sizeof(struct pollfd)*(*size));
+    memset(*fd_array, 0, sizeof(struct pollfd)*(*size));
+    int i = 0;
+    registered_events_entry  *events_ptr = NULL;
+    // Цикл по сокетам
+    TAILQ_FOREACH(events_ptr, loop->_sock_events, entries) {
+
+        (*fd_array)[i].fd = events_ptr->sock_events.sock;
+
+        // Заполнение pollfd событиями чтения и записи
+        // цикл по событиям конкретного сокета
+        events_entry *sock_event = NULL;
+        TAILQ_FOREACH(sock_event, events_ptr->sock_events.events, entries) {
+            event_t *event = sock_event->event;
+            if (event->event.type == SOCK_READ) {
+                (*fd_array)[i].events = (*fd_array)[i].events | POLLIN;
+            } else if (event->event.type == SOCK_WRITE) {
+                (*fd_array)[i].events = (*fd_array)[i].events | POLLOUT;
+            }
+        }
+        i = i + 1;
+    }
+    // Приемщики записываем в опследний момет, и запоминаем с какого индекса они начианются.
+    // Таким образом мы може определить, что события  POLLIN необходимо выполнить приняте подключения а не
+    // чтение данных
+    loop->_index_acepptors_start = i;
+    socket_entry *se_ptr = NULL;
+    TAILQ_FOREACH(se_ptr, loop->_sockets_accepts, entries) {
+        (*fd_array)[i].fd = se_ptr->socket;
+        (*fd_array)[i].events = (*fd_array)[i].events | POLLIN;
+        i = i + 1;
+    }
+
+    pthread_mutex_unlock(&loop->_mutex_sock_events);
+
+}
+
+
+// TODO (ageev) разобраться с блокировками
+void _create_pollin_event(event_loop *loop, struct pollfd *fd_array, int index, int size) {
+    fd_array[index].revents &= !POLLIN;
+    occurred_event_entry *occurred = malloc(sizeof(occurred_event_entry));
+    // ПРоверка: Ожидает ли сокет подключения
+    if (index >= loop->_index_acepptors_start) {
+        // Создаем событие - подключение клиента
+        occurred->element.event = (event_t*)malloc(sizeof(event_sock_accept));
+        occurred->element.event->event.type = SOCK_ACCEPT;
+        occurred->element.event->event.socket = fd_array[index].fd;
+        // выполняем поиск описания зарегистрированного события
+        socket_entry *se_ptr = NULL;
+        TAILQ_FOREACH(se_ptr, loop->_sockets_accepts, entries) {
+            if (se_ptr->socket == fd_array[index].fd) {
+                break;
+            }
+        }
+
+        assert(se_ptr != NULL);
+
+        // извлекаем обработчик для данного события
+        ((event_sock_accept*)occurred->element.event)->handler = se_ptr->handler;
+        TAILQ_INSERT_TAIL(loop->_event_queue, occurred, entries);
+        // убираем событие из списка, чтобы poll не реагировал на то, что мы еще не обработали его
+        // после обработки подключения, необходимо обратно его добавить!
+        TAILQ_REMOVE(loop->_sockets_accepts, se_ptr, entries);
+        free(se_ptr);
+    } else {
+        // Создаем событие - чтение из сокета
+        event_sock_read *e= (event_sock_read*)malloc(sizeof(event_sock_read));
+        e->event.event.type = SOCK_READ;
+        e->event.event.socket = fd_array[index].fd;
+        // TODO (ageev) заменить список на динамический массив!
+        registered_events_entry *re_ptr = NULL; // поиск группы событий для сокета
+        TAILQ_FOREACH(re_ptr, loop->_sock_events, entries) {
+            if (re_ptr->sock_events.sock == fd_array[index].fd) {
+                break;
+            }
+        }
+
+        assert(re_ptr != NULL);
+
+        // поиск зарегистрированного события для сокета
+        // Событие должно существовать. Так на основе него строился fd_array
+        events_entry *ee_ptr = NULL;
+        TAILQ_FOREACH(ee_ptr, re_ptr->sock_events.events, entries) {
+            if (ee_ptr->event->event.type == SOCK_READ) {
+                break;
+            }
+        }
+
+        assert(ee_ptr != NULL);
+
+        e->handler = ((event_sock_read*)(ee_ptr->event))->handler;
+        e->size = ((event_sock_read*)(ee_ptr->event))->size;
+        occurred->element.event = (event_t*)e;
+        TAILQ_INSERT_TAIL(loop->_event_queue, occurred, entries);
+
+        TAILQ_REMOVE(re_ptr->sock_events.events, ee_ptr, entries);
+        free(ee_ptr);
+        if (TAILQ_EMPTY(re_ptr->sock_events.events)) {
+            TAILQ_REMOVE(loop->_sock_events, re_ptr, entries);
+            free(re_ptr);
+        }
+    }
+}
+
+void _create_pollout_event(event_loop *loop, struct pollfd *fd_array, int index, int size) {
+    // TODO (ageev) написать создание события записи в сокет.
 }

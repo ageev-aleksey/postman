@@ -9,7 +9,7 @@ SRC = $(wildcard $(SRC_DIR)/lib/*.c)
 OBJS = $(patsubst $(SRC_DIR)/%.c, $(OBJECTS_DIR)/%.o, $(SRC))
 TEST_OBJS = $(patsubst $(TEST_PATH)/src/%.c, $(OBJECTS_DIR)/test/src/%.o, $(TEST_SRC))
 CC = gcc-4.8
-CCFLAGS = -std=c99 -Wall -Werror
+CCFLAGS = -std=c99 #-Wall -Werror
 
 .PHONY: release debug mkdir clean test
 
@@ -35,7 +35,7 @@ debug: $(BIN_PATH)/server.out
 test: CCFLAGS += -DDEBUG -g
 test: INCLUDES += -I$(TEST_PATH)/include
 test: $(TEST_OBJS) $(BIN_PATH)/libserver.a
-	$(CC) $(CCFLAGS) $(INCLUDES) $(TEST_PATH)/main.c $(TEST_OBJS) -L$(BIN_PATH) -lserver  -lcunit -o $(BIN_PATH)/test.out
+	$(CC) $(CCFLAGS) $(INCLUDES) $(TEST_PATH)/main.c $(TEST_OBJS) -L$(BIN_PATH) -lserver  -lcunit -lpthread -o $(BIN_PATH)/test.out
 
 
 echo: $(OBJS)
