@@ -27,7 +27,7 @@ typedef struct _sockets_queue sockets_queue;
  * Инициализации очредеи ацепторов
  * @return указатель на инициализированную структуру
  */
-sockets_queue *sq_init();
+sockets_queue *sq_init(error_t *error);
 /**
  * Добавление ацептора и его обработчика
  * @param queue - очередь
@@ -36,14 +36,14 @@ sockets_queue *sq_init();
  * @return успешность операции. Возможно добавить только один обработчик для одного сокета
  *  и обработчик не должен быть равным NULL
  */
-bool sq_add(sockets_queue *queue, int socket, sock_accept_handler handler);
+bool sq_add(sockets_queue *queue, int socket, sock_accept_handler handler, error_t *error);
 /**
  * Получение обработчика для сокета-ацептора
  * @param queue - очередь обработчиков
  * @param socket - сокет-ацептор
  * @return Указатель на обработчик или NULL если обработчик отсутствует
  */
-sock_accept_handler sq_get(sockets_queue *queue, int socket);
+sock_accept_handler sq_get(sockets_queue *queue, int socket, error_t *error);
 /**
  * Удаление обработчика для указанного сокета
  * @param queue - очередь содрежащая обработчик

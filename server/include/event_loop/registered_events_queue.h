@@ -31,7 +31,7 @@ typedef struct _registered_events_queue registered_events_queue;
  * создание и инициализация структуры для хранения обработчиков событий
  * @return Инициализированная структура
  */
-registered_events_queue* registered_events_queue_init();
+registered_events_queue* req_init(error_t* error);
 /**
  * Добавление события для сокета
  * @param queue куда добавлять событе
@@ -39,7 +39,7 @@ registered_events_queue* registered_events_queue_init();
  * @param event  описать события (описатль будет скопирован)
  * @return Успешность выполнения. Возможно для одного секта добавлять только один тип событий
  */
-bool req_add_accept(registered_events_queue* queue, int socket, event_sock_accept *event);
+bool req_add_accept(registered_events_queue* queue, int socket, event_sock_accept *event, error_t *error);
 bool req_add_read(registered_events_queue* queue, int socket, event_sock_read event);
 bool req_add_write(registered_events_queue* queue, int socket, event_sock_write event);
 //
