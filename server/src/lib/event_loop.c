@@ -1,5 +1,5 @@
-#include "event_loop.h"
-#include "buffered_queue.h"
+#include "event_loop/event_loop.h"
+#include "event_loop/buffered_queue.h"
 
 #include <stdio.h>
 #include <poll.h>
@@ -87,7 +87,7 @@ void *loop_thread(void *args) {
 void el_init(event_loop* el) {
     el->_sockets_accepts = malloc(sizeof(sockets_queue));
     TAILQ_INIT(el->_sockets_accepts);
-    el->_event_queue = malloc(sizeof(event_queue_t));
+    el->_event_queue = malloc(sizeof(occurred_event_queue));
     TAILQ_INIT(el->_event_queue);
     el->_sock_events = malloc(sizeof(registered_events_queue));
     TAILQ_INIT(el->_sock_events);
