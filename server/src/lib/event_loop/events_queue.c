@@ -32,6 +32,7 @@ void eq_free(events_queue *queue) {
         free(el->event);
         free(el);
     }
+    free(queue);
 }
 
 

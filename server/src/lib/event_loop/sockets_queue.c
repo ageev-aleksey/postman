@@ -80,7 +80,8 @@ bool sq_add(sockets_queue *queue, int socket, sock_accept_handler handler, error
     return true;
 }
 
-sock_accept_handler sq_get(sockets_queue *queue, int socket, error_t *error) {
+
+socket_entry* pr_sq_get(sockets_queue *queue, int socket, error_t *error) {
     if (queue == NULL) {
         if (error != NULL) {
             error->error = FATAL;
@@ -106,8 +107,21 @@ sock_accept_handler sq_get(sockets_queue *queue, int socket, error_t *error) {
         error->error = OK;
         error->message = ERROR_SUCCESS;
     }
+    return el;
+}
+
+sock_accept_handler sq_get(sockets_queue *queue, int socket, error_t *error) {
+    socket_entry *el = pr_sq_get(queue, socket, error);
+    if (el == NULL) {
+        return NULL;
+    }
     return el->handler;
 }
+
+bool sq_delete(sockets_queue *queue, int socket) {
+
+}
+
 
 void sq_free(sockets_queue* queue) {
     if (queue == NULL) {

@@ -24,6 +24,10 @@ typedef struct _registered_events_entry {
 TAILQ_HEAD(_registered_events_queue, _registered_events_entry);
 typedef struct _registered_events_queue registered_events_queue;
 
+extern int REQ_ACCEPT_EVENT;
+extern int REQ_READ_EVENT;
+extern int REQ_WRITE_EVENT;
+
 
 /////////// registered_events_queue - req ///////////
 
@@ -57,16 +61,16 @@ bool req_push_write(registered_events_queue* queue, int socket, event_sock_write
  * @param type - тип события, которое необходимо найти
  * @return Указатель на событие из очереди или NULL если описатель отсутсвует
  */
-event_sock_accept* req_pop_accept(registered_events_queue* queue, int socket);
-event_sock_read* req_pop_read(registered_events_queue* queue, int socket);
-event_sock_write* req_pop_write(registered_events_queue* queue, int socket);
+event_sock_accept* req_pop_accept(registered_events_queue* queue, int socket, error_t *error);
+event_sock_read* req_pop_read(registered_events_queue* queue, int socket, error_t *error);
+event_sock_write* req_pop_write(registered_events_queue* queue, int socket, error_t *error);
 /**
  * Возвращает битовую маску зарегистрированных событий для сокета
  * @param queue - очередь зарегистрированных событий
  * @param socket - сокет для которого выполнять поиск
  * @return Битовая маска
  */
-int req_reg(registered_events_queue* queue, int socket);
+int req_reg(registered_events_queue* queue, int socket, error_t *error);
 
 /**
  * Освобождение память от всех зарегистрированных событий и очереди событий

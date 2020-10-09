@@ -14,6 +14,7 @@ enum ErrorType {
     OK = 0,
     NOT_FOUND,
     EXISTS,
+    EMPTY,
     FATAL,
 };
 

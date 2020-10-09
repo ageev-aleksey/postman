@@ -33,10 +33,10 @@ release: $(BIN_PATH)/server.out
 debug: CCFLAGS += -DDEBUG -g
 debug: $(BIN_PATH)/server.out
 
-test: CCFLAGS += -DDEBUG -g
+test: CCFLAGS += -DDEBUG -g -fprofile-arcs -ftest-coverage
 test: INCLUDES += -I$(TEST_PATH)/include
 test: $(TEST_OBJS) $(BIN_PATH)/libserver.a
-	$(CC) $(CCFLAGS) $(INCLUDES) $(TEST_PATH)/main.c $(TEST_OBJS) -L$(BIN_PATH) -lserver  -lcunit -lpthread -o $(BIN_PATH)/test.out
+	$(CC) $(CCFLAGS) $(INCLUDES) $(TEST_PATH)/main.c $(TEST_OBJS) -L$(BIN_PATH) -lserver  -lcunit -lpthread -lgcov -o $(BIN_PATH)/test.out
 
 
 echo: $(OBJS)
