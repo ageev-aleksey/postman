@@ -28,7 +28,7 @@ sockets_queue* sq_init(error_t *error) {
 bool sq_add(sockets_queue *queue, int socket, sock_accept_handler handler, error_t *error) {
     if (queue == NULL) {
         if (error != NULL) {
-            error->is_error = true;
+            error->error = FATAL;
             error->message = SQ_QUEUE_IS_NULL;
         }
         return NULL;
@@ -36,7 +36,7 @@ bool sq_add(sockets_queue *queue, int socket, sock_accept_handler handler, error
 
     if (handler == NULL) {
         if (error != NULL) {
-            error->is_error = true;
+            error->error= FATAL;
             error->message = SQ_HANDLER_IS_NULL;
         }
         return false;
@@ -44,7 +44,7 @@ bool sq_add(sockets_queue *queue, int socket, sock_accept_handler handler, error
 
     if (socket < 0) {
         if (error != NULL) {
-            error->is_error = true;
+            error->error = FATAL;
             error->message = SQ_INVALID_SOCKET_VALUE;
         }
         return false;
@@ -58,7 +58,7 @@ bool sq_add(sockets_queue *queue, int socket, sock_accept_handler handler, error
     }
     if (el != NULL) {
         if (error != NULL) {
-            error->is_error = true;
+            error->error = EXISTS;
             error->message = SQ_SOCKET_EXISTS;
         }
         return false;
@@ -66,7 +66,7 @@ bool sq_add(sockets_queue *queue, int socket, sock_accept_handler handler, error
 
     error_t er;
     el = s_malloc(sizeof(socket_entry), &er);
-    if (er.is_error) {
+    if (er.error) {
         *error = er;
         return false;
     }
@@ -74,7 +74,7 @@ bool sq_add(sockets_queue *queue, int socket, sock_accept_handler handler, error
     el->handler = handler;
     TAILQ_INSERT_TAIL(queue, el, entries);
     if (error != NULL) {
-        error->is_error = false;
+        error->error = OK;
         error->message = ERROR_SUCCESS;
     }
     return true;
@@ -83,7 +83,7 @@ bool sq_add(sockets_queue *queue, int socket, sock_accept_handler handler, error
 sock_accept_handler sq_get(sockets_queue *queue, int socket, error_t *error) {
     if (queue == NULL) {
         if (error != NULL) {
-            error->is_error = true;
+            error->error = FATAL;
             error->message = SQ_QUEUE_IS_NULL;
         }
         return NULL;
@@ -97,13 +97,13 @@ sock_accept_handler sq_get(sockets_queue *queue, int socket, error_t *error) {
     }
     if (el == NULL) {
         if (error != NULL) {
-            error->is_error = true;
+            error->error = NOT_FOUND;
             error->message = SQ_SOCKET_NOT_FOUND;
         }
         return NULL;
     }
     if (error != NULL) {
-        error->is_error = false;
+        error->error = OK;
         error->message = ERROR_SUCCESS;
     }
     return el->handler;

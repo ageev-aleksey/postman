@@ -50,7 +50,7 @@ $(BIN_PATH)/server.out: $(OBJECTS_DIR)/main.o $(BIN_PATH)/libserver.a
 	$(CC) $(CCFLAGS) $(INCLUDES) $< -L$(BIN_PATH) -lserver -lpthread -o $@
 
 mkdir:
-	mkdir -p $(OBJECTS_DIR)/lib
+	mkdir -p $(OBJECTS_DIR)/lib/event_loop
 	mkdir -p $(OBJECTS_DIR)/test/src
 	mkdir -p $(BIN_PATH)
 

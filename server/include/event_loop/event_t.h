@@ -32,12 +32,12 @@ typedef struct _event_t {
 } event_t;
 
 typedef struct _event_sock_accept {
-    event_t event;
+    sock_event event;
     sock_accept_handler handler;
 } event_sock_accept;
 
 typedef struct _event_sock_read {
-    event_t event;
+    sock_event event;
     sock_read_handler handler;
     char *buffer;
     int size;
@@ -45,7 +45,7 @@ typedef struct _event_sock_read {
 } event_sock_read;
 
 typedef struct _event_sock_write {
-    event_t event;
+    sock_event event;
     sock_write_handler handler;
     int offset; // возможна не полная отправка данных за раз. Это смещенеи в буфере
     int size;

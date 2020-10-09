@@ -39,9 +39,9 @@ registered_events_queue* req_init(error_t* error);
  * @param event  описать события (описатль будет скопирован)
  * @return Успешность выполнения. Возможно для одного секта добавлять только один тип событий
  */
-bool req_add_accept(registered_events_queue* queue, int socket, event_sock_accept *event, error_t *error);
-bool req_add_read(registered_events_queue* queue, int socket, event_sock_read event);
-bool req_add_write(registered_events_queue* queue, int socket, event_sock_write event);
+bool req_push_accept(registered_events_queue* queue, int socket, event_sock_accept *event, error_t *error);
+bool req_push_read(registered_events_queue* queue, int socket, event_sock_read *event, error_t *error);
+bool req_push_write(registered_events_queue* queue, int socket, event_sock_write *event, error_t *error);
 //
 /**
  * удаление события определенного типа для заданного сокета
@@ -49,7 +49,7 @@ bool req_add_write(registered_events_queue* queue, int socket, event_sock_write 
  * @param socket сокет для которого удалять событе
  * @param type тип события, который необходимо удалить
  */
-void req_delete(registered_events_queue* queue, int socket, event_type type);
+//void req_delete(registered_events_queue* queue, int socket, event_type type);
 /**
  * Получение описателя зарегистрированного события для заданного сокета и определнного типа
  * @param queue - Очередь, в которой искать событие
@@ -57,9 +57,9 @@ void req_delete(registered_events_queue* queue, int socket, event_type type);
  * @param type - тип события, которое необходимо найти
  * @return Указатель на событие из очереди или NULL если описатель отсутсвует
  */
-event_sock_accept* req_get_accept(registered_events_queue* queue, int socket);
-event_sock_read* req_get_read(registered_events_queue* queue, int socket);
-event_sock_write* req_get_write(registered_events_queue* queue, int socket);
+event_sock_accept* req_pop_accept(registered_events_queue* queue, int socket);
+event_sock_read* req_pop_read(registered_events_queue* queue, int socket);
+event_sock_write* req_pop_write(registered_events_queue* queue, int socket);
 /**
  * Возвращает битовую маску зарегистрированных событий для сокета
  * @param queue - очередь зарегистрированных событий
@@ -72,7 +72,7 @@ int req_reg(registered_events_queue* queue, int socket);
  * Освобождение память от всех зарегистрированных событий и очереди событий
  * @param queue очередь событий, из под которой необходимо совободить память
  */
-void registered_events_queue_free(registered_events_queue* queue);
+void req_free(registered_events_queue* queue);
 
 
 #endif //SERVER_REGISTERED_EVENTS_QUEUE_H
