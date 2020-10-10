@@ -48,6 +48,7 @@ void event_queue_push_test() {
     CU_ASSERT_EQUAL(el->event.type, SOCK_ACCEPT);
     CU_ASSERT(el->event.socket == 10);
     eq_free(eq);
+    free(el);
 }
 
 void event_queue_double_push_test() {
@@ -56,11 +57,13 @@ void event_queue_double_push_test() {
     event_sock_accept *accept = s_malloc(sizeof(event_sock_accept), &error);
     ERR_CHECK(error);
     accept->event.socket = 10;
+    //accept->event.type = SOCK_ACCEPT;
     eq_push_accept(eq, accept, &error);
     ERR_CHECK(error);
     accept = s_malloc(sizeof(event_sock_accept), &error);
     ERR_CHECK(error);
     accept->event.socket = 20;
+    //accept->event.type = SOCK_ACCEPT;
     eq_push_accept(eq, accept, &error);
     CU_ASSERT(error.error == EXISTS);
     int i = 0;
@@ -86,6 +89,7 @@ void event_queue_pop_test() {
     CU_ASSERT_PTR_NOT_NULL(event);
     CU_ASSERT_EQUAL(event->offset, 100);
     eq_free(eq);
+    free(event);
 }
 
 void event_queue_empty_pop_test() {

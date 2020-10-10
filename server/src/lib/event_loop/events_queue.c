@@ -47,14 +47,6 @@ bool _el_is_contain(events_queue *queue, event_type type) {
 }
 
 bool _eq_add(events_queue *queue, event_t *event, error_t *error) {
-    error_t  err;
-    events_entry *entry = s_malloc(sizeof(events_entry), &err);
-    if (err.error) {
-        if (error != NULL) {
-            *error = err;
-        }
-        return false;
-    }
     bool is_contain = _el_is_contain(queue, event->event.type);
     if (is_contain) {
         if (error != NULL) {
@@ -63,6 +55,17 @@ bool _eq_add(events_queue *queue, event_t *event, error_t *error) {
         }
         return false;
     }
+
+    error_t  err;
+    ERROR_SUCCESS(&err);
+    events_entry *entry = s_malloc(sizeof(events_entry), &err);
+    if (err.error) {
+        if (error != NULL) {
+            *error = err;
+        }
+        return false;
+    }
+
     entry->event = event;
     TAILQ_INSERT_TAIL(queue, entry, entries);
     ERROR_SUCCESS(error);

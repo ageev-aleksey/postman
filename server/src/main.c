@@ -9,6 +9,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <string.h>
+#include <search.h>
 
 #define PRINT_ERROR_EXIT(res) \
 do { \
@@ -38,6 +39,8 @@ void accept_handler(event_loop *loop, int master_socket, int client_socket, stru
 }
 
 int main() {
+    int i = hcreate(10);
+
     event_loop loop;
     el_init(&loop);
     int sock = socket(AF_INET, SOCK_STREAM, 0);
