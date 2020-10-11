@@ -1,11 +1,12 @@
 #include <stdio.h>
 #include <string.h>
 #include "CUnit/Basic.h"
-//#include "event_loop_test.h"
+#include "event_loop_test.h"
 #include "events_queue_test.h"
 #include "registered_events_queue_test.h"
 bool eq_test_init();
 bool req_test_init();
+bool el_test_init();
 int main()
 {
     CU_pSuite pSuite = NULL;
@@ -15,46 +16,13 @@ int main()
     /* add a suite to the registry */
 
     if (!eq_test_init() ||
-        !req_test_init())
+        !req_test_init() ||
+        !el_test_init())
     {
         CU_cleanup_registry();
         return CU_get_error();
     }
 
-
-    /* add a suite to the registry */
-//    pSuite = CU_add_suite("Event Loop", event_loop_test_init, event_loop_test_clean);
-//    if (NULL == pSuite) {
-//        CU_cleanup_registry();
-//        return CU_get_error();
-//    }
-
-    /* add the tests to the suite */
-    /* NOTE - ORDER IS IMPORTANT - MUST TEST fread() AFTER fprintf() */
-//    if ((NULL == CU_add_test(pSuite,
-//                             "test of creating pollfd array from list of registered events",
-//                             create_pollfd_array_test)) ||
-//        NULL == CU_add_test(pSuite,
-//                            "test of adding in queue info about pollin event",
-//                            create_pollin_occurred_events_test) ||
-//        NULL == CU_add_test(pSuite,
-//                            "test of adding in queue info about pollout event",
-//                            create_pollout_occurred_events_test) ||
-//        NULL == CU_add_test(pSuite,
-//                            "test of processing of sock read event",
-//                            process_sock_read_event_test) ||
-//        NULL == CU_add_test(pSuite,
-//                            "test of processing of sock write event",
-//                            process_sock_write_event_test) ||
-//        NULL == CU_add_test(pSuite,
-//                            "test of processing of sock accept event",
-//                            process_sock_accept_event_test))
-//    {
-//        CU_cleanup_registry();
-//        return CU_get_error();
-//    }
-
-    /* Run all tests using the CUnit Basic interface */
     CU_basic_set_mode(CU_BRM_VERBOSE);
     CU_basic_run_tests();
     CU_cleanup_registry();
@@ -115,6 +83,25 @@ bool req_test_init() {
          NULL == CU_add_test(pSuite,
                              "get bitmask of registered events for socket",
                              registered_events_queue_bitmask_test))
+    {
+        return false;
+    }
+    return true;
+}
+
+bool el_test_init() {
+    CU_pSuite pSuite = NULL;
+    pSuite = CU_add_suite("EventLoop", event_loop_test_init, event_loop_test_clean);
+    if (NULL == pSuite) {
+        return false;
+    }
+
+    if (NULL == CU_add_test(pSuite,
+                         "test init event loop",
+                         event_loop_initialize_test) ||
+        NULL == CU_add_test(pSuite,
+                            "create pollfd from event_loop structure",
+                            create_pollfd_array_test))
     {
         return false;
     }

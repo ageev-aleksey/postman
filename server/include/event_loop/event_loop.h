@@ -42,7 +42,7 @@ typedef struct _event_loop {
 
 //PUBLIC
 
-void el_init(event_loop*);
+event_loop* el_init(error_t *error);
 /**
  * Инициализация цикла событий.
  * @param is_in_thread true - Запуск менеджера цикла событий в текущем потоке.
@@ -52,22 +52,24 @@ void el_init(event_loop*);
  *  Менеджер не будет вызывать обработчики событий. Для обработки возникшех событий в отдельных потоках
  *  необходимо вызывать функцию run на данном цикле событией. В этом случае работа потокобезопасная.
  */
-int el_open(event_loop*, bool is_in_thread);
+bool el_open(event_loop*, bool is_in_thread,  error_t *error);
 void el_close(event_loop*);
-bool el_run(event_loop*);
-void el_async_accept(event_loop* loop, int sock, sock_accept_handler);
-void el_async_read(event_loop* loop, int sock, char *buffer, int size, sock_read_handler);
-void el_async_write(event_loop* loop, int sock, void *output_buffer, unsigned int bsize, buff_deleter, sock_read_handler);
-void el_timer(event_loop* loop, int sock, unsigned int ms, sock_timer_handler);
+//bool el_run(event_loop*,  error_t *error);
+//bool el_async_accept(event_loop* loop, int sock, sock_accept_handler,  error_t *error);
+//bool el_async_read(event_loop* loop, int sock, char *buffer, int size, sock_read_handler,  error_t *error);
+//bool el_async_write(event_loop* loop, int sock, void *output_buffer, unsigned int bsize,
+//                    buff_deleter, sock_read_handler,  error_t *error);
+// bool el_timer(event_loop* loop, int sock, unsigned int ms, sock_timer_handler);
+bool el_stop(event_loop* loop,  error_t *error);
 
 // PRIVATE
-void _el_async_accept(event_loop* loop, int sock, sock_accept_handler handler);
-void _socket_read(event_loop *loop, occurred_event_entry *occurred);
-void _el_async_read(event_loop *loop, occurred_event_entry *occurred);
-void _socket_accept(event_loop *loop, occurred_event_entry *occurred);
-void _create_pollfd(event_loop* loop, struct pollfd **fd_array, int *size);
-void _create_pollin_event(event_loop *loop, struct pollfd *fd_array, int index, int size);
-void _create_pollout_event(event_loop *loop, struct pollfd *fd_array, int index, int size);
+void pr_el_async_accept(event_loop* loop, int sock, sock_accept_handler handler);
+void pr_socket_read(event_loop *loop, occurred_event_entry *occurred);
+void pr_el_async_read(event_loop *loop, occurred_event_entry *occurred);
+void pr_socket_accept(event_loop *loop, occurred_event_entry *occurred);
+bool pr_create_pollfd(event_loop* loop, struct pollfd **fd_array, int *size, error_t *error);
+bool pr_create_pollin_event(event_loop *loop, struct pollfd *fd, int index, error_t *error);
+//void pr_create_pollout_event(event_loop *loop, struct pollfd *fd_array, int index, int size);
 
 
 #define QUEUE_SIZE(entry_type, queue, field, res) \

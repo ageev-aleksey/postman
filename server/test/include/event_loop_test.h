@@ -8,6 +8,7 @@
 int event_loop_test_init();
 int event_loop_test_clean();
 
+void event_loop_initialize_test();
 void create_pollfd_array_test();
 void create_pollin_occurred_events_test();
 void create_pollout_occurred_events_test();

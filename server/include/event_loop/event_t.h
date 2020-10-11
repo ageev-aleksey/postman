@@ -7,6 +7,8 @@
 
 #include "error_t.h"
 
+#include <netinet/in.h>
+
 typedef enum _event_type {
     SOCK_ACCEPT,
     SOCK_READ,
@@ -16,7 +18,7 @@ typedef enum _event_type {
 } event_type;
 
 struct _event_loop;
-typedef  void (*sock_accept_handler)(struct _event_loop*, int acceptro, int client_socket, struct sockaddr_in client_addr, error_t);
+typedef  void (*sock_accept_handler)(struct _event_loop*, int acceptor, int client_socket, struct sockaddr_in client_addr, error_t);
 typedef  void (*sock_read_handler)(struct _event_loop* loop, int socket, char *buffer, int size, error_t);
 typedef  void (*sock_write_handler)(struct _event_loop*, int socket, int size, error_t);
 typedef void (*sock_timer_handler)(struct _event_loop*, int socket, unsigned int time, error_t);
@@ -34,6 +36,8 @@ typedef struct _event_t {
 typedef struct _event_sock_accept {
     sock_event event;
     sock_accept_handler handler;
+    int client_socket;
+    struct sockaddr_in client_addr;
 } event_sock_accept;
 
 typedef struct _event_sock_read {

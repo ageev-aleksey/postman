@@ -2,6 +2,7 @@
 // Created by nrx on 08.10.2020.
 //
 #include "util.h"
+#include <string.h>
 
 const char ERROR_SUCCESS[] = "Success";
 const char UTIL_ERROR_ALLOCATED_MEMORY[] = "Error allocated memory";
@@ -20,6 +21,7 @@ void* s_malloc(size_t size, error_t *error) {
         error->error = OK;
         error->message = ERROR_SUCCESS;
     }
+    memset(ptr, 0, size);
     return ptr;
 }
 

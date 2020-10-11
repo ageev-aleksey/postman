@@ -19,7 +19,7 @@ const char SQ_QUEUE_IS_NULL[] = "pointer of queue is null";
 
 
 sockets_queue* sq_init(error_t *error) {
-    sockets_queue *ptr = malloc(sizeof(sockets_queue));
+    sockets_queue *ptr = s_malloc(sizeof(sockets_queue), error);
 
     TAILQ_INIT(ptr);
     return ptr;

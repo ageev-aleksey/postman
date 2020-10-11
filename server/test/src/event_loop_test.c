@@ -1,71 +1,80 @@
-//#include "CUnit/Basic.h"
-//#include "event_loop/event_loop.h"
-//#include "event_loop_test.h"
-//#include <stdlib.h>
-//
-//
-//
-//int event_loop_test_init() {
-//   return 0;
-//}
-//
-//int event_loop_test_clean() {
-//   return 0;
-//}
-//
-//void create_pollfd_array_test() {
-////    static event_loop el;
-////    el_init(&el);
-////
-////    registered_events_entry *registered_entry = malloc(sizeof(registered_events_entry));
-////    registered_entry->sock_events.sock = 1;
-////    registered_entry->sock_events.events = malloc(sizeof(events_queue));
-////    TAILQ_INIT(registered_entry->sock_events.events);
-////
-////    events_entry *entry = malloc(sizeof(events_entry));
-////    entry->event = malloc(sizeof(event_t));
-////    entry->event->event.socket = 1;
-////    entry->event->event.type = SOCK_READ;
-////    TAILQ_INSERT_TAIL(registered_entry->sock_events.events, entry, entries);
-////
-////    entry = malloc(sizeof(events_entry));
-////    entry->event = malloc(sizeof(event_t));
-////    entry->event->event.socket = 1;
-////    entry->event->event.type = SOCK_WRITE;
-////    TAILQ_INSERT_TAIL(registered_entry->sock_events.events, entry, entries);
-////
-////    TAILQ_INSERT_TAIL(el._sock_events, registered_entry, entries);
-////
-////    registered_entry = malloc(sizeof(registered_events_entry));
-////    registered_entry->sock_events.sock = 2;
-////    registered_entry->sock_events.events = malloc(sizeof(events_queue));
-////    TAILQ_INIT(registered_entry->sock_events.events);
-////
-////    entry = malloc(sizeof(events_entry));
-////    entry->event = malloc(sizeof(event_t));
-////    entry->event->event.socket = 1;
-////    entry->event->event.type = SOCK_WRITE;
-////    TAILQ_INSERT_TAIL(registered_entry->sock_events.events, entry, entries);
-////
-////    TAILQ_INSERT_TAIL(el._sock_events, registered_entry, entries);
-////
-////    struct pollfd *fd_array = NULL;
-////    int size;
-////    _create_pollfd(&el, &fd_array, &size);
-////
-////    CU_ASSERT(size == 2)
-////    CU_ASSERT(fd_array[0].fd == 1)
-////    CU_ASSERT(fd_array[0].events == (POLLIN | POLLOUT));
-////    CU_ASSERT(fd_array[1].fd == 2)
-////    CU_ASSERT(fd_array[1].events == POLLOUT);
-////
-////    free(fd_array);
-////
-////    el_close(&el);
-//
-//}
-//
-//void create_pollin_occurred_events_test() {
+#include "CUnit/Basic.h"
+#include "event_loop/event_loop.h"
+#include "event_loop_test.h"
+#include "util.h"
+#include <stdlib.h>
+
+#define ERROR_ASSERT(_error_)   \
+do {                            \
+    if (error.error) {          \
+        CU_FAIL();              \
+    }                           \
+} while(0)
+
+
+int event_loop_test_init() {
+   return 0;
+}
+
+int event_loop_test_clean() {
+   return 0;
+}
+
+void event_loop_initialize_test() {
+    error_t  error;
+    ERROR_SUCCESS(&error);
+    event_loop *loop = el_init(&error);
+    ERROR_ASSERT(error);
+    el_close(loop);
+}
+
+void create_pollfd_array_test() {
+    int socket1 = 10;
+    int socket2 = 20;
+    error_t error;
+    ERROR_SUCCESS(&error);
+    event_loop *loop = el_init(&error);
+    ERROR_ASSERT(error);
+
+    event_sock_write *write1 = s_malloc(sizeof(event_sock_write), &error);
+    ERROR_ASSERT(error);
+    req_push_write(loop->_sock_events, socket1, write1, &error);
+    ERROR_ASSERT(error);
+    event_sock_read  *read1 = s_malloc(sizeof(event_sock_read), &error);
+    ERROR_ASSERT(error);
+    req_push_read(loop->_sock_events, socket1, read1, &error);
+
+    event_sock_write *write2 = s_malloc(sizeof(event_sock_write), &error);
+    ERROR_ASSERT(error);
+    req_push_write(loop->_sock_events, socket2, write2, &error);
+    ERROR_ASSERT(error);
+
+    struct pollfd *fd_array = NULL;
+    int res_size = 0;
+    pr_create_pollfd(loop, &fd_array, &res_size, &error);
+    ERROR_ASSERT(error);
+
+    CU_ASSERT_EQUAL(res_size, 2);
+    for (int i = 0; i < 2; ++i) {
+        if (fd_array[i].fd == socket1) {
+            CU_ASSERT_EQUAL(fd_array[i].events, POLLIN | POLLOUT);
+        } else if (fd_array[i].fd == socket2) {
+            CU_ASSERT_EQUAL(fd_array[i].events, POLLOUT);
+        } else {
+            CU_FAIL();
+        }
+    }
+
+    if (loop != NULL) {
+        el_close(loop);
+    }
+    if (fd_array != NULL) {
+        free(fd_array);
+    }
+
+}
+
+void create_pollin_occurred_events_test() {
 //    event_loop el;
 //    el_init(&el);
 //
@@ -110,60 +119,60 @@
 //    se->socket = sock3;
 //    se->handler = NULL;
 //    TAILQ_INSERT_TAIL(el._sockets_accepts, se, entries);
+
 //
-////
 //    _create_pollin_event(&el, fd_array, 0, 3);
-////    _create_pollin_event(&el, fd_array, 1, 3);
-////    _create_pollin_event(&el, fd_array, 2, 3);
-////    int size = 0;
-////    QUEUE_SIZE(occurred_event_entry, el._event_queue, entries, &size);
-////    CU_ASSERT(size == 3)
-////    event_t *res[3] = {0};
-////    occurred_event_entry *ptr = NULL;
-////    int i = 0;
-////    TAILQ_FOREACH(ptr, el._event_queue, entries) {
-////        res[i] = ptr->element.event;
-////        i++;
-////    }
-////    CU_ASSERT(res[0]->event.type == SOCK_READ);
-////    CU_ASSERT(res[1]->event.type == SOCK_READ);
-////    CU_ASSERT(res[2]->event.type == SOCK_ACCEPT);
-////
-////    CU_ASSERT(res[0]->event.socket == sock1);
-////    CU_ASSERT(res[1]->event.socket == sock2);
-////    CU_ASSERT(res[2]->event.socket == sock3);
-////
-////    registered_events_entry *re_ptr = NULL;
-////    TAILQ_FOREACH(re_ptr, el._sock_events, entries) {
-////        events_entry *ee_ptr = NULL;
-////        TAILQ_FOREACH(ee_ptr, re_ptr->sock_events.events, entries) {
-////            free(ee_ptr->event);
-////        }
-////    }
-////    while (!TAILQ_EMPTY(el._sock_events)) {
-////        registered_events_entry *ptr = TAILQ_FIRST(el._sock_events);
-////        TAILQ_REMOVE(el._sock_events, ptr, entries);
-////        free(ptr);
-////    }
-////
-////    while (!TAILQ_EMPTY(el._sockets_accepts)) {
-////        socket_entry *ptr = TAILQ_FIRST(el._sockets_accepts);
-////        TAILQ_REMOVE(el._sockets_accepts, ptr, entries);
-////        free(ptr);
-////    }
-//    el_close(&el);
+//    _create_pollin_event(&el, fd_array, 1, 3);
+//    _create_pollin_event(&el, fd_array, 2, 3);
+//    int size = 0;
+//    QUEUE_SIZE(occurred_event_entry, el._event_queue, entries, &size);
+//    CU_ASSERT(size == 3)
+//    event_t *res[3] = {0};
+//    occurred_event_entry *ptr = NULL;
+//    int i = 0;
+//    TAILQ_FOREACH(ptr, el._event_queue, entries) {
+//        res[i] = ptr->element.event;
+//        i++;
+//    }
+//    CU_ASSERT(res[0]->event.type == SOCK_READ);
+//    CU_ASSERT(res[1]->event.type == SOCK_READ);
+//    CU_ASSERT(res[2]->event.type == SOCK_ACCEPT);
 //
-//}
+//    CU_ASSERT(res[0]->event.socket == sock1);
+//    CU_ASSERT(res[1]->event.socket == sock2);
+//    CU_ASSERT(res[2]->event.socket == sock3);
 //
-//void create_pollout_occurred_events_test() {
+//    registered_events_entry *re_ptr = NULL;
+//    TAILQ_FOREACH(re_ptr, el._sock_events, entries) {
+//        events_entry *ee_ptr = NULL;
+//        TAILQ_FOREACH(ee_ptr, re_ptr->sock_events.events, entries) {
+//            free(ee_ptr->event);
+//        }
+//    }
+//    while (!TAILQ_EMPTY(el._sock_events)) {
+//        registered_events_entry *ptr = TAILQ_FIRST(el._sock_events);
+//        TAILQ_REMOVE(el._sock_events, ptr, entries);
+//        free(ptr);
+//    }
 //
-//}
-//void process_sock_read_event_test() {
-//
-//}
-//void process_sock_write_event_test() {
-//
-//}
-//void process_sock_accept_event_test() {
-//
-//}
+//    while (!TAILQ_EMPTY(el._sockets_accepts)) {
+//        socket_entry *ptr = TAILQ_FIRST(el._sockets_accepts);
+//        TAILQ_REMOVE(el._sockets_accepts, ptr, entries);
+//        free(ptr);
+//    }
+  //  el_close(&el);
+
+}
+
+void create_pollout_occurred_events_test() {
+
+}
+void process_sock_read_event_test() {
+
+}
+void process_sock_write_event_test() {
+
+}
+void process_sock_accept_event_test() {
+
+}

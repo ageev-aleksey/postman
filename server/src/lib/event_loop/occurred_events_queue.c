@@ -14,6 +14,7 @@ occurred_event_queue* oeq_init(error_t *error) {
     if (error != NULL) {
         *error = err;
     }
+    TAILQ_INIT(q);
     return q;
  }
 
