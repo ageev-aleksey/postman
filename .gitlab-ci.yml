@@ -12,8 +12,10 @@ stages:
 server_build:
   stage: build
   before_script:
-    - apt-get update
+    - apt-get update --yes
     - apt-get install build-essential --yes
+    - sudo apt-get install gcc-4.8  --yes
+    - sudo apt-get install lcov --yes
   script:
     - cd server
     - make mkdir
@@ -24,6 +26,7 @@ server_unit_testig:
   before_script:
     - apt-get update
     - apt-get install build-essential --yes
+    - sudo apt-get install lcov --yes
   script:
     - cd server
     - valgrind --leak-check=full ./bin/test.out
