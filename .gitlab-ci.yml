@@ -12,6 +12,7 @@ stages:
 server_build:
   stage: build
   before_script:
+    - apt-get update
     - apt-get install build-essential
   script:
     - cd server
@@ -21,6 +22,7 @@ server_build:
 server_unit_testig:
   stage: unit_testing
   before_script:
+    - apt-get update
     - apt-get install build-essential
   script:
     - cd server
