@@ -1,4 +1,4 @@
-image: ubuntu:16.04
+image: ubuntu:20.04
 
 stages:
   - build
@@ -6,8 +6,13 @@ stages:
   - functional_testing
 
 
+
+
+
 server_build:
   stage: build
+  before_script:
+    - apt-get install build-essential
   script:
     - cd server
     - make mkdir
@@ -15,6 +20,8 @@ server_build:
 
 server_unit_testig:
   stage: unit_testing
+  before_script:
+    - apt-get install build-essential
   script:
     - cd server
     - valgrind --leak-check=full ./bin/test.out
