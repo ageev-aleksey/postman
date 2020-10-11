@@ -16,7 +16,7 @@ server_build:
     - apt-get install build-essential --yes
     - apt-get install gcc-4.8  --yes
     - apt-get install lcov --yes
-    - server/depends.h
+    - ./server/depends.sh
   script:
     - cd server
     - make mkdir
