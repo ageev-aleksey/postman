@@ -101,7 +101,10 @@ bool el_test_init() {
                          event_loop_initialize_test) ||
         NULL == CU_add_test(pSuite,
                             "create pollfd from event_loop structure",
-                            create_pollfd_array_test))
+                            create_pollfd_array_test) ||
+        NULL == CU_add_test(pSuite,
+                            "process pollin",
+                            create_pollin_occurred_events_test))
     {
         return false;
     }

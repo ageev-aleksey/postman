@@ -3,6 +3,7 @@
 #include "event_loop_test.h"
 #include "util.h"
 #include <stdlib.h>
+#include <arpa/inet.h>
 
 #define ERROR_ASSERT(_error_)   \
 do {                            \
@@ -75,92 +76,78 @@ void create_pollfd_array_test() {
 }
 
 void create_pollin_occurred_events_test() {
-//    event_loop el;
-//    el_init(&el);
+//    struct sockaddr_in addr;
+//    memset(&addr, 0, sizeof(struct sockaddr_in));
+//    addr.sin_family = AF_INET;
+//    addr.sin_port = htonl(8081);
+//    addr.sin_addr.s_addr = INADDR_ANY;
+//    int socket1 = socket(AF_INET, SOCK_STREAM, 0);
+//   // int er = bind(socket1, (struct sockaddr*)&addr, sizeof(struct sockaddr_in));
+////    if (er == -1) {
+////        CU_FAIL();
+////    }
+//    int socket2 = socket(AF_INET, SOCK_STREAM, 0);
+//    int er = bind(socket2, (struct sockaddr*)&addr, sizeof(struct sockaddr_in));
+//    if (er == -1) {
+//        CU_FAIL();
+//        return;
+//    }
+//    er = listen(socket2, 1);
+//    if (er == -1) {
+//        CU_FAIL();
+//        return;
+//    }
+//    struct sockaddr_in addr2 = addr;
+//    addr2.sin_addr.s_addr = INADDR_LOOPBACK;
+//    er = connect(socket1, (struct sockaddr*)&addr2, sizeof(struct sockaddr));
 //
-//    int sock1 = 1;
-//    int sock2 = 2;
-//    int sock3 = 3;
-//    struct pollfd fd_array[] = {
-//            {sock1, POLLIN, 0},
-//            {sock2, POLLIN, 0},
-//            {sock3, POLLIN, 0}
-//    };
-//    el._index_acepptors_start = 2; // последний элемент fd_array относится к событию принятия подключения от клиента
-//
-//    registered_events_entry *registered_entry = (registered_events_entry*)malloc(sizeof(registered_events_entry));
-//
-//     //Создаем список событий для сокета 1
-//    registered_entry->sock_events.sock = sock1;
-//    registered_entry->sock_events.events = malloc(sizeof(events_queue));
-//    TAILQ_INIT(registered_entry->sock_events.events);
-//    events_entry *e_entry = (events_entry*) malloc(sizeof(events_entry));
-//    e_entry->event = malloc(sizeof(event_sock_read));
-//    e_entry->event->event.socket = sock1;
-//    e_entry->event->event.type = SOCK_READ;
-//    TAILQ_INSERT_TAIL(registered_entry->sock_events.events, e_entry, entries);
-//    TAILQ_INSERT_TAIL(el._sock_events, registered_entry, entries);
-//
-////    // Создаем список событий для сокета 2
-//    registered_entry = malloc(sizeof(registered_events_entry));
-//    registered_entry->sock_events.sock = sock2;
-//    registered_entry->sock_events.events = malloc(sizeof(events_queue));
-//    TAILQ_INIT(registered_entry->sock_events.events);
-//    e_entry = malloc(sizeof(events_entry));
-//    e_entry->event = malloc(sizeof(event_sock_read));
-//    e_entry->event->event.socket = sock2;
-//    e_entry->event->event.type = SOCK_READ;
-//    ((event_sock_read*)(e_entry->event))->handler = NULL;
-//    TAILQ_INSERT_TAIL(registered_entry->sock_events.events, e_entry, entries);
-//    TAILQ_INSERT_TAIL(el._sock_events, registered_entry, entries);
-////
-////    // Создаем список событий для сокета 3
-//    socket_entry  *se = malloc(sizeof(socket_entry));
-//    se->socket = sock3;
-//    se->handler = NULL;
-//    TAILQ_INSERT_TAIL(el._sockets_accepts, se, entries);
+//    if (er == -1) {
+//        CU_FAIL();
+//    }
 
+    // РУЧНОЕ ТЕСТИРОВАНИЕ С ОТЛАДЧИКОМ
+    int socket1 = 10;
+    int socket2 = 20;
+
+    error_t error;
+    ERROR_SUCCESS(&error);
+    event_loop *loop = el_init(&error);
+    ERROR_ASSERT(error);
+
+    loop->_index_acepptors_start = 1; // socket2 is acceptor
+    sq_add(loop->_sockets_accepts, socket2, NULL, &error);
+    event_sock_read *event = s_malloc(sizeof(event_sock_read), &error);
+    ERROR_ASSERT(error);
+
+    event->event.socket = socket1;
+    event->event.type = SOCK_READ;
+    event->size = 1;
+    req_push_read(loop->_sock_events, socket1, event, &error);
+    ERROR_ASSERT(error);
+
+    struct pollfd fd_array[2] = {0};
+    fd_array[0].revents = POLLIN;
+    fd_array[0].events = POLLIN;
+    fd_array[0].fd = socket1;
+    fd_array[1].revents = POLLIN;
+    fd_array[1].events = POLLIN;
+    fd_array[1].fd = socket2;
+    pr_create_pollin_event(loop, fd_array, 0, &error);
+    ERROR_ASSERT(error);
+
+    CU_ASSERT_FALSE(TAILQ_EMPTY(loop->_event_queue));
+    occurred_event_entry *ptr = TAILQ_FIRST(loop->_event_queue);
+    CU_ASSERT_EQUAL(ptr->element.event->event.type, SOCK_READ);
+    CU_ASSERT_EQUAL(ptr->element.event->event.socket, socket1);
+
+    pr_create_pollin_event(loop, fd_array, 1, &error);
+    ERROR_ASSERT(error);
 //
-//    _create_pollin_event(&el, fd_array, 0, 3);
-//    _create_pollin_event(&el, fd_array, 1, 3);
-//    _create_pollin_event(&el, fd_array, 2, 3);
-//    int size = 0;
-//    QUEUE_SIZE(occurred_event_entry, el._event_queue, entries, &size);
-//    CU_ASSERT(size == 3)
-//    event_t *res[3] = {0};
-//    occurred_event_entry *ptr = NULL;
-//    int i = 0;
-//    TAILQ_FOREACH(ptr, el._event_queue, entries) {
-//        res[i] = ptr->element.event;
-//        i++;
-//    }
-//    CU_ASSERT(res[0]->event.type == SOCK_READ);
-//    CU_ASSERT(res[1]->event.type == SOCK_READ);
-//    CU_ASSERT(res[2]->event.type == SOCK_ACCEPT);
-//
-//    CU_ASSERT(res[0]->event.socket == sock1);
-//    CU_ASSERT(res[1]->event.socket == sock2);
-//    CU_ASSERT(res[2]->event.socket == sock3);
-//
-//    registered_events_entry *re_ptr = NULL;
-//    TAILQ_FOREACH(re_ptr, el._sock_events, entries) {
-//        events_entry *ee_ptr = NULL;
-//        TAILQ_FOREACH(ee_ptr, re_ptr->sock_events.events, entries) {
-//            free(ee_ptr->event);
-//        }
-//    }
-//    while (!TAILQ_EMPTY(el._sock_events)) {
-//        registered_events_entry *ptr = TAILQ_FIRST(el._sock_events);
-//        TAILQ_REMOVE(el._sock_events, ptr, entries);
-//        free(ptr);
-//    }
-//
-//    while (!TAILQ_EMPTY(el._sockets_accepts)) {
-//        socket_entry *ptr = TAILQ_FIRST(el._sockets_accepts);
-//        TAILQ_REMOVE(el._sockets_accepts, ptr, entries);
-//        free(ptr);
-//    }
-  //  el_close(&el);
+//    occurred_event_entry *ptr2 = TAILQ_LAST(loop->_event_queue, _occurred_event_queue);
+//    CU_ASSERT_EQUAL(ptr2->element.event->event.type, SOCK_ACCEPT);
+//    CU_ASSERT_EQUAL(ptr2->element.event->event.socket, socket2);
+
+    el_close(loop);
 
 }
 

@@ -69,7 +69,7 @@ void pr_el_async_read(event_loop *loop, occurred_event_entry *occurred);
 void pr_socket_accept(event_loop *loop, occurred_event_entry *occurred);
 bool pr_create_pollfd(event_loop* loop, struct pollfd **fd_array, int *size, error_t *error);
 bool pr_create_pollin_event(event_loop *loop, struct pollfd *fd, int index, error_t *error);
-//void pr_create_pollout_event(event_loop *loop, struct pollfd *fd_array, int index, int size);
+bool pr_create_pollout_event(event_loop *loop, struct pollfd *fd_array, int index, error_t *error);
 
 
 #define QUEUE_SIZE(entry_type, queue, field, res) \

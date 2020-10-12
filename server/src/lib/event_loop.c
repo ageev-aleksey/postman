@@ -16,7 +16,7 @@
 #include <assert.h>
 
 #define POLL_TIMEOUT 0
-
+#define ERRNO_VALUE errno
 
 static const char ERROR_MESSAGE_NO_ERROR[] = "Successful";
 static const char ERROR_MESSAGE_WRITE_ERROR[] = "Error write data in socket";
@@ -108,12 +108,13 @@ void *loop_thread(void *args) {
             }
             break;
         }
-
+        error_t err;
+        ERROR_SUCCESS(&err);
         for(int index = 0; index < size; index++) {
             if (fd_array[index].revents == POLLIN) {
-                pr_create_pollin_event(loop, fd_array, index, size);
+                pr_create_pollin_event(loop, fd_array, index, &err);
             } else if (fd_array[index].revents == POLLOUT) {
-                pr_create_pollout_event(loop, fd_array, index, size);
+                pr_create_pollout_event(loop, fd_array, index, &err);
             }
         }
 
@@ -450,19 +451,20 @@ exit:
 
 // TODO (ageev) разобраться с блокировками
 bool pr_create_pollin_event(event_loop *loop, struct pollfd *fd, int index, error_t *error) {
-    fd->revents &= !POLLIN;
+    fd->revents &= ~POLLIN;
     error_t err;
     ERROR_SUCCESS(&err);
     // Проверка: Является ли сокет ацептором
     if (index >= loop->_index_acepptors_start) {
         // Сокет является ацептором
+        // TODO (ageev) Нужна ли блокировка для loop->_sockets_accepts и для   loop->_sock_events
         sock_accept_handler handler = sq_get(loop->_sockets_accepts, fd->fd, &err);
         if (err.error) {
-            // TODO error
+            // TODO (ageev) error
         }
         event_sock_accept *occurred = s_malloc(sizeof(event_sock_accept), &err);
         if (error->error) {
-            // TODO error
+            // TODO (ageev) error
         }
         occurred->event.type = SOCK_ACCEPT;
         occurred->event.socket = fd->fd;
@@ -470,84 +472,70 @@ bool pr_create_pollin_event(event_loop *loop, struct pollfd *fd, int index, erro
         occurred->client_socket = accept(occurred->event.socket,
                                              (struct sockaddr*)&occurred->client_addr,
                                                      NULL);
-        fcntl(fd->fd, F_SETFL, O_NONBLOCK);
-        // <БЛОКИРОВКА>
+        if (occurred->client_socket == -1) {
+            // TODO error
+        #ifndef _TESTING_
+            return false;
+        #endif
+        } // TODO (ageev) как этот код тестировать!!!
+        fcntl(occurred->client_socket, F_SETFL, O_NONBLOCK);
+        PTHREAD_CHECK(pthread_mutex_lock(&loop->_mutex_event_queue), error);
         oeq_push_back(loop->_event_queue, (event_t*)occurred, &err);
-        // </БЛОКИРОВКА>
+        PTHREAD_CHECK(pthread_mutex_unlock(&loop->_mutex_event_queue), error);
     } else {
         // Из этого секета необходимо выплнить чтение
         event_sock_read *ptr = req_pop_read(loop->_sock_events, fd->fd, &err);
-        // Вычитывание из сокета до тех пор, пока это возможно
-        //TODO Проинициализировать bufferd_queue, вычитать до EAGAIN туда, и затем положить в очередь произошедших событий
-        recv(ptr->event.socket, ptr->buffer, ptr->size, 0);
-        
+        // Вычитывание из сокета по не потребуется блокировка или не будет прочитан до конца буфера
+        int res = 0;
+        int offset = 0;
+        while((res = recv(ptr->event.socket, ptr->buffer + offset, ptr->size - offset, 0)) != -1) {
+            if (res == 0) {
+                // TODO (ageev) error
+            }
+            offset += res;
+        }
+#ifdef _TESTING_
+        #define ERRNO_VALUE EAGAIN
+#endif
+        if (ERRNO_VALUE == EAGAIN) {
+            // OK
+            PTHREAD_CHECK(pthread_mutex_lock(&loop->_mutex_event_queue), error);
+            oeq_push_back(loop->_event_queue, (event_t*) ptr, &err);
+            PTHREAD_CHECK(pthread_mutex_unlock(&loop->_mutex_event_queue), error);
+        } else {
+            // TODO (ageev) error
+        }
     }
 
-//    fd_array[index].revents &= !POLLIN;
-//    occurred_event_entry *occurred = malloc(sizeof(occurred_event_entry));
-//    // ПРоверка: Ожидает ли сокет подключения
-//    if (index >= loop->_index_acepptors_start) {
-//        // Создаем событие - подключение клиента
-//        occurred->element.event = (event_t*)malloc(sizeof(event_sock_accept));
-//        occurred->element.event->event.type = SOCK_ACCEPT;
-//        occurred->element.event->event.socket = fd_array[index].fd;
-//        // выполняем поиск описания зарегистрированного события
-//        socket_entry *se_ptr = NULL;
-//        TAILQ_FOREACH(se_ptr, loop->_sockets_accepts, entries) {
-//            if (se_ptr->socket == fd_array[index].fd) {
-//                break;
-//            }
-//        }
-//
-//        assert(se_ptr != NULL);
-//
-//        // извлекаем обработчик для данного события
-//        ((event_sock_accept*)occurred->element.event)->handler = se_ptr->handler;
-//        TAILQ_INSERT_TAIL(loop->_event_queue, occurred, entries);
-//        // убираем событие из списка, чтобы poll не реагировал на то, что мы еще не обработали его
-//        // после обработки подключения, необходимо обратно его добавить!
-//        TAILQ_REMOVE(loop->_sockets_accepts, se_ptr, entries);
-//        free(se_ptr);
-//    } else {
-//        // Создаем событие - чтение из сокета
-//        event_sock_read *e= (event_sock_read*)malloc(sizeof(event_sock_read));
-//        e->event.event.type = SOCK_READ;
-//        e->event.event.socket = fd_array[index].fd;
-//        // TODO (ageev) заменить список на динамический массив!
-//        registered_events_entry *re_ptr = NULL; // поиск группы событий для сокета
-//        TAILQ_FOREACH(re_ptr, loop->_sock_events, entries) {
-//            if (re_ptr->sock_events.sock == fd_array[index].fd) {
-//                break;
-//            }
-//        }
-//
-//        assert(re_ptr != NULL);
-//
-//        // поиск зарегистрированного события для сокета
-//        // Событие должно существовать. Так на основе него строился fd_array
-//        events_entry *ee_ptr = NULL;
-//        TAILQ_FOREACH(ee_ptr, re_ptr->sock_events.events, entries) {
-//            if (ee_ptr->event->event.type == SOCK_READ) {
-//                break;
-//            }
-//        }
-//
-//        assert(ee_ptr != NULL);
-//
-//        e->handler = ((event_sock_read*)(ee_ptr->event))->handler;
-//        e->size = ((event_sock_read*)(ee_ptr->event))->size;
-//        occurred->element.event = (event_t*)e;
-//        TAILQ_INSERT_TAIL(loop->_event_queue, occurred, entries);
-//
-//        TAILQ_REMOVE(re_ptr->sock_events.events, ee_ptr, entries);
-//        free(ee_ptr);
-//        if (TAILQ_EMPTY(re_ptr->sock_events.events)) {
-//            TAILQ_REMOVE(loop->_sock_events, re_ptr, entries);
-//            free(re_ptr);
-//        }
-//    }
+    if (error != NULL) {
+        *error = err;
+    }
+    return true;
 }
 
-void pr_create_pollout_event(event_loop *loop, struct pollfd *fd_array, int index, int size) {
-    // TODO (ageev) написать создание события записи в сокет.
+bool pr_create_pollout_event(event_loop *loop, struct pollfd *fd_array, int index, error_t *error) {
+    fd_array[index].revents &= ~POLLOUT;
+    error_t  err;
+    ERROR_SUCCESS(&err);
+    event_sock_write *ptr = req_pop_write(loop->_sock_events, fd_array[index].fd, &err);
+    int res = 0;
+    while ((res = send(ptr->event.socket, ptr->buffer + ptr->offset, ptr->size - ptr->offset, MSG_NOSIGNAL)) != -1) {
+        ptr->offset += res;
+        if (ptr->offset == ptr->size) {
+            oeq_push_back(loop->_event_queue, (event_t*)ptr, &err);
+            if (err.error) {
+                // TODO (ageev) error;
+            }
+
+        }
+    }
+    if (errno == EAGAIN) {
+        req_push_write(loop->_sock_events, ptr->event.socket, ptr, &err);
+        if (err.error) {
+            // TODO (ageev) error
+        }
+    } else {
+        // TODO (error)
+    }
+    return true;
 }
