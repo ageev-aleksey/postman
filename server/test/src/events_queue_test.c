@@ -4,7 +4,7 @@
 #include "CUnit/Basic.h"
 #include "events_queue_test.h"
 #include "util.h"
-#include "event_loop/error_t.h"
+#include "error_t.h"
 
 #define ERR_CHECK(error)                    \
 do {                                        \

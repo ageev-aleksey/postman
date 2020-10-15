@@ -7,6 +7,7 @@ TEST_PATH = test
 TEST_SRC = $(wildcard $(TEST_PATH)/src/*.c)
 SRC = $(wildcard $(SRC_DIR)/lib/*.c)
 SRC += $(wildcard $(SRC_DIR)/lib/event_loop/*.c)
+SRC += $(wildcard $(SRC_DIR)/lib/protocol/*.c)
 OBJS = $(patsubst $(SRC_DIR)/%.c, $(OBJECTS_DIR)/%.o, $(SRC))
 TEST_OBJS = $(patsubst $(TEST_PATH)/src/%.c, $(OBJECTS_DIR)/test/src/%.o, $(TEST_SRC))
 CC = gcc-4.8
@@ -51,6 +52,7 @@ $(BIN_PATH)/server.out: $(OBJECTS_DIR)/main.o $(BIN_PATH)/libserver.a
 
 mkdir:
 	mkdir -p $(OBJECTS_DIR)/lib/event_loop
+	mkdir -p $(OBJECTS_DIR)/lib/protocol
 	mkdir -p $(OBJECTS_DIR)/test/src
 	mkdir -p $(BIN_PATH)
 

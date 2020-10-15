@@ -1,6 +1,9 @@
 #include "event_loop/event_loop.h"
+#include "util.h"
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #define __USE_MISC
 #include <sys/types.h>
@@ -19,31 +22,49 @@ do { \
     } \
 } while(0);
 
-void read_handler(event_loop* loop, int socket, char *buffer, int size, async_error error) {
-    printf("%s", buffer);
+void read_handler(struct _event_loop* loop, int socket, char *buffer, int size, error_t er);
+void write_handler(struct _event_loop* loop, int socket, char* buffer, int size, int writing,  error_t error) {
+    printf(" -- Send -> %d \n", writing);
     free(buffer);
-   // el_async_read(loop, client_socket, buffer, 500, read_handler);
+    buffer = s_malloc(500, NULL);
+    el_async_read(loop, socket, buffer, 500, read_handler, NULL);
+
+}
+
+void read_handler(struct _event_loop* loop, int socket, char *buffer, int size, error_t er) {
+    if (size == 0) {
+        // client disconnect
+        close(socket);
+        free(buffer);
+    } else {
+        printf(" -- %s\n", buffer);
+        char *new_buffer = s_malloc(500, NULL);
+        el_async_write(loop, socket, buffer, 500, write_handler, NULL);
+    }
 }
 
 
 
-void accept_handler(event_loop *loop, int master_socket, int client_socket, struct sockaddr_in client_addr, async_error error) {
-    if (error.is != NO_ERROR) {
+void accept_handler(struct _event_loop* loop, int acceptor, int client_socket, struct sockaddr_in client_addr, error_t error) {
+    if (error.error) {
         printf("error");
     }
     char ip[12] = {'\0'};
     inet_ntop(AF_INET, &client_addr.sin_addr, ip, 12);
     int port = ntohs(client_addr.sin_port);
-    printf("accept connection from: %s:%d", ip, port);
+    printf("accept connection from: %s:%d \n", ip, port);
     char *buffer = (char*) malloc(sizeof(char)*500);
-    el_async_read(loop, client_socket, buffer, 500, read_handler);
+    el_async_read(loop, client_socket, buffer, 500, read_handler, NULL);
 }
 
 int main() {
 //    int i = hcreate(10);
 //
-    event_loop loop;
-    el_init(&loop);
+    error_t error;
+    event_loop *loop = el_init(&error);
+    if (error.error) {
+        return -1;
+    }
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     fcntl(sock, O_NONBLOCK);
     struct sockaddr_in addr;
@@ -56,13 +77,8 @@ int main() {
     PRINT_ERROR_EXIT(res);
     res = listen(sock, 1);
     PRINT_ERROR_EXIT(res);
-    el_async_accept(&loop, sock, accept_handler);
-    el_open(&loop, true);
-
-
-    el_run(&loop);
-
-
+    el_async_accept(loop, sock, accept_handler, NULL);
+    el_open(loop, ONE_THREAD, &error);
 
     return 0;
 }

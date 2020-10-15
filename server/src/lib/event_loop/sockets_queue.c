@@ -3,7 +3,7 @@
 //
 
 #include "event_loop/sockets_queue.h"
-#include "event_loop/error_t.h"
+#include "error_t.h"
 #include "util.h"
 #include <stdlib.h>
 

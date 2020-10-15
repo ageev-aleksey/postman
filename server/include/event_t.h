@@ -13,20 +13,20 @@ typedef enum _event_type {
     SOCK_ACCEPT,
     SOCK_READ,
     SOCK_WRITE,
-    SOCK_TIMER,
-    NONE,
+  // TODO (ageev)  SOCK_TIMER,
 } event_type;
 
 struct _event_loop;
 typedef  void (*sock_accept_handler)(struct _event_loop*, int acceptor, int client_socket, struct sockaddr_in client_addr, error_t);
 typedef  void (*sock_read_handler)(struct _event_loop* loop, int socket, char *buffer, int size, error_t);
-typedef  void (*sock_write_handler)(struct _event_loop*, int socket, int size, error_t);
-typedef void (*sock_timer_handler)(struct _event_loop*, int socket, unsigned int time, error_t);
-typedef void (*buff_deleter)(void *buffer, int bsize);
+typedef  void (*sock_write_handler)(struct _event_loop*, int socket, char* buffer, int size, int writing,  error_t);
+//typedef void (*sock_timer_handler)(struct _event_loop*, int socket, unsigned int time, error_t);
+//typedef void (*buff_deleter)(void *buffer, int bsize);
 
 typedef struct _sock_event {
     event_type type;
     int socket;
+    error_t error;
 } sock_event;
 
 typedef struct _event_t {
@@ -54,7 +54,7 @@ typedef struct _event_sock_write {
     int offset; // возможна не полная отправка данных за раз. Это смещенеи в буфере
     int size;
     char *buffer;
-    buff_deleter deleter;
+    // buff_deleter deleter;
 
 } event_sock_write;
 
