@@ -1,0 +1,22 @@
+image: ubuntu:16.04
+
+stages:
+  - build
+  - unit_testing
+  - functional_testing
+
+
+server_build:
+  stage: build
+  script:
+    - cd server
+    - make mkdir
+    - make
+
+server_unit_testig:
+  stage: unit_testing
+  script:
+    - cd server
+    - valgrind --leak-check=full ./bin/test.out
+    - lcov -t "server testing code coverage" -o server_coverage.info -c -d .
+    - genhtml -o report server_coverage.info  

@@ -16,15 +16,66 @@ typedef struct _events_entry {
 TAILQ_HEAD(_events_queue,  _events_entry);
 typedef struct _events_queue events_queue;
 
+/**
+ * Создание и инициализация списка событий
+ * @param error - статус выполнения
+ * @return указатель на список событий если операция удачна; NULL - если операци не удачна
+ */
 events_queue* eq_init(error_t *error);
+/**
+ * Освобождение памяти из под списка и всех его элементов
+ * @param queue  Список из под которого необходимо освободить память
+ */
 void eq_free(events_queue *queue);
 
+/**
+ * Добавление в список события "Подключение клиента"
+ * @param queue - список событий
+ * @param event  - описатьль события
+ * @param error - статус выполнения
+ * @return true - операция заврешилась успешно; false -  операция завершилась с ошибкой.
+ */
 bool eq_push_accept(events_queue *queue, event_sock_accept *event, error_t *error);
+/**
+ * Добавление в список события "Чтение из сокета"
+ * @param queue - список событий
+ * @param event  - описатьль события
+ * @param error - статус выполнения
+ * @return true - операция заврешилась успешно; false -  операция завершилась с ошибкой.
+ */
 bool eq_push_read(events_queue *queue, event_sock_read *event, error_t *error);
+/**
+ * Добавление в список события "Запись в сокет"
+ * @param queue - список событий
+ * @param event  - описатьль события
+ * @param error - статус выполнения
+ * @return true - операция заврешилась успешно; false -  операция завершилась с ошибкой.
+ */
 bool eq_push_write(events_queue *queue, event_sock_write *event, error_t *error);
 
+/**
+ * Извлечение (удаление из списка и возрат удаленного объекта) события "Подключение клиента" из списка
+ * @param queue список из которого извлеч
+ * @param event указатель на указатель, в которой будет присовено значение адреса извлекаемого элемента
+ * @param error статус выполнения операции
+ * @return true - операция заврешилась успешно; false -  операция завершилась с ошибкой.
+ */
 bool eq_pop_accept(events_queue *queue, event_sock_accept **event, error_t *error);
+/**
+ * Извлечение (удаление из списка и возрат удаленного объекта) события "Чтение из сокета" из списка
+ * @param queue список из которого извлеч
+ * @param event указатель на указатель, в которой будет присовено значение адреса извлекаемого элемента
+ * @param error статус выполнения операции
+ * @return true - операция заврешилась успешно; false -  операция завершилась с ошибкой.
+ */
 bool eq_pop_read(events_queue *queue, event_sock_read **event, error_t *error);
+/**
+ * Извлечение (удаление из списка и возрат удаленного объекта) события "Запись в сокет" из списка
+ * @param queue список из которого извлеч
+ * @param event указатель на указатель, в которой будет присовено значение адреса извлекаемого элемента
+ * @param error статус выполнения операции
+ * @return true - операция заврешилась успешно; false -  операция завершилась с ошибкой.
+ */
 bool eq_pop_write(events_queue *queue, event_sock_write **event, error_t *error);
 
 #endif //SERVER_EVENTS_QUEUE_H

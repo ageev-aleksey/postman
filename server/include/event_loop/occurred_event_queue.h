@@ -23,7 +23,9 @@ typedef struct _occurred_event_queue occurred_event_queue;
 
 /////////// occurred_event_queue - oeq ///////////
 /**
- * Выдиление памяти и инициализации стркутуры очереди произошедших событий
+ *
+ * @param error
+ * @return
  */
 occurred_event_queue* oeq_init(error_t *error);
 int oeq_size(occurred_event_queue *queue, error_t *error);
