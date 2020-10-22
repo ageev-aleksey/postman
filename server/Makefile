@@ -13,7 +13,7 @@ TEST_OBJS = $(patsubst $(TEST_PATH)/src/%.c, $(OBJECTS_DIR)/test/src/%.o, $(TEST
 CC = gcc-4.8
 CCFLAGS = -std=c99 #-Wall -Werror
 
-.PHONY: release debug mkdir clean test
+.PHONY: release debug mkdir clean test st_echo_with_context
 
 $(OBJECTS_DIR)/%.o: $(SRC_DIR)/%.c
 	$(CC) $(CCFLAGS) -c $< -o $@  $(INCLUDES)  -D__FILENAME__='"$<"'
@@ -40,6 +40,13 @@ test: $(TEST_OBJS) $(BIN_PATH)/libserver.a
 	$(CC) $(CCFLAGS) $(INCLUDES) $(TEST_PATH)/main.c $(TEST_OBJS) -L$(BIN_PATH) -lserver  -lcunit -lpthread -lgcov -o $(BIN_PATH)/test.out
 
 
+$(OBJECTS_DIR)/test/system_test/st_echo_with_context/main.o: $(TEST_PATH)/system_test/echo_with_context/main.c test $(BIN_PATH)/libserver.a
+	$(CC) $(CCFLAGS) -c $< -o $@
+
+st_echo_with_context: $(OBJECTS_DIR)/test/system_test/st_echo_with_context/main.o
+	$(CC) $(CCFLAGS) $(INCLUDES) $< -L$(BIN_PATH) -lserver -o $(BIN_PATH)/st_echo_with_context.out
+
+
 echo: $(OBJS)
 	echo $<
 
@@ -54,6 +61,7 @@ mkdir:
 	mkdir -p $(OBJECTS_DIR)/lib/event_loop
 	mkdir -p $(OBJECTS_DIR)/lib/protocol
 	mkdir -p $(OBJECTS_DIR)/test/src
+	mkdir -p $(OBJECTS_DIR)/test/system_test/st_echo_with_context
 	mkdir -p $(BIN_PATH)
 
 $(OBJECTS_DIR)/main.o: $(SRC_DIR)/main.c

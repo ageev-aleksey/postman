@@ -53,6 +53,8 @@ bool eq_push_read(events_queue *queue, event_sock_read *event, error_t *error);
  */
 bool eq_push_write(events_queue *queue, event_sock_write *event, error_t *error);
 
+// bool eq_push_disconnect(events_queue *queue, event_sock_disconnect *event, error_t *error);
+
 /**
  * Извлечение (удаление из списка и возрат удаленного объекта) события "Подключение клиента" из списка
  * @param queue список из которого извлеч
@@ -77,5 +79,7 @@ bool eq_pop_read(events_queue *queue, event_sock_read **event, error_t *error);
  * @return true - операция заврешилась успешно; false -  операция завершилась с ошибкой.
  */
 bool eq_pop_write(events_queue *queue, event_sock_write **event, error_t *error);
+
+// bool eq_pop_disconnect(events_queue *queue, event_sock_disconnect **event, error_t *error);
 
 #endif //SERVER_EVENTS_QUEUE_H

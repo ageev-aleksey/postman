@@ -18,6 +18,7 @@
 #define TIMEOUT_ZERO 0
 #define POLL_TIMEOUT 0
 #define TIMEOUT_INF (-1)
+#define NO_SOCKET (-1)
 
 static const char ERROR_MESSAGE_NO_ERROR[] = "Successful";
 static const char ERROR_MESSAGE_WRITE_ERROR[] = "Error write data in socket";
@@ -27,6 +28,7 @@ const char EL_EVENT_LOOP_PTR_IS_NULL[] = "event loop ptr is null";
 const char EL_INVALID_EVENT_TYPE[] = "invalid event type";
 const char EL_POLLFD_ERROR[] = "error execute poll";
 const char EL_NO_EVENTS[] = "not occurred events";
+const char EL_PARAMETER_IS_NULL[] = "parameter of function is null";
 
 
 
@@ -41,6 +43,10 @@ do {                                           \
     }                                          \
 } while(0)
 
+
+void pr_default_global_handler(int socket, error_t error, int line, const char* function) {
+    // slacker!
+}
 
 bool loop_is_started(event_loop* loop, error_t *error) {
     int res = 0;
@@ -99,7 +105,7 @@ void pr_manager_step(event_loop *loop, int fd_timeout, error_t *error) {
         // TODO (ageev) сделать обработку ошибки через callback
         error->error = FATAL;
         error->message = EL_POLLFD_ERROR;
-       goto exit;
+        goto exit;
     }
     for(int index = 0; index < size; index++) {
         if (fd_array[index].revents == POLLIN) {
@@ -108,7 +114,7 @@ void pr_manager_step(event_loop *loop, int fd_timeout, error_t *error) {
             pr_create_pollout_event(loop, fd_array, index, error);
         }
     }
-exit:
+    exit:
     free(fd_array);
 }
 
@@ -121,6 +127,7 @@ void *loop_thread(void *args) {
     while (loop_is_started(loop, &error)) {
         pr_manager_step(loop, TIMEOUT_INF, &error);
         if (error.error) {
+            loop->_global_handler(NO_SOCKET, error, __LINE__, __FUNCTION__);
             break;
         }
     }
@@ -133,7 +140,7 @@ event_loop* el_init(error_t *error) {
     if (loop == NULL) {
         return NULL;
     }
-
+    loop->_global_handler = pr_default_global_handler;
     loop->_registered_events = NULL;
     loop->_acceptors_queue = NULL;
     loop->_occurred_events = NULL;
@@ -277,11 +284,11 @@ void pr_sock_accept_execute(event_loop *loop, event_sock_accept *event) {
 }
 
 void pr_sock_read_execute(event_loop *loop, event_sock_read *event) {
-    event->handler(loop, event->event.socket, event->buffer, event->offset, event->event.error);
+    event->handler(loop, event->event.socket, event->buffer, event->offset, event->status, event->event.error);
 }
 
 void pr_sock_write_execute(event_loop *loop, event_sock_write *event) {
-        event->handler(loop, event->event.socket, event->buffer, event->size, event->offset, event->event.error);
+    event->handler(loop, event->event.socket, event->buffer, event->size, event->offset, event->status, event->event.error);
 }
 
 
@@ -305,7 +312,10 @@ bool el_run(event_loop* loop, error_t *error) {
     PTHREAD_CHECK(pthread_mutex_unlock(&loop->_mutex_occurred_events), error);
 
     if (err_queue.error) {
-        // TODO (ageev) ERROR
+        if (error != NULL) {
+            *error = err_queue;
+        }
+        return false;
     }
 
     switch (event->event.type) {
@@ -325,12 +335,18 @@ bool el_run(event_loop* loop, error_t *error) {
 
 
 bool el_async_accept(event_loop* loop, int sock, sock_accept_handler handler, error_t *error) {
-   ERROR_SUCCESS(error);
-   pthread_mutex_lock(&loop->_mutex_acceptors_queue);
-   sq_add(loop->_acceptors_queue, sock, handler, error);
-   pthread_mutex_unlock(&loop->_mutex_acceptors_queue);
-    // TODO (ageev) ERROR
-   return true;
+    error_t err;
+    ERROR_SUCCESS(&err);
+    PTHREAD_CHECK(pthread_mutex_lock(&loop->_mutex_acceptors_queue), error);
+    sq_add(loop->_acceptors_queue, sock, handler, &err);
+    PTHREAD_CHECK(pthread_mutex_unlock(&loop->_mutex_acceptors_queue), error);
+    if (err.error) {
+        if (error != NULL) {
+            *error = err;
+        }
+        return false;
+    }
+    return true;
 }
 
 bool el_async_read(event_loop* loop, int sock, char *buffer, int size, sock_read_handler handler, error_t *error) {
@@ -349,17 +365,25 @@ bool el_async_read(event_loop* loop, int sock, char *buffer, int size, sock_read
     read->handler = handler;
     read->size = size;
     read->buffer = buffer;
+    read->status = CONNECTED;
 
-    pthread_mutex_lock(&loop->_mutex_registered_events);
-    req_push_read(loop->_registered_events, sock, read, error);
-    pthread_mutex_unlock(&loop->_mutex_registered_events);
-    // TODO (ageev) ERROR
+    PTHREAD_CHECK(pthread_mutex_lock(&loop->_mutex_registered_events), error);
+    req_push_read(loop->_registered_events, sock, read, &err);
+    PTHREAD_CHECK(pthread_mutex_unlock(&loop->_mutex_registered_events), error);
+    if (err.error) {
+        if (error != NULL) {
+            *error= err;
+        }
+        return false;
+    }
     return true;
 }
 
 bool el_async_write(event_loop* loop, int sock, void *output_buffer, int bsize,
                     sock_write_handler handler,  error_t *error) {
     ERROR_SUCCESS(error);
+    error_t err;
+    ERROR_SUCCESS(&err);
     event_sock_write *write = s_malloc(sizeof(event_sock_write), error);
     if (write == NULL) {
         return false;
@@ -370,11 +394,17 @@ bool el_async_write(event_loop* loop, int sock, void *output_buffer, int bsize,
     write->buffer = output_buffer;
     write->size = bsize;
     write->handler = handler;
+    write->status = CONNECTED;
 
-    pthread_mutex_lock(&loop->_mutex_registered_events);
-    bool is_res = req_push_write(loop->_registered_events, sock, write, error);
-    pthread_mutex_unlock(&loop->_mutex_registered_events);
-
+    PTHREAD_CHECK(pthread_mutex_lock(&loop->_mutex_registered_events), error);
+    bool is_res = req_push_write(loop->_registered_events, sock, write, &err);
+    PTHREAD_CHECK(pthread_mutex_unlock(&loop->_mutex_registered_events), error);
+    if (err.error) {
+        if (error != NULL) {
+            *error = err;
+        }
+        return false;
+    }
     return is_res;
 }
 
@@ -401,9 +431,11 @@ bool pr_create_pollfd(event_loop* loop, struct pollfd **fd_array, int *size, err
             switch (eptr->event->event.type) {
                 case SOCK_WRITE:
                     fd_tmp[i].events |= POLLOUT;
+                    fd_tmp[i].events |= POLLHUP;
                     break;
                 case SOCK_READ:
                     fd_tmp[i].events |= POLLIN;
+                    fd_tmp[i].events |= POLLHUP;
                     break;
                 default:
                     err.error = FATAL;
@@ -441,26 +473,27 @@ bool pr_create_pollfd(event_loop* loop, struct pollfd **fd_array, int *size, err
 }
 
 
-// TODO (ageev) разобраться с блокировками
 bool pr_create_pollin_event(event_loop *loop, struct pollfd *fd, int index, error_t *error) {
     fd->revents &= ~POLLIN;
     error_t err;
     ERROR_SUCCESS(&err);
+    bool statusExecute = true;
     // Проверка: Является ли сокет ацептором
     if (index >= loop->_index_acepptors_start) {
         // Сокет является ацептором
-        // TODO (ageev) Нужна ли блокировка для loop->_acceptors_queue и для   loop->_registered_events
 
         PTHREAD_CHECK(pthread_mutex_lock(&loop->_mutex_acceptors_queue), error);
         sock_accept_handler handler = sq_get(loop->_acceptors_queue, fd->fd, &err);
         PTHREAD_CHECK(pthread_mutex_unlock(&loop->_mutex_acceptors_queue), error);
 
         if (err.error) {
-            // TODO (ageev) error
+            loop->_global_handler(fd->fd, err, __LINE__, __FUNCTION__);
+            return false;
         }
         event_sock_accept *occurred = s_malloc(sizeof(event_sock_accept), &err);
-        if (error->error) {
-            // TODO (ageev) error
+        if (err.error) {
+            loop->_global_handler(fd->fd, err, __LINE__, __FUNCTION__);
+            return false;
         }
         occurred->event.type = SOCK_ACCEPT;
         occurred->event.socket = fd->fd;
@@ -470,10 +503,14 @@ bool pr_create_pollin_event(event_loop *loop, struct pollfd *fd, int index, erro
                                          (struct sockaddr*)&occurred->client_addr,
                                          &addr_len);
         if (occurred->client_socket == -1) {
-            // TODO error
-            return false;
-        } // TODO (ageev) как этот код тестировать!!!
-        fcntl(occurred->client_socket, F_SETFL, O_NONBLOCK);
+            // Создаем событие с ошибкой. Ошибку обрабатываем в в обработчике событи
+            occurred->event.error.error = ERRNO;
+            occurred->event.error.errno_value = errno;
+            statusExecute = error;
+            loop->_global_handler(occurred->event.socket, occurred->event.error, __LINE__, __FUNCTION__);
+        }  else {
+            fcntl(occurred->client_socket, F_SETFL, O_NONBLOCK);
+        }
 
         PTHREAD_CHECK(pthread_mutex_lock(&loop->_mutex_occurred_events), error);
         oeq_push_back(loop->_occurred_events, (event_t*)occurred, &err);
@@ -486,28 +523,35 @@ bool pr_create_pollin_event(event_loop *loop, struct pollfd *fd, int index, erro
         PTHREAD_CHECK(pthread_mutex_unlock(&loop->_mutex_registered_events), error);
         // Вычитывание из сокета по не потребуется блокировка или не будет прочитан до конца буфера
         int res = 0;
-        int offset = 0;
-        while((res = recv(ptr->event.socket, ptr->buffer + offset, ptr->size - offset, 0)) != -1) {
-            offset += res;
+        ptr->offset = 0;
+        while((res = recv(ptr->event.socket, ptr->buffer + ptr->offset, ptr->size - ptr->offset, 0)) != -1) {
+            ptr->offset  += res;
             if (res == 0 ) {
                 // client disconnect
+                ptr->status = DISCONNECTED;
                 break;
             }
         }
-        if (errno == EAGAIN) {
+        if ((errno == EAGAIN) || ((res == 0) && (ptr->offset > 0))) {
             // OK
             PTHREAD_CHECK(pthread_mutex_lock(&loop->_mutex_occurred_events), error);
             oeq_push_back(loop->_occurred_events, (event_t*) ptr, &err);
             PTHREAD_CHECK(pthread_mutex_unlock(&loop->_mutex_occurred_events), error);
         } else {
-            // TODO (ageev) error
+            ptr->event.error.error = ERRNO;
+            ptr->event.error.errno_value = errno;
+            PTHREAD_CHECK(pthread_mutex_lock(&loop->_mutex_occurred_events), error);
+            oeq_push_back(loop->_occurred_events, (event_t*) ptr, &err);
+            PTHREAD_CHECK(pthread_mutex_unlock(&loop->_mutex_occurred_events), error);
+            loop->_global_handler(ptr->event.socket, ptr->event.error, __LINE__, __FUNCTION__);
+            statusExecute = false;
         }
     }
 
     if (error != NULL) {
         *error = err;
     }
-    return true;
+    return statusExecute;
 }
 
 bool pr_create_pollout_event(event_loop *loop, struct pollfd *fd_array, int index, error_t *error) {
@@ -527,6 +571,9 @@ bool pr_create_pollout_event(event_loop *loop, struct pollfd *fd_array, int inde
         }
         ptr->offset += res;
     }
+    if (errno == EPIPE) {
+        ptr->status = DISCONNECTED;
+    }
     if ((errno == EAGAIN) && (ptr->offset == 0)) {
 
         PTHREAD_CHECK(pthread_mutex_lock(&loop->_mutex_registered_events), error);
@@ -534,7 +581,8 @@ bool pr_create_pollout_event(event_loop *loop, struct pollfd *fd_array, int inde
         PTHREAD_CHECK(pthread_mutex_unlock(&loop->_mutex_registered_events), error);
 
         if (err.error) {
-            // TODO (ageev) error
+            loop->_global_handler(NO_SOCKET, err, __LINE__, __FUNCTION__);
+            return false;
         }
     } else if (ptr->offset != old_offset) {
 
@@ -543,10 +591,37 @@ bool pr_create_pollout_event(event_loop *loop, struct pollfd *fd_array, int inde
         PTHREAD_CHECK(pthread_mutex_unlock(&loop->_mutex_occurred_events), error);
 
         if (err.error) {
-            // TODO (ageev) error;
+            loop->_global_handler(NO_SOCKET, err, __LINE__, __FUNCTION__);
+            return false;
         }
     } else {
-        // TODO (ageev) error;
+        ptr->event.error.error = ERRNO;
+        ptr->event.error.errno_value = errno;
+        PTHREAD_CHECK(pthread_mutex_lock(&loop->_mutex_occurred_events), error);
+        oeq_push_back(loop->_occurred_events, (event_t*)ptr, &err);
+        PTHREAD_CHECK(pthread_mutex_unlock(&loop->_mutex_occurred_events), error);
+        loop->_global_handler(ptr->event.socket, err, __LINE__, __FUNCTION__);
     }
+    return true;
+}
+
+bool el_reg_global_error_handler(event_loop *loop, error_global_handler handler, error_t *error) {
+    if (loop == NULL) {
+        if (error != NULL) {
+            error->error = FATAL;
+            error->message = EL_EVENT_LOOP_PTR_IS_NULL;
+        }
+        return false;
+    }
+    if (handler == NULL) {
+        if (error != NULL) {
+            error->error = FATAL;
+            error->message = EL_PARAMETER_IS_NULL;
+        }
+        return false;
+    }
+
+    ERROR_SUCCESS(error);
+    loop->_global_handler = handler;
     return true;
 }

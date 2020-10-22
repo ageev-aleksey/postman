@@ -16,11 +16,13 @@ enum ErrorType {
     EXISTS,
     EMPTY,
     FATAL,
+    ERRNO,
 };
 
 typedef struct _error_t {
     const char *message;
     enum ErrorType error;
+    int errno_value;
 } error_t;
 
 const char *errtostr(enum ErrorType type);

@@ -4,4 +4,5 @@ bin/
 coverage_report/
 *.gcda
 *.gcno
+doxygen/
 

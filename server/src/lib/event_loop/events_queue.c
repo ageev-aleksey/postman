@@ -93,6 +93,15 @@ bool eq_push_write(events_queue *queue, event_sock_write *event, error_t *error)
     return _eq_add(queue, (event_t*)event, error);
 }
 
+// TODO (aageev) нужен ли отдельный обработчик для события отключения?
+//  В данный моент реализация выполняет обработку отключения пользователя в обрабочтике чтения или записи
+//bool eq_push_disconnect(events_queue *queue, event_sock_disconnect *event, error_t *error) {
+//    CHECK_AND_RETURN(queue, error, EQ_QUEUE_IS_NULL);
+//    CHECK_AND_RETURN(event, error, EQ_ELEMENT_IS_NULL);
+//    event->event.type = SOCK_DISCONNECT;
+//    return _eq_add(queue, (event_t*)event, error);
+//}
+
 bool _eq_pop(events_queue *queue, event_t **event, event_type type, error_t *error) {
     CHECK_AND_RETURN(queue, error, EQ_QUEUE_IS_NULL);
     events_entry *el = NULL;
@@ -125,3 +134,9 @@ bool eq_pop_read(events_queue *queue, event_sock_read **event, error_t *error)  
 bool eq_pop_write(events_queue *queue, event_sock_write **event, error_t *error)  {
     return _eq_pop(queue, (event_t**)event, SOCK_WRITE, error);
 }
+
+//bool eq_pop_disconnect(events_queue *queue, event_sock_disconnect **event, error_t *error) {
+//    return _eq_pop(queue, (event_t**)event, SOCK_DISCONNECT, error);
+//}
+
+

@@ -1,3 +1,10 @@
+// TODO (ageev) необходимо реализовать свойства цикла событий.
+//  - Время на таймаут в poll
+//  - Выбор способа мультипликсирвоания (?)
+//  - ...
+
+//  TODO (ageev) Использовать глобальный обработчик для Debug логирования
+
 #ifndef SMTP_EVENT_LOOP_H
 #define SMTP_EVENT_LOOP_H
 
@@ -13,6 +20,13 @@
 #include <pthread.h>
 #include <poll.h>
 #include <netinet/in.h>
+
+/**
+ * Описание глобального обработчика
+ * socket - файловый дескриптор (сокет) при работе с котроым возникал ошибка
+ * error - что произошло
+ */
+typedef void (*error_global_handler)(int socket, error_t error, int line_execute, const char* function_execute);
 
 typedef enum __work_mode {
     ONE_THREAD, // Менеджер очереди и обработка произошедших событий будет выполнятся в одном потоке
@@ -42,6 +56,7 @@ typedef struct _event_loop {
     pthread_mutex_t _mutex_acceptors_queue;
     pthread_mutex_t _mutex_is_run; // Защита флага is_run
     int _is_run; // флаг работы менеджера. Если 1 то менеджер работает.
+    error_global_handler _global_handler; // Обрабочтик событий не остносящийся к событиям.
 } event_loop;
 
 //PUBLIC
@@ -135,6 +150,17 @@ bool el_async_write(event_loop* loop, int sock, void *output_buffer, int bsize,
  * @return true - операция заврешилась успешно; false -  операция завершилась с ошибкой.
  */
 bool el_stop(event_loop* loop,  error_t *error);
+
+/**
+ * Регистрация глобального обработчика ошибок. Имеются набор ошибок, которые необходимо обрабатывать
+ * немедленно. Например, ошибка добавление нового события в очередь зарегистрированных событий.
+ * Данный обработчик вызывается (Если это возможно) при фатальных ошибках.
+ * @param loop - цикл событий
+ * @param hander - обрабочик
+ * @param error - возрват ошибок, которые могут произойти при добавлении обработчика
+ * @return true - операция заврешилась успешно; false -  операция завершилась с ошибкой.
+ */
+bool el_reg_global_error_handler(event_loop *loop, error_global_handler hander, error_t *error);
 
 // PRIVATE
 bool pr_create_pollfd(event_loop* loop, struct pollfd **fd_array, int *size, error_t *error);

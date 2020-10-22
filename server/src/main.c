@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#define __USE_MISC
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <fcntl.h>
@@ -22,7 +21,7 @@ do { \
     } \
 } while(0);
 
-void read_handler(struct _event_loop* loop, int socket, char *buffer, int size, error_t er);
+void read_handler(struct _event_loop* loop, int socket, char *buffer, int size, client_status status, error_t er);
 void write_handler(struct _event_loop* loop, int socket, char* buffer, int size, int writing,  error_t error) {
     printf(" -- Send -> %d \n", writing);
     free(buffer);
@@ -31,8 +30,8 @@ void write_handler(struct _event_loop* loop, int socket, char* buffer, int size,
 
 }
 
-void read_handler(struct _event_loop* loop, int socket, char *buffer, int size, error_t er) {
-    if (size == 0) {
+void read_handler(struct _event_loop* loop, int socket, char *buffer, int size, client_status status, error_t er) {
+    if (status == DISCONNECTED) {
         // client disconnect
         close(socket);
         free(buffer);
@@ -63,22 +62,15 @@ int main() {
     error_t error;
     event_loop *loop = el_init(&error);
     if (error.error) {
+        printf("%s", error.message);
         return -1;
     }
-    int sock = socket(AF_INET, SOCK_STREAM, 0);
-    fcntl(sock, O_NONBLOCK);
-    struct sockaddr_in addr;
-    memset(&addr, 0, sizeof(struct sockaddr_in));
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(8080);
-    int res = inet_aton("127.0.0.1", &addr.sin_addr);
-    PRINT_ERROR_EXIT(res);
-    res = bind(sock, (struct sockaddr*)&addr, sizeof(struct sockaddr_in));
-    PRINT_ERROR_EXIT(res);
-    res = listen(sock, 1);
-    PRINT_ERROR_EXIT(res);
+    int sock = make_server_socket("127.0.0.1", 8080, &error);
+    if (error.error) {
+        printf("%s", error.message);
+        return -1;
+    }
     el_async_accept(loop, sock, accept_handler, NULL);
     el_open(loop, ONE_THREAD, &error);
-
     return 0;
 }

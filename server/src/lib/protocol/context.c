@@ -33,25 +33,26 @@ bool cq_add(context_queue *queue, context_t *context, error_t *error) {
 }
 
 context_entry* pr_cq_find(context_queue *queue, int socket, error_t *error) {
-    ERROR_SUCCESS(error);
-    if (queue == NULL || context == NULL) {
-        if (error != NULL) {
-            error->error = FATAL;
-            error->message = CQ_PTR_IS_NULL;
-        }
-        return false;
-    }
-    context_entry  *ptr = NULL;
-    TAILQ_FOREACH(ptr, queue, entries) {
-        if (ptr->context->socket == socket) {
-            return ptr;
-        }
-    }
-    if (error != NULL) {
-        error->error = NOT_FOUND;
-        error->message = CQ_CONTEXT_NOTFOUND;
-    }
-    return NULL;
+//    ERROR_SUCCESS(error);
+//    if (queue == NULL || context == NULL) {
+//        if (error != NULL) {
+//            error->error = FATAL;
+//            error->message = CQ_PTR_IS_NULL;
+//        }
+//        return false;
+//    }
+//    context_entry  *ptr = NULL;
+//    TAILQ_FOREACH(ptr, queue, entries) {
+//        if (ptr->context->socket == socket) {
+//            return ptr;
+//        }
+//    }
+//    if (error != NULL) {
+//        error->error = NOT_FOUND;
+//        error->message = CQ_CONTEXT_NOTFOUND;
+//    }
+//    return NULL;
+return NULL;
 }
 
 bool cq_find(context_queue *queue, context_t **context, int socket, error_t *error){
