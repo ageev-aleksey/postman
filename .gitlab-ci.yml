@@ -8,10 +8,7 @@ server_build:
   stage: build
   before_script:
     - apt-get update --yes
-    - apt-get install build-essential --yes
-    - apt-get install gcc-4.8  --yes
-    - apt-get install lcov --yes
-    - apt-get install wget --yes
+    - apt-get install build-essential gcc-4.8 lcov wget libtoolize aclocal autoheader automake autoconf --yes
     - ./server/depends.sh
   script:
     - cd server
