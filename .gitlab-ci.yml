@@ -8,7 +8,7 @@ server_build:
   stage: build
   before_script:
     - apt-get update --yes
-    - apt-get install make --yes
+    - apt-get install gcc-4.8 lcov make --yes
     - apt-get install libcunit1 libcunit1-dev --yes
   script:
     - cd server
