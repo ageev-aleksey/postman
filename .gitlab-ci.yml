@@ -9,7 +9,7 @@ server_build:
   before_script:
     - apt-get update --yes
     - apt-get install build-essential gcc-4.8 lcov wget automake autoconf --yes
-    - ./server/depends.sh
+    - apt-get install libcunit1 libcunit1-dev --yes
   script:
     - cd server
     - make mkdir
