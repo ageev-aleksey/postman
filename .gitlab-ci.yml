@@ -14,6 +14,11 @@ server_build:
     - cd server
     - make mkdir
     - make
+  artifacts:
+    paths:
+      - server/bin/server.out
+      - server/bin/test.out
+    expire_in: 1 hrs
 
 server_unit_testig:
   stage: unit_testing
@@ -25,4 +30,9 @@ server_unit_testig:
     - cd server
     - valgrind --leak-check=full ./bin/test.out
     - lcov -t "server testing code coverage" -o server_coverage.info -c -d .
-    - genhtml -o report server_coverage.info  
+    - genhtml -o report server_coverage.info 
+  artifacts:
+    paths:
+      - server/report
+    expire_in: 1 hrs 
+
