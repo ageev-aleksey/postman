@@ -3,13 +3,16 @@ stages:
   - unit_testing
   - functional_testing
 
+before_script:
+  - apt-get update --yes
+  - apt-get install libcunit1 libcunit1-dev --yes
+  - apt-get install lcov make
+
 
 server_build:
   stage: build
   before_script:
-    - apt-get update --yes
-    - apt-get install gcc-4.8 lcov make --yes
-    - apt-get install libcunit1 libcunit1-dev --yes
+    - apt-get install gcc-4.8  --yes
   script:
     - cd server
     - make mkdir
@@ -23,8 +26,6 @@ server_build:
 server_unit_testig:
   stage: unit_testing
   before_script:
-    - apt-get update
-    - apt-get install lcov --yes
     - apt-get install valgrind --yes
   script:
     - cd server
