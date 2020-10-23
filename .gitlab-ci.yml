@@ -1,35 +1,42 @@
-image: ubuntu:16.04
-
 stages:
   - build
   - unit_testing
   - functional_testing
 
 
-
-
-
 server_build:
   stage: build
   before_script:
     - apt-get update --yes
-    - apt-get install build-essential --yes
+    - apt-get install libcunit1 libcunit1-dev --yes
     - apt-get install gcc-4.8  --yes
-    - apt-get install lcov --yes
-    - ./server/depends.sh
+    - apt-get install lcov make --yes
   script:
     - cd server
     - make mkdir
     - make
+  artifacts:
+    paths:
+      - server/bin/server.out
+      - server/bin/test.out
+      - server/main.gcno
+      - server/build
+    expire_in: 1 hrs
 
 server_unit_testig:
   stage: unit_testing
   before_script:
-    - apt-get update
-    - apt-get install build-essential --yes
+    - apt-get update --yes
+    - apt-get install valgrind --yes
+    - apt-get install libcunit1 libcunit1-dev --yes
     - apt-get install lcov --yes
   script:
     - cd server
     - valgrind --leak-check=full ./bin/test.out
     - lcov -t "server testing code coverage" -o server_coverage.info -c -d .
-    - genhtml -o report server_coverage.info  
+    - genhtml -o report server_coverage.info 
+  artifacts:
+    paths:
+      - server/report
+    expire_in: 1 hrs 
+
