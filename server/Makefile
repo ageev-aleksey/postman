@@ -12,26 +12,28 @@ OBJS = $(patsubst $(SRC_DIR)/%.c, $(OBJECTS_DIR)/%.o, $(SRC))
 TEST_OBJS = $(patsubst $(TEST_PATH)/src/%.c, $(OBJECTS_DIR)/test/src/%.o, $(TEST_SRC))
 CC = gcc-4.8
 CCFLAGS = -std=c99 #-Wall -Werror
+LFLAGS = -L$(BIN_PATH) -lserver -lpthread 
 
 .PHONY: release debug mkdir clean test st_echo_with_context
 
 $(OBJECTS_DIR)/%.o: $(SRC_DIR)/%.c
-	$(CC) $(CCFLAGS) -c $< -o $@  $(INCLUDES)  -D__FILENAME__='"$<"'
+	$(CC) $(CCFLAGS) -c $< -o $@  $(INCLUDES) $(ADDITIONAL_FLAGS) -D__FILENAME__='"$<"'
 
 $(OBJECTS_DIR)/lib/%.o: $(SRC_DIR)/lib/%.c
-	$(CC) $(CCFLAGS) -c $< -o $@  $(INCLUDES)  -D__FILENAME__='"$<"'
+	$(CC) $(CCFLAGS) -c $< -o $@  $(INCLUDES)  $(ADDITIONAL_FLAGS) -D__FILENAME__='"$<"'
 
 $(OBJECTS_DIR)/test/%.o: $(TEST_PATH)/%.c
-	$(CC) $(CCFLAGS) -c $< -o $@  $(INCLUDES)  -D__FILENAME__='"$<"'
+	$(CC) $(CCFLAGS) -c $< -o $@  $(INCLUDES) $(ADDITIONAL_FLAGS) -D__FILENAME__='"$<"'
 
 $(OBJECTS_DIR)/test/src/%.o: $(TEST_PATH)/src/%.c
-	$(CC) $(CCFLAGS) -c $< -o $@ $(INCLUDES)  -D__FILENAME__='"$<"'
+	$(CC) $(CCFLAGS) -c $< -o $@ $(INCLUDES) $(ADDITIONAL_FLAGS) -D__FILENAME__='"$<"'
 
 all: debug test
 
 release: $(BIN_PATH)/server.out
 
 debug: CCFLAGS += -DDEBUG -g
+debug: ADDITIONAL_FLAGS += -fprofile-arcs -ftest-coverage
 debug: $(BIN_PATH)/server.out
 
 test: CCFLAGS += -DDEBUG -g -fprofile-arcs -ftest-coverage -D_TESTING_
