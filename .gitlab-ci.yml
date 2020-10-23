@@ -4,9 +4,6 @@ stages:
   - functional_testing
 
 
-
-
-
 server_build:
   stage: build
   before_script:
