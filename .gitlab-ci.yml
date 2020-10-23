@@ -19,6 +19,7 @@ server_build:
     paths:
       - server/bin/server.out
       - server/bin/test.out
+      - server/main.gcno
     expire_in: 1 hrs
 
 server_unit_testig:
