@@ -20,7 +20,7 @@ server_unit_testig:
   before_script:
     - apt-get update
     - apt-get install lcov --yes
-    - sudo apt install valgrind --yes
+    - apt-get install valgrind --yes
   script:
     - cd server
     - valgrind --leak-check=full ./bin/test.out
