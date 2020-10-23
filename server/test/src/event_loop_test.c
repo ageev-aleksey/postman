@@ -2,15 +2,10 @@
 #include "event_loop/event_loop.h"
 #include "event_loop_test.h"
 #include "util.h"
+#include "test.h"
 #include <stdlib.h>
 #include <arpa/inet.h>
 
-#define ERROR_ASSERT(_error_)   \
-do {                            \
-    if (error.error) {          \
-        CU_FAIL();              \
-    }                           \
-} while(0)
 
 
 int event_loop_test_init() {
@@ -58,9 +53,9 @@ void create_pollfd_array_test() {
     CU_ASSERT_EQUAL(res_size, 2);
     for (int i = 0; i < 2; ++i) {
         if (fd_array[i].fd == socket1) {
-            CU_ASSERT_EQUAL(fd_array[i].events, POLLIN | POLLOUT);
+            CU_ASSERT_EQUAL(fd_array[i].events, POLLIN | POLLOUT | POLLHUP);
         } else if (fd_array[i].fd == socket2) {
-            CU_ASSERT_EQUAL(fd_array[i].events, POLLOUT);
+            CU_ASSERT_EQUAL(fd_array[i].events, POLLOUT | POLLHUP);
         } else {
             CU_FAIL();
         }
@@ -106,33 +101,35 @@ void create_pollin_occurred_events_test() {
 //    }
 
     // РУЧНОЕ ТЕСТИРОВАНИЕ С ОТЛАДЧИКОМ
-    int socket1 = 10;
-    int socket2 = 20;
-
-    error_t error;
-    ERROR_SUCCESS(&error);
-    event_loop *loop = el_init(&error);
-    ERROR_ASSERT(error);
-
-    loop->_index_acepptors_start = 1; // socket2 is acceptor
-    sq_add(loop->_acceptors_queue, socket2, NULL, &error);
-    event_sock_read *event = s_malloc(sizeof(event_sock_read), &error);
-    ERROR_ASSERT(error);
-
-    event->event.socket = socket1;
-    event->event.type = SOCK_READ;
-    event->size = 1;
-    req_push_read(loop->_registered_events, socket1, event, &error);
-    ERROR_ASSERT(error);
-
-    struct pollfd fd_array[2] = {0};
-    fd_array[0].revents = POLLIN;
-    fd_array[0].events = POLLIN;
-    fd_array[0].fd = socket1;
-    fd_array[1].revents = POLLIN;
-    fd_array[1].events = POLLIN;
-    fd_array[1].fd = socket2;
-    pr_create_pollin_event(loop, fd_array, 0, &error);
+//    int socket1 = 10;
+//    int socket2 = 20;
+//
+//    error_t error;
+//    ERROR_SUCCESS(&error);
+//    event_loop *loop = el_init(&error);
+//    ERROR_ASSERT(error);
+//
+//    loop->_index_acepptors_start = 1; // socket2 is acceptor
+//    sq_add(loop->_acceptors_queue, socket2, NULL, &error);
+//    event_sock_read *event = s_malloc(sizeof(event_sock_read), &error);
+//    ERROR_ASSERT(error);
+//
+//    event->event.socket = socket1;
+//    event->event.type = SOCK_READ;
+//    event->size = 1;
+//    req_push_read(loop->_registered_events, socket1, event, &error);
+//    ERROR_ASSERT(error);
+//
+//    struct pollfd fd_array[2] = {0};
+//    fd_array[0].revents = POLLIN;
+//    fd_array[0].events = POLLIN;
+//    fd_array[0].fd = socket1;
+//    fd_array[1].revents = POLLIN;
+//    fd_array[1].events = POLLIN;
+//    fd_array[1].fd = socket2;
+//    pr_create_pollin_event(loop, fd_array, 0, &error);
+//
+    //////////////////////////////////////////////////////////
 //    ERROR_ASSERT(error);
 //
 //    CU_ASSERT_FALSE(TAILQ_EMPTY(loop->_occurred_events));
@@ -147,7 +144,7 @@ void create_pollin_occurred_events_test() {
 //    CU_ASSERT_EQUAL(ptr2->element.event->event.type, SOCK_ACCEPT);
 //    CU_ASSERT_EQUAL(ptr2->element.event->event.socket, socket2);
 
-    el_close(loop);
+//    el_close(loop);
 
 }
 

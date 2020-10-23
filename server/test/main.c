@@ -4,9 +4,12 @@
 #include "event_loop_test.h"
 #include "events_queue_test.h"
 #include "registered_events_queue_test.h"
+#include "vector_test.h"
+
 bool eq_test_init();
 bool req_test_init();
 bool el_test_init();
+bool vector_test_create();
 int main()
 {
     CU_pSuite pSuite = NULL;
@@ -17,7 +20,8 @@ int main()
 
     if (!eq_test_init() ||
         !req_test_init() ||
-        !el_test_init())
+        !el_test_init() ||
+        !vector_test_create())
     {
         CU_cleanup_registry();
         return CU_get_error();
@@ -105,6 +109,36 @@ bool el_test_init() {
         NULL == CU_add_test(pSuite,
                             "process pollin",
                             create_pollin_occurred_events_test))
+    {
+        return false;
+    }
+    return true;
+}
+
+
+bool vector_test_create() {
+    CU_pSuite pSuite = NULL;
+    pSuite = CU_add_suite("Vector", vector_test_init, vector_test_clean);
+    if (NULL == pSuite) {
+        return false;
+    }
+
+    if (NULL == CU_add_test(pSuite,
+                            "test init vector",
+                            vector_test_push_with_allocating) ||
+        NULL == CU_add_test(pSuite,
+                             "test get element by wrong index",
+                             vector_test_get_by_error_index) ||
+        NULL == CU_add_test(pSuite,
+                            "test create full copy",
+                            vector_test_get_subvector_full_copy) ||
+        NULL == CU_add_test(pSuite,
+                            "test create sub vector as first part",
+                            vector_test_get_subvector_first_part_copy) ||
+        NULL == CU_add_test(pSuite,
+                            "test create sub vector as second part",
+                             vector_test_get_subvector_second_part_copy)
+                             )
     {
         return false;
     }

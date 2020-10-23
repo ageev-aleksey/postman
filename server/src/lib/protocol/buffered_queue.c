@@ -24,7 +24,7 @@ bool bfq_init(bf_queue **queue, error_t *error) {
     return false;
 }
 
-bool bfq_add(bf_queue *queue, error_t *error) {
+bool bfq_add(bf_queue *queue, char **buffer, error_t *error) {
     if (queue == NULL) {
         if (error != NULL) {
             error->error = FATAL;

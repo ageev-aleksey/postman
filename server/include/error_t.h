@@ -17,6 +17,7 @@ enum ErrorType {
     EMPTY,
     FATAL,
     ERRNO,
+    OUT_OF_RANGE,
 };
 
 typedef struct _error_t {
