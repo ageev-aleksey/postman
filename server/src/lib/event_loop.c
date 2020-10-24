@@ -111,9 +111,9 @@ void pr_manager_step(event_loop *loop, int fd_timeout, error_t *error) {
     }
     for(int index = 0; index < size; index++) {
         if (fd_array[index].revents == POLLIN) {
-            pr_create_pollin_event(loop, fd_array, index, error);
+            pr_create_pollin_event(loop, &fd_array[index], index, error);
         } else if (fd_array[index].revents == POLLOUT) {
-            pr_create_pollout_event(loop, fd_array, index, error);
+            pr_create_pollout_event(loop, &fd_array[index], index, error);
         }
     }
     exit:
@@ -597,13 +597,13 @@ bool pr_create_pollin_event(event_loop *loop, struct pollfd *fd, int index, erro
     return statusExecute;
 }
 
-bool pr_create_pollout_event(event_loop *loop, struct pollfd *fd_array, int index, error_t *error) {
-    fd_array[index].revents &= ~POLLOUT;
+bool pr_create_pollout_event(event_loop *loop, struct pollfd *fd, int index, error_t *error) {
+    fd->revents &= ~POLLOUT;
     error_t  err;
     ERROR_SUCCESS(&err);
 
     PTHREAD_CHECK(pthread_mutex_lock(&loop->_mutex_registered_events), error);
-    event_sock_write *ptr = req_pop_write(loop->_registered_events, fd_array[index].fd, &err);
+    event_sock_write *ptr = req_pop_write(loop->_registered_events, fd->fd, &err);
     PTHREAD_CHECK(pthread_mutex_unlock(&loop->_mutex_registered_events), error);
 
     int res = 0;
