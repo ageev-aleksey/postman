@@ -67,3 +67,7 @@ mkdir:
 
 clean:
 	rm -rf $(OBJS) $(TEST_OBJS) $(OBJECTS_DIR)/main.o
+
+start_system_test: system_test
+	$(BIN_PATH)/system_test_echo_with_context.out &
+	python2 $(SYSTEM_TEST_PATH)/echo_with_context/several_clients_test1.py

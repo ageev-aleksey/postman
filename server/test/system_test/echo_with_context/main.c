@@ -24,6 +24,7 @@ typedef struct d_client_context {
 VECTOR_DECLARE(vector_context, client_context);
 
 vector_context *contexts;
+size_t clients_connected;
 
 
 char *make_buffer_from_vector_char(vector_char *vec) {
@@ -56,6 +57,11 @@ void write_handler(event_loop *loop, int socket, char* buffer, int size, int wri
 
     if (status == DISCONNECTED) {
         printf("Client Disconnected - write handler\n");
+        clients_connected--;
+        if (clients_connected == 0) {
+            el_stop(loop, NULL);
+        }
+        // TODO
         // TODO (ageev) remove context
         return;
     } else {
@@ -78,6 +84,10 @@ void read_handler(event_loop *loop, int socket, char *buffer, int size, client_s
     }
     if (status == DISCONNECTED) {
         printf("Client Disconnected - read handler\n");
+        clients_connected--;
+        if (clients_connected == 0) {
+            el_stop(loop, NULL);
+        }
         // TODO (ageev) remove context
         return;
     }
@@ -167,6 +177,7 @@ void accept_handler(event_loop *loop, int acceptor, int client_socket, struct so
     if (error.error) {
         printf("%s\n", error.message);
     } else {
+        clients_connected++;
         char ip[IP_BUFFER_LEN] = {0};
         uint16_t port = 0;
         get_addr(&client_addr, ip, IP_BUFFER_LEN, &port, NULL);

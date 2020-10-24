@@ -35,6 +35,7 @@ server_unit_testig:
     - valgrind --leak-check=full ./bin/test.out
     - lcov -t "server testing code coverage" -o server_coverage.info -c -d .
     - genhtml -o report server_coverage.info 
+    - make start_system_test
   artifacts:
     paths:
       - server/report
