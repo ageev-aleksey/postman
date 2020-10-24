@@ -29,6 +29,8 @@ const char EL_INVALID_EVENT_TYPE[] = "invalid event type";
 const char EL_POLLFD_ERROR[] = "error execute poll";
 const char EL_NO_EVENTS[] = "not occurred events";
 const char EL_PARAMETER_IS_NULL[] = "parameter of function is null";
+const char EL_UNDEFINED_ERROR_OF_READ[] = "occurred undefined error when perform read";
+const char EL_UNDEFINED_ERROR_OF_WRITE[] = "occurred undefined error when perform write";
 
 
 
@@ -526,20 +528,33 @@ bool pr_create_pollin_event(event_loop *loop, struct pollfd *fd, int index, erro
         ptr->offset = 0;
         while((res = recv(ptr->event.socket, ptr->buffer + ptr->offset, ptr->size - ptr->offset, 0)) != -1) {
             ptr->offset  += res;
+            if (ptr->offset == ptr->size) {
+                break;
+            }
             if (res == 0 ) {
                 // client disconnect
                 ptr->status = DISCONNECTED;
                 break;
             }
+
         }
-        if ((errno == EAGAIN) || ((res == 0) && (ptr->offset > 0))) {
+        // TODO (ageev) проверить условие успешного завершения чтения
+        if ((ptr->offset == ptr->size) || (errno == EAGAIN) || (ptr->status == DISCONNECTED)) {
             // OK
             PTHREAD_CHECK(pthread_mutex_lock(&loop->_mutex_occurred_events), error);
             oeq_push_back(loop->_occurred_events, (event_t*) ptr, &err);
             PTHREAD_CHECK(pthread_mutex_unlock(&loop->_mutex_occurred_events), error);
         } else {
-            ptr->event.error.error = ERRNO;
-            ptr->event.error.errno_value = errno;
+            if (res == -1) {
+                ptr->event.error.error = ERRNO;
+                ptr->event.error.errno_value = errno;
+                loop->_global_handler(ptr->event.socket, ptr->event.error, __LINE__, __FUNCTION__);
+            } else {
+                ptr->event.error.error = FATAL;
+                ptr->event.error.message = EL_UNDEFINED_ERROR_OF_READ;
+                loop->_global_handler(ptr->event.socket, ptr->event.error, __LINE__, __FUNCTION__);
+            }
+
             PTHREAD_CHECK(pthread_mutex_lock(&loop->_mutex_occurred_events), error);
             oeq_push_back(loop->_occurred_events, (event_t*) ptr, &err);
             PTHREAD_CHECK(pthread_mutex_unlock(&loop->_mutex_occurred_events), error);
@@ -570,12 +585,15 @@ bool pr_create_pollout_event(event_loop *loop, struct pollfd *fd_array, int inde
             break;
         }
         ptr->offset += res;
+        if (ptr->offset == ptr->size) {
+            break;
+        }
     }
-    if (errno == EPIPE) {
+    if ((res == -1 ) && (errno == EPIPE)) {
         ptr->status = DISCONNECTED;
     }
-    if ((errno == EAGAIN) && (ptr->offset == 0)) {
-
+    //if ((errno == EAGAIN) && (ptr->offset == 0)) {
+    if ((res == -1) && (errno == EAGAIN)) {
         PTHREAD_CHECK(pthread_mutex_lock(&loop->_mutex_registered_events), error);
         req_push_write(loop->_registered_events, ptr->event.socket, ptr, &err);
         PTHREAD_CHECK(pthread_mutex_unlock(&loop->_mutex_registered_events), error);
@@ -595,12 +613,23 @@ bool pr_create_pollout_event(event_loop *loop, struct pollfd *fd_array, int inde
             return false;
         }
     } else {
-        ptr->event.error.error = ERRNO;
-        ptr->event.error.errno_value = errno;
+        if (res == -1) {
+            ptr->event.error.error = ERRNO;
+            ptr->event.error.errno_value = errno;
+            loop->_global_handler(ptr->event.socket, ptr->event.error, __LINE__, __FUNCTION__);
+        } else {
+            ptr->event.error.error = FATAL;
+            ptr->event.error.message = EL_UNDEFINED_ERROR_OF_WRITE;
+            loop->_global_handler(ptr->event.socket, ptr->event.error, __LINE__, __FUNCTION__);
+        }
+
         PTHREAD_CHECK(pthread_mutex_lock(&loop->_mutex_occurred_events), error);
         oeq_push_back(loop->_occurred_events, (event_t*)ptr, &err);
         PTHREAD_CHECK(pthread_mutex_unlock(&loop->_mutex_occurred_events), error);
-        loop->_global_handler(ptr->event.socket, err, __LINE__, __FUNCTION__);
+        if (err.error) {
+            loop->_global_handler(ptr->event.socket, err, __LINE__, __FUNCTION__);
+            return false;
+        }
     }
     return true;
 }

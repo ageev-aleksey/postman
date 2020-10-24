@@ -4,6 +4,7 @@ OBJECTS_DIR = build
 LIB_PATH = $(SRC_DIR)/lib
 BIN_PATH = bin
 TEST_PATH = test
+SYSTEM_TEST_PATH = $(TEST_PATH)/system_test
 TEST_SRC = $(wildcard $(TEST_PATH)/src/*.c)
 SRC = $(wildcard $(SRC_DIR)/lib/*.c)
 SRC += $(wildcard $(SRC_DIR)/lib/event_loop/*.c)
@@ -14,7 +15,7 @@ CC = gcc-4.8
 CCFLAGS = -std=c99 #-Wall -Werror
 LFLAGS = -L$(BIN_PATH) -lserver -lpthread 
 
-.PHONY: release debug mkdir clean test st_echo_with_context
+.PHONY: release debug mkdir clean test
 
 $(OBJECTS_DIR)/%.o: $(SRC_DIR)/%.c
 	$(CC) $(CCFLAGS) -c $< -o $@  $(INCLUDES) $(ADDITIONAL_FLAGS) -D__FILENAME__='"$<"'
@@ -28,7 +29,7 @@ $(OBJECTS_DIR)/test/%.o: $(TEST_PATH)/%.c
 $(OBJECTS_DIR)/test/src/%.o: $(TEST_PATH)/src/%.c
 	$(CC) $(CCFLAGS) -c $< -o $@ $(INCLUDES) $(ADDITIONAL_FLAGS) -D__FILENAME__='"$<"'
 
-all: debug test
+all: debug test system_test
 
 release: $(BIN_PATH)/server.out
 
@@ -41,13 +42,11 @@ test: INCLUDES += -I$(TEST_PATH)/include
 test: $(TEST_OBJS) $(BIN_PATH)/libserver.a
 	$(CC) $(CCFLAGS) $(INCLUDES) $(TEST_PATH)/main.c $(TEST_OBJS) -L$(BIN_PATH) -lserver  -lcunit -lpthread -lgcov -o $(BIN_PATH)/test.out
 
+$(BIN_PATH)/system_test_echo_with_context.out: $(SYSTEM_TEST_PATH)/echo_with_context/main.c $(BIN_PATH)/libserver.a
+	$(CC) $(CCFLAGS) $(INCLUDES) $<  -L$(BIN_PATH) -lserver -lpthread -o $@
 
-$(OBJECTS_DIR)/test/system_test/st_echo_with_context/main.o: $(TEST_PATH)/system_test/echo_with_context/main.c test $(BIN_PATH)/libserver.a
-	$(CC) $(CCFLAGS) -c $< -o $@
-
-st_echo_with_context: $(OBJECTS_DIR)/test/system_test/st_echo_with_context/main.o
-	$(CC) $(CCFLAGS) $(INCLUDES) $< -L$(BIN_PATH) -lserver -o $(BIN_PATH)/st_echo_with_context.out
-
+system_test: CCFLAGS += -DDEBUG -g
+system_test: $(BIN_PATH)/system_test_echo_with_context.out
 
 echo: $(OBJS)
 	echo $<
@@ -65,9 +64,6 @@ mkdir:
 	mkdir -p $(OBJECTS_DIR)/test/src
 	mkdir -p $(OBJECTS_DIR)/test/system_test/st_echo_with_context
 	mkdir -p $(BIN_PATH)
-
-$(OBJECTS_DIR)/main.o: $(SRC_DIR)/main.c
-	$(CC) $(CCFLAGS) $< -c $(INCLUDES) -o $@  -D__FILENAME__='"$@"'
 
 clean:
 	rm -rf $(OBJS) $(TEST_OBJS) $(OBJECTS_DIR)/main.o

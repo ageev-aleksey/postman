@@ -67,6 +67,15 @@ do {                                                \
 
 #define VECTOR(_vector_) (_vector_)->array
 
+#define VECTOR_RESET(_vector_, _buffer_ptr_)    \
+do {                                            \
+    (_vector_)->size = 0;                       \
+    (_vector_)->allocated = 0;                  \
+    (_buffer_ptr_) = (_vector_)->array;          \
+    (_vector_)->array = NULL;                   \
+}while(0)
+
+
 /**
  * Создания массива нужного размера, чтобы при добавлении элементов, небыло выделение памяти.
  * Вкомпирование существующих элементов в новый учатсток памяти не выполняется.

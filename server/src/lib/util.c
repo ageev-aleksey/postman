@@ -20,6 +20,10 @@ const char UTIL_ERROR_BIND[] = "error binding socket to address";
 const char UTIL_ERROR_SET_LISTEN_SOCKET[] = "error setting listening mode for socket";
 const char UTIL_ERROR_CREATE_SOCKET[] = "error creating socket";
 
+const char UTIL_PARAMETER_IS_NULL[] = "parameter is null";
+const char UTIL_ERROR_IP_BUFFER_SIZE[] = "invalid buffer size for writing string representation of ip address";
+
+
 void* s_malloc(size_t size, error_t *error) {
     void* ptr = malloc(size);
     if (ptr == NULL) {
@@ -104,4 +108,25 @@ exit_error:
         error->message = message;
     }
     return ERROR;
+}
+
+bool get_addr(struct sockaddr_in* addr, char *ip, size_t buffer_size, uint16_t *port, error_t *error) {
+    ERROR_SUCCESS(error);
+    if (addr == NULL || ip == NULL || port == NULL) {
+        if (error != NULL) {
+            error->error = FATAL;
+            error->message = UTIL_PARAMETER_IS_NULL;
+        }
+        return false;
+    }
+    if (buffer_size < IP_BUFFER_LEN) {
+        if (error != NULL) {
+            error->error = FATAL;
+            error->message = UTIL_ERROR_IP_BUFFER_SIZE;
+        }
+        return false;
+    }
+    inet_ntop(AF_INET, &addr->sin_addr, ip, buffer_size);
+    *port = ntohs(addr->sin_port);
+    return true;
 }
