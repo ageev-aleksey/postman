@@ -181,7 +181,7 @@ do {                                                                    \
         && ((_index_start_) >=0 )                                                \
         && ((_index_stop_) <= (_vector_)->size)) \
     {                                                                            \
-        size_t length = (_index_stop_) - (_index_start_);                        \
+        size_t length = (_index_stop_) - (_index_start_) + 1;                        \
         VECTOR_INIT_WITH_RESERVE(_type_name_, _new_vector_, length, _error_);                   \
         if ((_error_).error) {                                                                     \
             break;                                                                                      \

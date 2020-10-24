@@ -354,6 +354,20 @@ bool el_async_accept(event_loop* loop, int sock, sock_accept_handler handler, er
 bool el_async_read(event_loop* loop, int sock, char *buffer, int size, sock_read_handler handler, error_t *error) {
     error_t err;
     ERROR_SUCCESS(&err);
+    if (loop == NULL) {
+        if (error != NULL) {
+            error->error = FATAL;
+            error->message = EL_EVENT_LOOP_PTR_IS_NULL;
+        }
+        return false;
+    }
+    if (buffer == NULL) {
+        if (error != NULL) {
+            error->error = FATAL;
+            error->message = EL_PARAMETER_IS_NULL;
+        }
+        return false;
+    }
     event_sock_read *read = s_malloc(sizeof(event_sock_read), &err);
     if (err.error) {
         if (error != NULL) {
@@ -383,6 +397,20 @@ bool el_async_read(event_loop* loop, int sock, char *buffer, int size, sock_read
 
 bool el_async_write(event_loop* loop, int sock, void *output_buffer, int bsize,
                     sock_write_handler handler,  error_t *error) {
+    if (loop == NULL) {
+        if (error != NULL) {
+            error->error = FATAL;
+            error->message = EL_EVENT_LOOP_PTR_IS_NULL;
+        }
+        return false;
+    }
+    if (output_buffer == NULL) {
+        if (error != NULL) {
+            error->error = FATAL;
+            error->message = EL_PARAMETER_IS_NULL;
+        }
+        return false;
+    }
     ERROR_SUCCESS(error);
     error_t err;
     ERROR_SUCCESS(&err);

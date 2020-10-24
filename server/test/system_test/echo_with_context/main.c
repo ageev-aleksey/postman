@@ -25,6 +25,17 @@ VECTOR_DECLARE(vector_context, client_context);
 
 vector_context *contexts;
 
+
+char *make_buffer_from_vector_char(vector_char *vec) {
+    size_t size = VECTOR_SIZE(vec);
+    char *buffer = malloc(size + 1);
+    for (size_t i = 0; i < size; ++i) {
+        buffer[i] = VECTOR(vec)[i];
+    }
+    buffer[size] = '\0';
+    return buffer;
+}
+
 int find_client(vector_context *con, int socket) {
     size_t size = VECTOR_SIZE(con);
     for (int i = 0; i < size; ++i) {
@@ -37,7 +48,8 @@ int find_client(vector_context *con, int socket) {
 void read_handler(event_loop *loop, int socket, char *buffer, int size, client_status status, error_t error);
 void write_handler(event_loop *loop, int socket, char* buffer, int size, int writing, client_status status,  error_t error) {
     if (error.error) {
-        printf("%s\n", error.message);
+        //printf("%s\n", error.message);
+        perror(error.message);
         return;
     }
     free(buffer);
@@ -48,7 +60,10 @@ void write_handler(event_loop *loop, int socket, char* buffer, int size, int wri
         return;
     } else {
         buffer = s_malloc(BUFFER_READ, NULL);
-        el_async_read(loop, socket, buffer, BUFFER_READ, read_handler, &error);
+        error_t async_error;
+        if (!el_async_read(loop, socket, buffer, BUFFER_READ, read_handler, &error)) {
+            printf("write_handler - error async operation: %s\n", error.message);
+        }
     }
 
 
@@ -58,7 +73,7 @@ void write_handler(event_loop *loop, int socket, char* buffer, int size, int wri
 void read_handler(event_loop *loop, int socket, char *buffer, int size, client_status status, error_t error) {
     // TODO (ageev) сделать удаление элемента по индексу из вектора
     if (error.error) {
-        printf("%s\n", error.message);
+        perror(error.message);
         return;
     }
     if (status == DISCONNECTED) {
@@ -118,12 +133,28 @@ void read_handler(event_loop *loop, int socket, char *buffer, int size, client_s
                 VECTOR(contexts)[client_index].data = new_context_buffer;
             }
             size_t message_size = VECTOR_SIZE(message);
+            if (message_size == 0) {
+                printf("Client send empty message\n");
+                error_t async_error;
+                if (!el_async_read(loop, socket, buffer, BUFFER_READ, read_handler, &async_error)) {
+                    printf("read handler - error async operation: %s\n", async_error.message);
+                }
+                return;
+            }
             char *write_buffer = NULL;
+            char *recv_message = make_buffer_from_vector_char(message);
+            printf("recv message: %s\n--------\n", recv_message);
+            free(recv_message);
             VECTOR_RESET(message, write_buffer);
-            printf("recv message: %s\n", write_buffer);
-            el_async_write(loop, socket, write_buffer,message_size, write_handler, NULL);
+            error_t  async_error;
+            if (!el_async_write(loop, socket, write_buffer,message_size, write_handler, &async_error)) {
+                printf("read handler - error async operation: %s\n", async_error.message);
+            }
         } else {
-            el_async_read(loop, socket, buffer, BUFFER_READ, read_handler, &error);
+            error_t async_error;
+            if (!el_async_read(loop, socket, buffer, BUFFER_READ, read_handler, &async_error)) {
+                printf("read handler - error async operation: %s\n", async_error.message);
+            }
         }
 
 
@@ -162,7 +193,7 @@ void accept_handler(event_loop *loop, int acceptor, int client_socket, struct so
         }
         el_async_read(loop, client_socket, read_buffer, BUFFER_READ, read_handler, &error);
         if (error.error) {
-            printf("%s\n", error.message);
+            printf("accept handler - error async operation: %s\n", error.message);
         }
     }
 

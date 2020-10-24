@@ -29,8 +29,9 @@
 typedef void (*error_global_handler)(int socket, error_t error, int line_execute, const char* function_execute);
 
 typedef enum __work_mode {
-    ONE_THREAD, // Менеджер очереди и обработка произошедших событий будет выполнятся в одном потоке
-    OWN_THREAD // Менеджер очереди будет выполнятся в отдельном потоке, для обработки событий необходимо вызывать функцию el_run
+    ONE_THREAD, //< Менеджер очереди и обработка произошедших событий будет выполнятся в одном потоке
+    OWN_THREAD //< Менеджер очереди будет выполнятся в отдельном потоке, для обработки событий необходимо вызывать функцию el_run
+               //   в отдельном потоке
 } work_mode;
 
 typedef  enum _error_type  {
