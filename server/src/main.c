@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include "event_loop/event_loop.h"
 #include "util.h"
 

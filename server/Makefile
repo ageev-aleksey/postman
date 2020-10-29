@@ -9,6 +9,7 @@ TEST_SRC = $(wildcard $(TEST_PATH)/src/*.c)
 SRC = $(wildcard $(SRC_DIR)/lib/*.c)
 SRC += $(wildcard $(SRC_DIR)/lib/event_loop/*.c)
 SRC += $(wildcard $(SRC_DIR)/lib/protocol/*.c)
+SRC += $(wildcard $(SRC_DIR)/lib/log/*.c)
 OBJS = $(patsubst $(SRC_DIR)/%.c, $(OBJECTS_DIR)/%.o, $(SRC))
 TEST_OBJS = $(patsubst $(TEST_PATH)/src/%.c, $(OBJECTS_DIR)/test/src/%.o, $(TEST_SRC))
 CC = gcc-4.8
