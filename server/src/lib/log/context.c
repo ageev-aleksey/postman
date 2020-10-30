@@ -39,10 +39,15 @@ VECTOR_DECLARE(vector_messages, log_message);
 
 void pr_printer_in_console(log_message msg) {
     char buf[16];
-    size_t len = printf(buf, sizeof(buf), "%H:%M:%S", msg.time);
+    struct tm *time = localtime (&msg.time);
+    if (time == NULL) {
+        fprintf(stderr, "FATAL ERROR IN LOGGER: error converting time_t in struct tm");
+        return;
+    }
+    size_t len = strftime(buf, sizeof(buf), "%H:%M:%S", time);
     buf[len] = '\0';
-            /*TIME DEBUG_LEVEL" [file:function:line] : MESSAGE*/
-    fprintf(stderr, STYLE_RESET "%s %s%s" COLOR_GRAY "[" "%s:%s:%s]" STYLE_RESET ": %s",
+            /*TIME DEBUG_LEVEL [file:function:line] : MESSAGE*/
+    fprintf(stderr, STYLE_RESET "%s %s%s" COLOR_GRAY "[%s:%s:%zu]" STYLE_RESET ": %s \n",
            buf, debug_level_color[msg.level], debug_level_str[msg.level],
            msg.file, msg.function, msg.line,
            msg.message);
@@ -78,12 +83,26 @@ void* pr_log_thread(void *ptr) {
                     return NULL;
                 }
             }
+            VECTOR_FREE(log->printers);
+            free(log->printers);
+            log->printers = s_malloc(sizeof(log_vector_printers), NULL);
+            if (log->printers == NULL) {
+                fprintf(stderr, "FATAL ERROR IN LOGGER: error allocate memory for new push printers");
+                pthread_mutex_unlock(&log->mutex);
+                return NULL;
+            }
+            VECTOR_INIT(printer_t, log->printers, err);
+            if (err.error) {
+                fprintf(stderr, "FATAL ERROR IN LOGGER: error init vector printers");
+                pthread_mutex_unlock(&log->mutex);
+                return NULL;
+            }
         }
 
         struct timespec time;
         time.tv_sec = 0;
         time.tv_nsec = log->timeout * MS_TO_NS;
-        if (TAILQ_EMPTY(log->messages)) {
+        while (TAILQ_EMPTY(log->messages)) {
             pthread_cond_timedwait(&log->cv, &log->mutex, &time);
         }
         log_message_queue *msg = log->messages;
@@ -112,9 +131,9 @@ void* pr_log_thread(void *ptr) {
         }
 
         while(!TAILQ_EMPTY(msg)) {
-            log_message_entry *entry = TAILQ_FIRST(msg);
+            log_message *entry = TAILQ_FIRST(msg);
             TAILQ_REMOVE(msg, entry, entries);
-            VECTOR_PUSH_BACK(log_message, v_msg, entry->message, err);
+            VECTOR_PUSH_BACK(log_message, v_msg, *entry, err);
             if (err.error) {
                 fprintf(stderr, "FATAL ERROR IN LOGGER: error copy list to vector");
                 log->is_run = false;
@@ -170,6 +189,16 @@ bool log_init(log_context **context) {
         goto error;
     }
     con->timeout = 500;
+    printer_t stderr_printer;
+    stderr_printer.level = DEBUG_LEVEL;
+    stderr_printer.handler = pr_printer_in_console;
+    VECTOR_PUSH_BACK(printer_t, con->printers, stderr_printer, err);
+    if (err.error) {
+        goto error;
+    }
+    *context = con;
+    con->is_run = true;
+    pthread_create(&con->thread, NULL, pr_log_thread, con);
     return true;
 
 error:
@@ -191,11 +220,22 @@ error:
 
 bool log_make_message(log_message *message, log_level level, const char *pattern, const char *ptr, ...) {
     va_list vl;
+
     va_start(vl, ptr);
-    int buffer_size = vasprintf(&message->message, pattern, vl);
+    int buffer_size = sprintf(message->message, pattern, vl);
     return true;
 }
 
 log_level log_get_level(log_context *context) {
     return context->enabled_level;
+}
+
+bool log_write(log_context *context, log_message *message) {
+    if (context == NULL || message == NULL) {
+        return false;
+    }
+
+    pthread_mutex_lock(&context->mutex);
+    TAILQ_INSERT_TAIL(context->messages, message, entries);
+    pthread_mutex_unlock(&context->mutex);
 }

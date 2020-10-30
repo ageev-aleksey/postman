@@ -46,8 +46,11 @@ test: $(TEST_OBJS) $(BIN_PATH)/libserver.a
 $(BIN_PATH)/system_test_echo_with_context.out: $(SYSTEM_TEST_PATH)/echo_with_context/main.c $(BIN_PATH)/libserver.a
 	$(CC) $(CCFLAGS) $(INCLUDES) $<  -L$(BIN_PATH) -lserver -lpthread -o $@
 
+$(BIN_PATH)/system_test_log.out: $(SYSTEM_TEST_PATH)/log/main.c $(BIN_PATH)/libserver.a
+	$(CC) $(CCFLAGS) $(INCLUDES) $<  -L$(BIN_PATH) -lserver -lpthread -o $@
+
 system_test: CCFLAGS += -DDEBUG -g
-system_test: $(BIN_PATH)/system_test_echo_with_context.out
+system_test: $(BIN_PATH)/system_test_echo_with_context.out $(BIN_PATH)/system_test_log.out
 
 echo: $(OBJS)
 	echo $<
@@ -62,6 +65,7 @@ $(BIN_PATH)/server.out: $(OBJECTS_DIR)/main.o $(BIN_PATH)/libserver.a
 mkdir:
 	mkdir -p $(OBJECTS_DIR)/lib/event_loop
 	mkdir -p $(OBJECTS_DIR)/lib/protocol
+	mkdir -p $(OBJECTS_DIR)/lib/log
 	mkdir -p $(OBJECTS_DIR)/test/src
 	mkdir -p $(OBJECTS_DIR)/test/system_test/st_echo_with_context
 	mkdir -p $(BIN_PATH)
