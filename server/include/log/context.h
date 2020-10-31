@@ -48,9 +48,11 @@ typedef struct d_log_message_queue log_message_queue;
 typedef struct d_log_context {
     log_level  enabled_level;
     log_message_queue *messages;
+    size_t num_messages;
     log_vector_printers *printers;
+    pthread_mutex_t mutex_property;
     pthread_t thread;
-    pthread_mutex_t mutex;
+    pthread_mutex_t mutex_messages;
     pthread_cond_t cv;
     size_t timeout;
     bool is_run;
@@ -85,11 +87,12 @@ void log_free(log_context *context);
     message;            \
 })
 
-
-#define LOG_ERROR(format_, ...) \
+#define WRITE_LOG(log_level_, format_, ...) \
 do {                   \
-  if ((log_get_level(GLOBAL_LOG_CONTEXT) >= ERROR_LEVEL)) { \
-    log_message *message = LOG_MAKE_MESSAGE(ERROR_LEVEL, (format_),  __VA_ARGS__); \
+  if ((log_get_level(GLOBAL_LOG_CONTEXT) >= (log_level_))) { \
+    time_t t = time(NULL);                            \
+    log_message *message = LOG_MAKE_MESSAGE(log_level_, (format_),  __VA_ARGS__); \
+    message->time = t;\
     if (message == NULL) {                                  \
         fprintf(stderr, "LOG FATAL ERROR: error allocating memory for message struct\n");                   \
     }                          \
@@ -98,5 +101,11 @@ do {                   \
 } while(0)                       \
 
 
+#define LOG_INIT() ({bool res = log_init(&GLOBAL_LOG_CONTEXT); res;})
+#define LOG_FREE() log_free(GLOBAL_LOG_CONTEXT)
+#define LOG_ERROR(format_, ...) WRITE_LOG(ERROR_LEVEL, format_, __VA_ARGS__)
+#define LOG_WARNING(format_, ...) WRITE_LOG(WARNING_LEVEL, format_, __VA_ARGS__)
+#define LOG_INFO(format_, ...) WRITE_LOG(INFO_LEVEL, format_, __VA_ARGS__)
+#define LOG_DEBUG(format_, ...) WRITE_LOG(DEBUG_LEVEL, format_, __VA_ARGS__)
 
 #endif //SERVER_CONTEXT_H
