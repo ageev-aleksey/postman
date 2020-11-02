@@ -95,8 +95,10 @@ do {                   \
     message->time = t;\
     if (message == NULL) {                                  \
         fprintf(stderr, "LOG FATAL ERROR: error allocating memory for message struct\n");                   \
-    }                          \
-    log_write(GLOBAL_LOG_CONTEXT, message);          \
+    } else {                                \
+        log_write(GLOBAL_LOG_CONTEXT, message); \
+    }                    \
+             \
   }  \
 } while(0)                       \
 
