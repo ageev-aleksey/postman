@@ -11,13 +11,15 @@ typedef enum d_message_type {
 } message_type;
 
 typedef struct d_maildir_message {
-    maildir_user *user;
-    vector_char *file_name;
-    message_type type;
+    maildir_user *pr_user;
+    vector_char *pr_file_name;
+    message_type pr_type;
 } maildir_message;
 
-bool maildir_message_init(maildir_message *msg, maildir_user *user);
+bool pr_maildir_message_init(maildir_message *msg);
 bool maildir_message_free(maildir_message *msg);
+bool maildir_message_release(maildir_message *msg);
+bool maildir_message_finalize(maildir_message *msg);
 
 bool maildir_message_get_user(maildir_message *msg, maildir_user *user);
 bool maildir_message_read(maildir_message *msg, vector_char *buffer);

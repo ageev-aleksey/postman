@@ -12,22 +12,22 @@
 extern struct maildir_server;
 
 typedef struct d_maildir_user {
-    struct maildir_server *server;
-    vector_char *login;
+    struct maildir_server *pr_server;
+    vector_char *pr_login;
 } maildir_user;
 
 
 // Инициализация структуры
-bool maildir_user_init(maildir_user **user);
+bool pr_maildir_user_init(maildir_user **user);
+void maildir_user_free(maildir_user *user);
+bool maildir_user_release(maildir_user *user);
 // Свойства пользователя
 //  - Логин
-bool maildir_user_set_login(maildir_user *user, char *login);
 bool maildir_user_get_login(maildir_user *user, char *login);
 //  - Сервер
-bool maildir_user_set_server(maildir_user *user, struct maildir_server *server);
 bool maildir_user_get_server(maildir_user *user, struct maildir_server *server);
 //  - Сообщения
-bool maildir_user_add_message(maildir_user *user, struct maildir_message *message);
+bool maildir_user_create_message(maildir_user *user, struct maildir_message *message);
 bool maildir_user_message_list(maildir_user *user, struct maildir_message_list *msg_list);
 
 #endif //SERVER_USER_H

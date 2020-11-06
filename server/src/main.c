@@ -40,7 +40,7 @@ void read_handler(struct _event_loop* loop, int socket, char *buffer, int size, 
     } else {
         printf(" -- %s\n", buffer);
         char *new_buffer = s_malloc(500, NULL);
-        el_async_write(loop, socket, buffer, 500, write_handler, NULL);
+        //el_async_write(loop, socket, buffer, 500, write_handler, NULL);
     }
 }
 
