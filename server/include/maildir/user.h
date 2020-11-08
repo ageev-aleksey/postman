@@ -8,14 +8,21 @@
 #include "vector_structures.h"
 
 #include <stdbool.h>
+#include <linux/limits.h>
 
-extern struct maildir_server;
 
 typedef struct d_maildir_user {
-    struct maildir_server *pr_server;
-    vector_char *pr_login;
+    struct d_maildir_server *pr_server;
+    char  pr_login[NAME_MAX];
 } maildir_user;
 
+typedef struct d_maildir_users_entry {
+    maildir_user  user;
+    LIST_ENTRY(d_maildir_users_entry) entries;
+} maildir_users_entry;
+
+LIST_HEAD(d_maildir_users_list, d_maildir_users_entry);
+typedef struct d_maildir_users_list maildir_users_list;
 
 // Инициализация структуры
 bool pr_maildir_user_init(maildir_user **user);
