@@ -544,7 +544,7 @@ bool maildir_get_server_by_name(maildir *md, maildir_server *server,const char *
     closedir(dir);
 
     strcpy(server->pr_server_domain, name);
-
+    server->pr_md = md;
     return true;
 
 }

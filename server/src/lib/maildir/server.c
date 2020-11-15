@@ -5,6 +5,8 @@
 #include <dirent.h>
 #include <errno.h>
 #include <string.h>
+#include <sys/stat.h>
+
 #include "maildir/server.h"
 #include "maildir/maildir.h"
 #include "maildir/user.h"
@@ -23,9 +25,15 @@ do {                                    \
 
 const char MAILDIR_SERVER_ERROR_SERVER_PTR_IS_NULL[] = "ptr of server object is null";
 const char MAILDIR_SERVER_ERROR_ARGUMENT_PTR_IS_NULL[] = "argument of function is null";
+const char MAILDIR_SERVER_ERROR_CREATE_USER_ROOT_DIR[] = "error create root user dir";
+const char MAILDIR_SERVER_ERROR_CREATE_USER_TMP_DIR[] = "error create tmp user dir";
+const char MAILDIR_SERVER_ERROR_CREATE_USER_CUR_DIR[] = "error create cur user dir";
+const char MAILDIR_SERVER_ERROR_CREATE_USER_NEW_DIR[] = "error create new user dir";
+const char MAILDIR_SERVER_ERROR_USER_NOT_FOUND[] = "not found user in server";
 extern char MAILDIR_ERROR_OPENING_SERVERS_PATH[];
 
 extern char* pr_maildir_char_concatenate(size_t n, const char *str, ...);
+extern bool pr_maildir_char_make_buf_concat(char **buffer, size_t *bsize, size_t nargs,  const char *str, ...);
 extern const char MAILDIR_ERROR_CONCATENATE_PATHS[];
 
 extern bool pr_maildir_next_dirent_entry(DIR *dir, struct dirent *entry, struct dirent **result, error_t *error);
@@ -38,12 +46,27 @@ bool maildir_server_is_self(maildir_server *server, bool *res, error_t *error) {
     return true;
 }
 
+bool pr_maildir_server_path(maildir_server *server, char **path) {
+    size_t length = 0;
+    bool is_self = false;
+    if (!maildir_server_is_self(server, &is_self, NULL)) {
+        return false;
+    }
+    if (is_self) {
+        return pr_maildir_char_make_buf_concat(path, &length, 3, server->pr_md->pr_path, "/", server);
+    } else {
+        return pr_maildir_char_make_buf_concat(path, &length, 3, server->pr_md->pr_path, SERVERS_ROOT_NAME_PART, server);
+    }
+
+}
+
+
 bool maildir_server_users(maildir_server *server, maildir_users_list *users, error_t *error) {
     CHECK_PTR(server, error, MAILDIR_SERVER_ERROR_SERVER_PTR_IS_NULL);
     CHECK_PTR(users, error, MAILDIR_SERVER_ERROR_ARGUMENT_PTR_IS_NULL);
 
-    char *full_path = pr_maildir_char_concatenate(3, server->pr_md->pr_path, SERVERS_ROOT_NAME_PART, server);
-    if (full_path == NULL) {
+    char *full_path = NULL;
+    if (!pr_maildir_server_path(server, &full_path)) {
         if (error != NULL) {
             error->error = FATAL;
             error->message = MAILDIR_ERROR_CONCATENATE_PATHS;
@@ -82,5 +105,146 @@ bool maildir_server_users(maildir_server *server, maildir_users_list *users, err
     }
 
     closedir(dir);
+    return true;
+}
+
+bool maildir_server_domain(maildir_server *server, char **domain, error_t *error) {
+    CHECK_PTR(server, error, MAILDIR_SERVER_ERROR_SERVER_PTR_IS_NULL);
+    CHECK_PTR(domain, error, MAILDIR_SERVER_ERROR_ARGUMENT_PTR_IS_NULL);
+    ERROR_SUCCESS(error);
+    *domain = server->pr_server_domain;
+    return true;
+}
+
+bool pr_maildir_server_mkdir(char *path, error_t *error, const char *error_message) {
+    if (mkdir(path, S_IRWXU) != 0) {
+        if (error != NULL) {
+            error->error = ERRNO;
+            error->errno_value = errno;
+            error->message = error_message;
+        }
+        return false;
+    }
+    return true;
+}
+
+bool maildir_server_create_user(maildir_server *server, maildir_user *user, const char *username, error_t *error) {
+    CHECK_PTR(server, error, MAILDIR_SERVER_ERROR_SERVER_PTR_IS_NULL);
+    CHECK_PTR(user, error, MAILDIR_SERVER_ERROR_ARGUMENT_PTR_IS_NULL);
+    CHECK_PTR(username, error, MAILDIR_SERVER_ERROR_ARGUMENT_PTR_IS_NULL);
+    char *server_path = NULL;
+    if (!pr_maildir_server_path(server, &server_path)) {
+        if (error != NULL) {
+            error->error = FATAL;
+            error->message = MAILDIR_ERROR_CONCATENATE_PATHS;
+        }
+        return false;
+    }
+
+    size_t length = 0;
+    char *user_path = NULL;
+    if (!pr_maildir_char_make_buf_concat(&user_path, &length, 3, server_path, "/", username)) {
+        if (error != NULL) {
+                error->error = FATAL;
+                error->message = MAILDIR_ERROR_CONCATENATE_PATHS;
+        }
+        return false;
+    }
+
+    bool status = false;
+    char *path = NULL;
+    size_t path_length = 0;
+    if (pr_maildir_server_mkdir(user_path, error, MAILDIR_SERVER_ERROR_CREATE_USER_ROOT_DIR)) {
+        if (!pr_maildir_char_make_buf_concat(&path, &path_length, 3, user_path, "/", USER_PATH_TMP)) {
+            if (error != NULL) {
+                error->error = FATAL;
+                error->message = MAILDIR_ERROR_CONCATENATE_PATHS;
+            }
+            return false;
+        }
+        bool is_make_dir = pr_maildir_server_mkdir(path, error, MAILDIR_SERVER_ERROR_CREATE_USER_TMP_DIR);
+        if (is_make_dir) {
+            char *cur_path = NULL;
+            if (!pr_maildir_char_make_buf_concat(&path, &path_length, 3, user_path, "/", USER_PATH_CUR)) {
+                if (error != NULL) {
+                    error->error = FATAL;
+                    error->message = MAILDIR_ERROR_CONCATENATE_PATHS;
+                }
+                return false;
+            }
+
+            is_make_dir = pr_maildir_server_mkdir(path, error, MAILDIR_SERVER_ERROR_CREATE_USER_CUR_DIR);
+
+            if (is_make_dir) {
+
+                if (!pr_maildir_char_make_buf_concat(&path, &path_length, 3, user_path, "/", USER_PATH_NEW)) {
+                    if (error != NULL) {
+                        error->error = FATAL;
+                        error->message = MAILDIR_ERROR_CONCATENATE_PATHS;
+                    }
+                    return false;
+                }
+
+                is_make_dir = pr_maildir_server_mkdir(path, error, MAILDIR_SERVER_ERROR_CREATE_USER_NEW_DIR);
+                status = is_make_dir;
+            }
+
+        }
+    }
+
+    free(user_path);
+    free(path);
+    return status;
+}
+
+
+void maildir_server_free(maildir_server *server) {
+    if (server != NULL) {
+        server->pr_md = NULL;
+    }
+}
+
+bool maildir_server_user(maildir_server *server, maildir_user *user, const char *username, error_t *error) {
+    CHECK_PTR(server, error, MAILDIR_SERVER_ERROR_SERVER_PTR_IS_NULL);
+    CHECK_PTR(user, error, MAILDIR_SERVER_ERROR_ARGUMENT_PTR_IS_NULL);
+    CHECK_PTR(username, error, MAILDIR_SERVER_ERROR_ARGUMENT_PTR_IS_NULL);
+    char *path = NULL;
+    if (!pr_maildir_server_path(server, &path)) {
+        if (error != NULL) {
+            error->error = FATAL;
+            error->message = MAILDIR_ERROR_CONCATENATE_PATHS;
+        }
+        return false;
+    }
+    char *user_path = NULL;
+    size_t up_length = 0;
+    if (!pr_maildir_char_make_buf_concat(&user_path, &up_length, 3, path, "/", username)) {
+        if (error != NULL) {
+            error->error = FATAL;
+            error->message = MAILDIR_ERROR_CONCATENATE_PATHS;
+        }
+        return false;
+    }
+
+    DIR *dir = opendir(user_path);
+    free(path);
+    free(user_path);
+    if (dir == NULL) {
+        enum ErrorType type = ERRNO;
+        if (errno == ENOENT) {
+            type = NOT_FOUND;
+        }
+        if (error != NULL) {
+            error->error = errno;
+            error->errno_value = errno;
+            error->message = MAILDIR_SERVER_ERROR_USER_NOT_FOUND;
+        }
+
+        return false;
+    }
+
+    strcpy(user->pr_login, username);
+    user->pr_server = server;
+
     return true;
 }

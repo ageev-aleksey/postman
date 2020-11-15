@@ -9,6 +9,7 @@
 
 #include <stdbool.h>
 #include <linux/limits.h>
+#include <sys/queue.h>
 
 
 typedef struct d_maildir_user {
@@ -24,17 +25,25 @@ typedef struct d_maildir_users_entry {
 LIST_HEAD(d_maildir_users_list, d_maildir_users_entry);
 typedef struct d_maildir_users_list maildir_users_list;
 
+struct d_maildir_message;
+typedef struct d_maildir_message maildir_message;
+typedef struct d_maildir_messages_list maildir_messages_list;
+
+typedef struct d_maildir_server maildir_server;
+
+
+
 // Инициализация структуры
-bool pr_maildir_user_init(maildir_user **user);
+//bool pr_maildir_user_init(maildir_user *user, maildir_server *server, char *user_name,  error_t *error);
 void maildir_user_free(maildir_user *user);
-bool maildir_user_release(maildir_user *user);
+//bool maildir_user_release(maildir_user *user);
 // Свойства пользователя
 //  - Логин
-bool maildir_user_get_login(maildir_user *user, char *login);
+bool maildir_user_login(maildir_user *user, char **login);
 //  - Сервер
-bool maildir_user_get_server(maildir_user *user, struct maildir_server *server);
+bool maildir_user_server(maildir_user *user, maildir_server **server);
 //  - Сообщения
-bool maildir_user_create_message(maildir_user *user, struct maildir_message *message);
-bool maildir_user_message_list(maildir_user *user, struct maildir_message_list *msg_list);
+bool maildir_user_create_message(maildir_user *user, maildir_message *message, char *sender_name, error_t *error);
+bool maildir_user_message_list(maildir_user *user, maildir_messages_list *msg_list, error_t *error);
 
 #endif //SERVER_USER_H
