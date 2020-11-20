@@ -5,9 +5,24 @@
 #include <unistd.h>
 #include <errno.h>
 
+#define CHECK_PTR(ptr_, error_, error_message_) \
+do {                                    \
+    if ((ptr_) == NULL) {               \
+        if ((error_) != NULL) { \
+            (error_)->error = FATAL; \
+            (error_)->message = (error_message_); \
+        } \
+        return false;   \
+    }\
+} while(0)
+
 const char MAILDIR_MESSAGE_ERROR_ALREADY_COMPLETED_WORK[] = "already completed working with message";
 const char MAILDIR_MESSAGE_ERROR_REMOVE[] = "error remove message";
 const char MAILDIR_MESSAGE_ERROR_RENAME_FILE[] = "error move file from tmp to new dir";
+const char MAILDIR_MESSAGE_ERROR_MSG_DESCRIPTOR_IS_NULL[] = "ptr of maildir_message is null";
+const char MAILDIR_MESSAGE_ERROR_PARAMETER_IS_NULL[] = "ptr of parameter function is null";
+const char MAILDIR_MESSAGE_ERROR_WRITE_TO_FILE[] = "error write buffer to file";
+const char MAILDIR_MESSAGE_INVALID_SIZE_PARAMETER[] = "error size of buffer equal zero";
 
 extern bool pr_maildir_char_make_buf_concat(char **buffer, size_t *bsize, size_t nargs,  const char *str, ...);
 extern bool pr_maildir_make_full_path(maildir_user *user, char **result_path, error_t *error);
@@ -30,11 +45,10 @@ bool pr_maildir_message_make_full_path(maildir_message *msg, message_type path_t
     return true;
 }
 
-bool maildir_message_free(maildir_message *msg) {
+void maildir_message_free(maildir_message *msg) {
     if (msg->pr_is_open) {
         fclose(msg->pr_fd);
     }
-    free(msg->pr_filename);
 }
 
 bool maildir_message_release(maildir_message *msg, error_t *error) {
@@ -99,6 +113,32 @@ bool maildir_message_get_user(maildir_message *msg, maildir_user **user, error_t
     return true;
 }
 
-bool maildir_message_write(maildir_message *msg, char *buffer, error_t *error) {
-
+bool maildir_message_write(maildir_message *msg, const char *buffer, size_t b_len, error_t *error) {
+    CHECK_PTR(msg, error, MAILDIR_MESSAGE_ERROR_MSG_DESCRIPTOR_IS_NULL);
+    CHECK_PTR(buffer, error, MAILDIR_MESSAGE_ERROR_PARAMETER_IS_NULL);
+    if (b_len == 0) {
+        if (error != NULL) {
+            error->error = FATAL;
+            error->message = MAILDIR_MESSAGE_INVALID_SIZE_PARAMETER;
+        }
+        return false;
+    }
+    if (!msg->pr_is_open) {
+        if (error != NULL) {
+            error->error = FATAL;
+            error->message = MAILDIR_MESSAGE_ERROR_ALREADY_COMPLETED_WORK;
+        }
+        return false;
+    }
+//    int fd = fileno(msg->pr_fd);
+//    write(fd, buffer, b_len);
+    size_t res = fwrite(buffer, sizeof(char), b_len, msg->pr_fd);
+    if (res == 0) {
+        if (error != 0) {
+            error->error = FATAL;
+            error->message = MAILDIR_MESSAGE_ERROR_WRITE_TO_FILE;
+        }
+        return false;
+    }
+    return true;
 }

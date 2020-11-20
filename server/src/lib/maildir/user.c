@@ -165,7 +165,6 @@ bool maildir_user_create_message(maildir_user *user, maildir_message *message, c
 
 
     // Генерация имени файла до тех пор, пока в обоих папках такого файлна не будет
-    char file_name[NAME_MAX];
     char *tmp_file_path = NULL;
     FILE *in_tmp = NULL;
     FILE *in_new = NULL;
@@ -176,9 +175,11 @@ bool maildir_user_create_message(maildir_user *user, maildir_message *message, c
     char *new_path = NULL;
     size_t new_path_size = 0;
     while (is_continue) {
-        pr_maildir_message_filename_generate(file_name, sender_name);
-        pr_maildir_char_make_buf_concat(&tmp_path, &tmp_path_size, 5, user_full_path, "/", USER_PATH_TMP, "/", file_name);
-        pr_maildir_char_make_buf_concat(&new_path, &new_path_size, 5, user_full_path, "/", USER_PATH_NEW, "/", file_name);
+        pr_maildir_message_filename_generate(message->pr_filename, sender_name);
+        pr_maildir_char_make_buf_concat(&tmp_path, &tmp_path_size, 5, user_full_path, "/",
+                                        USER_PATH_TMP, "/", message->pr_filename);
+        pr_maildir_char_make_buf_concat(&new_path, &new_path_size, 5, user_full_path, "/",
+                                        USER_PATH_NEW, "/", message->pr_filename);
         if (tmp_path == NULL || new_path == NULL) {
             if (error != NULL) {
                 error->error = FATAL;
@@ -224,8 +225,8 @@ bool maildir_user_create_message(maildir_user *user, maildir_message *message, c
         return false;
     }
 
+    message->pr_user = user;
     message->pr_type = TMP;
-    message->pr_filename = file_name;
     message->pr_fd = in_tmp;
     message->pr_is_open = true;
     return true;

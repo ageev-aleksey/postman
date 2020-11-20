@@ -73,7 +73,7 @@ int main() {
     char message1[] = "First_part message\n";
     char message2[] = "Second_part message\n";
 
-    if (!maildir_message_write(&msg, message1, &error)) {
+    if (!maildir_message_write(&msg, message1, sizeof(message1)-1, &error)) {
         if (error.error == ERRNO) {
             printf("Error maildir write message: %s\n", strerror(error.errno_value));
         } else {
@@ -82,7 +82,7 @@ int main() {
         return ERROR;
     }
 
-    if (!maildir_message_write(&msg, message2, &error)) {
+    if (!maildir_message_write(&msg, message2, sizeof(message2)-1, &error)) {
         if (error.error == ERRNO) {
             printf("Error maildir write message: %s\n", strerror(error.errno_value));
         } else {

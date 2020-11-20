@@ -194,6 +194,8 @@ bool maildir_server_create_user(maildir_server *server, maildir_user *user, cons
 
     free(user_path);
     free(path);
+    user->pr_server = server;
+    strcpy(user->pr_login, username);
     return status;
 }
 
