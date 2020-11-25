@@ -74,6 +74,7 @@ bool pr_maildir_char_make_buf_concat(char **buffer, size_t *bsize, size_t nargs,
         size_array[i] = strlen(ptr);
         result_size += size_array[i];
     }
+    result_size++; // учет последнего нулевого символа в строке
     va_end(va);
     if (*bsize < result_size) {
         free(*buffer);
@@ -150,7 +151,10 @@ bool maildir_user_create_message(maildir_user *user, maildir_message *message, c
     CHECK_PTR(user, error, MAILDIR_USER_PTR_IS_NULL);
     CHECK_PTR(message, error, MAILDIR_MESSAGE_PTR_IS_NULL);
     CHECK_PTR(sender_name, error, MAILDIR_MESSAGE_PTR_IS_NULL);
+
     char *user_full_path = NULL;
+    bool status = false;
+
     if (!pr_maildir_make_full_path(user, &user_full_path, error)) {
         return false;
     }
@@ -174,6 +178,12 @@ bool maildir_user_create_message(maildir_user *user, maildir_message *message, c
     size_t tmp_path_size = 0;
     char *new_path = NULL;
     size_t new_path_size = 0;
+    // Создание уникального имени для файла
+    // Внутри цикла проверяется, что созданное имя не зането в папках пользователя сервера
+    //   - tmp
+    //   - new
+    // Если имя зането, то выполняется новая попытка создать уникальное имя файла.
+    // Если бло принято MAX_NUM_ATTEMPTS_TO_CREATE_FILENAME попыток, то выход из функции с ошибкой
     while (is_continue) {
         pr_maildir_message_filename_generate(message->pr_filename, sender_name);
         pr_maildir_char_make_buf_concat(&tmp_path, &tmp_path_size, 5, user_full_path, "/",
@@ -185,7 +195,8 @@ bool maildir_user_create_message(maildir_user *user, maildir_message *message, c
                 error->error = FATAL;
                 error->message = MAILDIR_MESSAGE_ERROR_CONCATENATE_STR;
             }
-            goto error_exit;
+            status = false;
+            goto exit;
         }
         in_tmp = fopen(tmp_path, FILE_READ);
         in_new = fopen(new_path, FILE_READ);
@@ -206,13 +217,11 @@ bool maildir_user_create_message(maildir_user *user, maildir_message *message, c
                 error->error = FATAL;
                 error->message = MAILDIR_MESSAGE_ERROR_GENERATE_FILENAME;
             }
-            free(tmp_path);
-            free(new_path);
-            return false;
+            status = false;
+            goto exit;
         }
        // sleep(DELAY_FOR_FILENAME_GENERATOR);
     }
-    free(new_path);
 
 
     in_tmp = fopen(tmp_path, FILE_WRITE);
@@ -221,18 +230,21 @@ bool maildir_user_create_message(maildir_user *user, maildir_message *message, c
             error->error = FATAL;
             error->message = MAILDIR_MESSAGE_ERROR_CREATE_FILE;
         }
-        free(tmp_path);
-        return false;
+        status = false;
+        goto exit;
     }
 
     message->pr_user = user;
     message->pr_type = TMP;
     message->pr_fd = in_tmp;
     message->pr_is_open = true;
-    return true;
-error_exit:
+    status = true;
+
+exit:
+    free(tmp_path);
+    free(new_path);
     free(user_full_path);
-    return false;
+    return status;
 
 }
 

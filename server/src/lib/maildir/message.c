@@ -28,21 +28,25 @@ extern bool pr_maildir_char_make_buf_concat(char **buffer, size_t *bsize, size_t
 extern bool pr_maildir_make_full_path(maildir_user *user, char **result_path, error_t *error);
 
 bool pr_maildir_message_make_full_path(maildir_message *msg, message_type path_type, char **result_path, error_t *error) {
+    bool status = false;
     size_t size = 0;
     char *user_path = NULL;
     if (!pr_maildir_make_full_path(msg->pr_user, &user_path, error)) {
-        return false;
+        goto exit;
     }
     if (path_type == NEW) {
         if (!pr_maildir_char_make_buf_concat(result_path, &size, 5, user_path, "/", USER_PATH_NEW, "/", msg->pr_filename)) {
-            return false;
+            goto exit;
         }
     } else if (path_type == TMP) {
         if (!pr_maildir_char_make_buf_concat(result_path, &size, 5, user_path, "/", USER_PATH_TMP, "/", msg->pr_filename)) {
-            return false;
+            goto exit;
         }
     }
-    return true;
+    status = true;
+exit:
+    free(user_path);
+    return status;
 }
 
 void maildir_message_free(maildir_message *msg) {
@@ -84,10 +88,11 @@ bool maildir_message_finalize(maildir_message *msg, error_t *error) {
     msg->pr_is_open = false;
 
     char *msg_path = NULL;
+    char *msg_new_path = NULL;
+
     if (!pr_maildir_message_make_full_path(msg, TMP, &msg_path, error)) {
         goto exit;
     }
-    char *msg_new_path = NULL;
     if (!pr_maildir_message_make_full_path(msg, NEW, &msg_new_path, error)) {
         goto  exit;
     }

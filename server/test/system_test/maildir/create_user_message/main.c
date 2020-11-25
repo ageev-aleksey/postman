@@ -104,5 +104,6 @@ int main() {
     maildir_user_free(&user);
     maildir_server_free(&server);
     maildir_free(md);
+    free(md);
     return OK;
 }

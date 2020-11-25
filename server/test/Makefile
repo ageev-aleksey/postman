@@ -3,6 +3,7 @@ TEST_SRC = ${shell find $(TEST_DIR)/src -name "*.c"}
 TEST_OBJS = $(patsubst $(TEST_SRC_DIR)/%.c, $(BUILD_DIR)/test/%.o, $(TEST_SRC))
 TEST_INCLUDES = $(INCLUDES) -I$(TEST_DIR)/include
 ST_DIR = $(TEST_DIR)/system_test
+UNIT_TEST_EXE = $(BIN_DIR)/unit_tests.out
 
 
 

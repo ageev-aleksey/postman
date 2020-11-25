@@ -64,10 +64,8 @@ const char MAILDIR_ERROR_STRUCTURE_OF_USER_PATH_OF_THE_SERVER[] =
 char* pr_maildir_char_concatenate(size_t n, const char *str, ...) {
 
     size_t result_size = 0;
-    size_t *size_array = s_malloc(n, NULL);
-    if (size_array == NULL) {
-        return NULL;
-    }
+    size_t size_array[50] = {0};
+
     va_list va;
     va_start(va, str);
     size_array[0] = strlen(str);
@@ -77,10 +75,10 @@ char* pr_maildir_char_concatenate(size_t n, const char *str, ...) {
         size_array[i] = strlen(ptr);
         result_size += size_array[i];
     }
+    result_size++; // учет нулевого символа в конце строки
     va_end(va);
-    char *res = s_malloc(result_size, NULL);
+    char *res = s_malloc(sizeof(char)*result_size, NULL);
     if (res == NULL) {
-        free(size_array);
         return NULL;
     }
     strcpy(res, str);
@@ -92,7 +90,6 @@ char* pr_maildir_char_concatenate(size_t n, const char *str, ...) {
         strcpy(res + offset, ptr);
     }
     va_end(va);
-    free(size_array);
     return res;
 }
 
