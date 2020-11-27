@@ -1,0 +1,34 @@
+autogen definitions fsm;
+
+event = TEST, RSET, HELO, MAIL, RCPT, DATA, READ, END, QUIT;
+
+state = client_init, begin_transaction, transaction, read_data;
+
+type = step;
+method = case;
+prefix = autofsm;
+cookie = "void* cookie";
+
+transition = {tst = init; tev = RSET; next = init;},
+	{tst = init; tev = TEST; next = init;},
+	{tst = init; tev = HELO; next = client_init;},
+	{tst = client_init; tev = HELO; next = client_init;},
+	{tst = client_init; tev = RSET; next = init;},
+	{tst = client_init; tev = TEST; next = client_init;},
+	{tst = client_init; tev = MAIL; next = begin_transaction;},
+	{tst = begin_transaction; tev = HELO; next = client_init;},
+	{tst = begin_transaction; tev = RSET; next = init;},
+	{tst = begin_transaction; tev = TEST; next = begin_transaction;},
+	{tst = begin_transaction; tev = RCPT; next = transaction;},
+	{tst = transaction; tev = HELO; next = client_init;},
+	{tst = transaction; tev = RSET; next = init;},
+	{tst = transaction; tev = TEST; next = transaction;},
+	{tst = transaction; tev = RCPT; next = transaction;},
+	{tst = transaction; tev = DATA; next = read_data;},
+	{tst = read_data; tev = READ; next = read_data;},
+	{tst = read_data; tev = END; next = init;},
+
+	{tst = init; tev = QUIT; next = end;},
+	{tst = client_init; tev = QUIT; next = end;},
+	{tst = begin_transaction; tev = QUIT; next = end;},
+	{tst = transaction; tev = QUIT; next = end;};
