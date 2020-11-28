@@ -59,4 +59,15 @@ do {                            \
     }                           \
 } while(0)
 
+#define CHECK_PTR(ptr_, error_, error_message_) \
+do {                                    \
+    if ((ptr_) == NULL) {               \
+        if ((error_) != NULL) { \
+            (error_)->error = FATAL; \
+            (error_)->message = (error_message_); \
+        } \
+        return false;   \
+    }\
+} while(0)
+
 #endif //SERVER_ERROR_T_H

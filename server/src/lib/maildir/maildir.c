@@ -27,16 +27,7 @@
 
 #define RWX_MODE 0777
 
-#define CHECK_PTR(ptr_, error_, error_message_) \
-do {                                    \
-    if ((ptr_) == NULL) {               \
-        if ((error_) != NULL) { \
-            (error_)->error = FATAL; \
-            (error_)->message = (error_message_); \
-        } \
-        return false;   \
-    }\
-} while(0)
+
 
 
 const char MAILDIR_MD_PTR_NULL[] = "pointer of maildir object is null";

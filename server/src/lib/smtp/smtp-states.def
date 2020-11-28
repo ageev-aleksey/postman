@@ -4,7 +4,7 @@ event = TEST, RSET, HELO, MAIL, RCPT, DATA, READ, END, QUIT;
 
 state = client_init, begin_transaction, transaction, read_data;
 
-type = step;
+type = reentrant;
 method = case;
 prefix = autofsm;
 cookie = "void* cookie";
@@ -28,7 +28,7 @@ transition = {tst = init; tev = RSET; next = init;},
 	{tst = read_data; tev = READ; next = read_data;},
 	{tst = read_data; tev = END; next = init;},
 
-	{tst = init; tev = QUIT; next = end;},
-	{tst = client_init; tev = QUIT; next = end;},
-	{tst = begin_transaction; tev = QUIT; next = end;},
-	{tst = transaction; tev = QUIT; next = end;};
+	{tst = init; tev = QUIT; next = done;},
+	{tst = client_init; tev = QUIT; next = done;},
+	{tst = begin_transaction; tev = QUIT; next = done;},
+	{tst = transaction; tev = QUIT; next = done;};

@@ -5,10 +5,13 @@
 #include "events_queue_test.h"
 #include "registered_events_queue_test.h"
 #include "vector_test.h"
+#include "smtp_regex_test.h"
+
 
 bool eq_test_init();
 bool req_test_init();
 bool el_test_init();
+bool smtp_regex_test_init_c();
 bool vector_test_create();
 int main()
 {
@@ -21,7 +24,8 @@ int main()
     if (!eq_test_init() ||
         !req_test_init() ||
         !el_test_init() ||
-        !vector_test_create())
+        !vector_test_create() ||
+        !smtp_regex_test_init_c())
     {
         CU_cleanup_registry();
         return CU_get_error();
@@ -139,6 +143,24 @@ bool vector_test_create() {
                             "test create sub vector as second part",
                              vector_test_get_subvector_second_part_copy)
                              )
+    {
+        return false;
+    }
+    return true;
+}
+
+bool smtp_regex_test_init_c() {
+    CU_pSuite pSuite = NULL;
+    pSuite = CU_add_suite("Smtp regex", smtp_regex_test_init, smtp_regex_test_clean);
+    if (NULL == pSuite) {
+        return false;
+    }
+    if (NULL == CU_add_test(pSuite,
+                            "regex hello",
+                            smtp_regex_hello_test) ||
+            NULL == CU_add_test(pSuite,
+                                "regex IPv4",
+                                smtp_regex_ipv4_test))
     {
         return false;
     }
