@@ -160,7 +160,13 @@ bool smtp_regex_test_init_c() {
                             smtp_regex_hello_test) ||
             NULL == CU_add_test(pSuite,
                                 "regex IPv4",
-                                smtp_regex_ipv4_test))
+                                smtp_regex_ipv4_test) ||
+            NULL == CU_add_test(pSuite,
+                                "regex domain route list",
+                                smtp_regex_domain_route_list_test) ||
+            NULL == CU_add_test(pSuite,
+                                "mail from",
+                                smtp_regex_mail_from_test))
     {
         return false;
     }
