@@ -8,6 +8,8 @@ stages:
 server_build:
   stage: build
   before_script:
+    - apt-get update --yes
+    - apt-get install -y software-properties-common
     - add-apt-repository ppa:ubuntu-toolchain-r/test
     - apt-get update --yes
     - apt-get install libcunit1 libcunit1-dev --yes
