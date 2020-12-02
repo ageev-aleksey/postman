@@ -9,11 +9,14 @@ CFLOW = cflow --level "0= "
 CFLOW2DOT = $(UTILS)/cflow2dot
 CFLOWFILES = $(shell find $(ROOT)/$(SRC_DIR) -name "*.c")
 FSM2DOT = $(UTILS)/fsm2dot
+MAKE2DOT = $(UTILS)/makefile2graph/make2graph
+RE2TEX = $(UTILS)/re2tex
 DOT = dot
+
 #find src -name "*.c"
 
 
-report: lcov_tex unit_tests_tex $(PATH_INCLUDE_TEX)/smtp_fsm.pdf cflow
+report: lcov_tex unit_tests_tex $(PATH_INCLUDE_TEX)/smtp_fsm.pdf cflow $(PATH_INCLUDE_TEX)/make.pdf regex_to_tex
 	cd $(PATH_TEX) && $(PDF) $(PATH_TEX)/main.tex
 
 lcov_tex: 
@@ -38,4 +41,17 @@ $(PATH_INCLUDE_TEX)/smtp_fsm.pdf: $(PATH_INCLUDE_TEX)/smtp_fsm.dot
 
 smtp_fsm_pdf: $(PATH_INCLUDE_TEX)/smtp_fsm.pdf
 
-.PHONY: report lcov_tex unit_tests_tex cflow smtp_fsm_pdf
+$(PATH_INCLUDE_TEX)/make.dot: Makefile
+	export LC_ALL=C && make -Bnd all | $(MAKE2DOT) > $(PATH_INCLUDE_TEX)/make.dot
+
+$(PATH_INCLUDE_TEX)/make.pdf: $(PATH_INCLUDE_TEX)/make.dot
+	dot -Tpdf -o $@ $<
+
+regex_to_tex: 
+	 $(RE2TEX) $(ROOT)/include/smtp/regex.h $(PATH_INCLUDE_TEX)
+
+mkdir_report:
+	mkdir -p $(PATH_TEX)/inlcude/re
+	mkdir -p $(PATH_TEX)/inlcude/lcov
+
+.PHONY: report lcov_tex unit_tests_tex cflow smtp_fsm_pdf $(PATH_INCLUDE_TEX)/make.dot

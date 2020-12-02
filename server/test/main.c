@@ -166,7 +166,10 @@ bool smtp_regex_test_init_c() {
                                 smtp_regex_domain_route_list_test) ||
             NULL == CU_add_test(pSuite,
                                 "mail from",
-                                smtp_regex_mail_from_test))
+                                smtp_regex_mail_from_test) ||
+            NULL == CU_add_test(pSuite,
+                                "rcpt to",
+                                smtp_regex_rcpt_to_test))
     {
         return false;
     }

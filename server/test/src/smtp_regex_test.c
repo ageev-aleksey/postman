@@ -110,17 +110,90 @@ void smtp_regex_mail_from_test() {
     char list[] = "02120 Mail FROM : <> .0022";
     char list2[] = "mail from : <@dom.ru:man1234@mail.ru>";
 
-    regex_t reg;
+    regex_t reg_mail_from;
+    regex_t  reg_path;
+    regex_t reg_mailbox;
     regmatch_t matcher[1];
-    int res = regcomp(&reg, RE_MAIL_FROM, REG_EXTENDED | REG_ICASE);
-    if (res != NULL) {
+     int res = regcomp(&reg_mail_from, RE_MAIL_FROM, REG_EXTENDED | REG_ICASE);
+    if (res != 0 ) {
         CU_FAIL("error compile regex RE_MAIL_FROM");
-    } else {
-        if (regexec(&reg, list, 1, matcher, 0) == 0) {
-
-        } else {
-            // TODO (ageev) доделать тесты 
-        }
+        return;
     }
+     //int res = regcomp(&reg, "mail[[:space:]]+from[[:space:]]*:[[:space:]]*", REG_EXTENDED | REG_ICASE);
+    res = regcomp(&reg_path, RE_MAIL_FROM_PATH, REG_EXTENDED | REG_ICASE);
+    if (res != 0 ) {
+        CU_FAIL("error compile regex RE_MAIL_FROM_PATH");
+        goto exit;
+    }
+    res = regcomp(&reg_mailbox, RE_MAILBOX, REG_EXTENDED | REG_ICASE);
+    if (res != 0 ) {
+        CU_FAIL("error compile regex RE_MAILBOX");
+        goto exit;
+    }
+
+
+    if (regexec(&reg_mail_from, list, 1, matcher, 0) == 0) {
+        CU_ASSERT_EQUAL(matcher[0].rm_so, 6);
+        CU_ASSERT_EQUAL(matcher[0].rm_eo, 18);
+    } else {
+        CU_FAIL("Error matching 'MAIL FROM' with empty reverse path");
+        goto exit;
+    }
+
+    if (regexec(&reg_mail_from, list2, 1, matcher, 0) == 0) {
+        CU_ASSERT_EQUAL(matcher[0].rm_so, 0);
+        CU_ASSERT_EQUAL(matcher[0].rm_eo, 12);
+    } else {
+        CU_FAIL("Error matching 'MAIL FROM' with filled route list reverse path");
+        goto exit;
+    }
+
+    if (regexec(&reg_mailbox, list2, 1, matcher, 0 ) == 0) {
+        CU_ASSERT_EQUAL(matcher[0].rm_so, 21);
+        CU_ASSERT_EQUAL(matcher[0].rm_eo, 36);
+    } else {
+        CU_FAIL("Error matching 'MAIL BOX' regex from 'MAIL FROM' command");
+        goto exit;
+    }
+exit:
+    regfree(&reg_mail_from);
+    regfree(&reg_path);
+    regfree(&reg_mailbox);
+}
+
+void smtp_regex_rcpt_to_test() {
+    char line[] = "rcpt to : <postmaster@local.ru>";
+    regex_t  reg_rcpt;
+    regex_t reg_domain;
+    regmatch_t matcher[1];
+    int res = regcomp(&reg_rcpt, RE_RCPT_TO, REG_EXTENDED | REG_ICASE);
+    if (res != 0) {
+        CU_FAIL("Error compile regex: RE_RCPT_TO");
+        return;
+    }
+    res = regcomp(&reg_domain, RE_MAILBOX, REG_EXTENDED | REG_ICASE);
+    if (res != 0) {
+        CU_FAIL("Error compile regex: RE_DOMAIN");
+        goto exit;
+    }
+
+    if (regexec(&reg_rcpt, line, 1, matcher, 0) == 0) {
+        CU_ASSERT_EQUAL(matcher[0].rm_so, 0);
+        CU_ASSERT_EQUAL(matcher[0].rm_eo, 10);
+    } else {
+        CU_FAIL("Error matching 'RCPT TO'");
+        goto exit;
+    }
+
+    if (regexec(&reg_domain, line, 1, matcher, 0) == 0) {
+        CU_ASSERT_EQUAL(matcher[0].rm_so, 11);
+        CU_ASSERT_EQUAL(matcher[0].rm_eo, 30);
+    } else {
+        CU_FAIL("Error matching 'domain'");
+        goto exit;
+    }
+exit:
+    regfree(&reg_rcpt);
+    regfree(&reg_domain);
 
 }

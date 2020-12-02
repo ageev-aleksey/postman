@@ -8,6 +8,7 @@
 #include "maildir/server.h"
 #include "maildir/maildir.h"
 #include "maildir/message.h"
+#include "util.h"
 
 #include <time.h>
 #include <sys/types.h>
@@ -42,82 +43,28 @@ const char MAILDIR_MESSAGE_ERROR_CREATE_FILE[] = "error crating file of message"
 
 extern char* pr_maildir_char_concatenate(size_t n, const char *str, ...);
 extern bool pr_maildir_next_dirent_entry(DIR *dir, struct dirent *entry, struct dirent **result, error_t *error);
-/**
- * Выполнение конкатенации строк. Резултат будез записан в передаваемый буфер.
- * Если размер буфера не достаточен, то он будет увеличен автоматически.
- * @param buffer - указатель на буффер, который будет перезаписан. Может быть равным NULL.
- *  Тогда будет выполнена автоматическое выделение памяти для буфера
- * @param bsize - размер буфера. Если происходит расширение буфера, то будт обновлен и его размер
- * @param nargs - число строк, для которых выполнять конкатенацию
- * @param str - первый указатель на строку
- * @param ... - последующие указатели на строки (не более 50 строк)
- * @return успешность операции
- */
-bool pr_maildir_char_make_buf_concat(char **buffer, size_t *bsize, size_t nargs,  const char *str, ...) {
-    size_t result_size = 0;
-//    static size_t *size_array = NULL;
-//    static size_t length_size_array = 0;
-//    if (length_size_array < nargs) {
-//        free(size_array);
-//        size_array = s_malloc(sizeof(size_t)*nargs, NULL);
-//        length_size_array = nargs;
-//    }
-    size_t size_array[50];
-    size_t length_size_array = nargs;
-
-    va_list va;
-    va_start(va, str);
-    size_array[0] = strlen(str);
-    result_size += size_array[0];
-    for (size_t i = 1; i < nargs; ++i) {
-        const char *ptr = va_arg(va, const char*);
-        size_array[i] = strlen(ptr);
-        result_size += size_array[i];
-    }
-    result_size++; // учет последнего нулевого символа в строке
-    va_end(va);
-    if (*bsize < result_size) {
-        free(*buffer);
-        *buffer = s_malloc(sizeof(char)*result_size, NULL);
-        *bsize = result_size;
-    }
-    if (*buffer == NULL) {
-        *buffer = NULL;
-        return false;
-    }
-    strcpy(*buffer, str);
-    va_start(va, str);
-    size_t offset = 0;
-    for (size_t i = 1; i < nargs; ++i) {
-        offset += size_array[i-1];
-        const char *ptr = va_arg(va, const char*);
-        strcpy(*buffer + offset, ptr);
-    }
-    va_end(va);
-    return true;
-}
 
 bool pr_maildir_make_full_path(maildir_user *user, char **result_path, error_t *error) {
     bool is_self = false;
     size_t size = 0;
     maildir_server_is_self(user->pr_server, &is_self, error);
     if (is_self) {
-        pr_maildir_char_make_buf_concat(result_path, &size, 5,
-                                                   user->pr_server->pr_md->pr_path,
-                                                   "/",
-                                                   user->pr_server->pr_server_domain,
-                                                   "/",
-                                                   user->pr_login);
+        char_make_buf_concat(result_path, &size, 5,
+                             user->pr_server->pr_md->pr_path,
+                             "/",
+                             user->pr_server->pr_server_domain,
+                             "/",
+                             user->pr_login);
         if (*result_path == NULL) {
             return false;
         }
     } else {
-        pr_maildir_char_make_buf_concat(result_path, &size, 5,
-                                                   user->pr_server->pr_md->pr_path,
-                                                   SERVERS_ROOT_NAME_PART,
-                                                   user->pr_server->pr_server_domain,
-                                                   "/",
-                                                   user->pr_login);
+        char_make_buf_concat(result_path, &size, 5,
+                             user->pr_server->pr_md->pr_path,
+                             SERVERS_ROOT_NAME_PART,
+                             user->pr_server->pr_server_domain,
+                             "/",
+                             user->pr_login);
         if (*result_path == NULL) {
             return false;
         }
@@ -186,10 +133,10 @@ bool maildir_user_create_message(maildir_user *user, maildir_message *message, c
     // Если бло принято MAX_NUM_ATTEMPTS_TO_CREATE_FILENAME попыток, то выход из функции с ошибкой
     while (is_continue) {
         pr_maildir_message_filename_generate(message->pr_filename, sender_name);
-        pr_maildir_char_make_buf_concat(&tmp_path, &tmp_path_size, 5, user_full_path, "/",
-                                        USER_PATH_TMP, "/", message->pr_filename);
-        pr_maildir_char_make_buf_concat(&new_path, &new_path_size, 5, user_full_path, "/",
-                                        USER_PATH_NEW, "/", message->pr_filename);
+        char_make_buf_concat(&tmp_path, &tmp_path_size, 5, user_full_path, "/",
+                             USER_PATH_TMP, "/", message->pr_filename);
+        char_make_buf_concat(&new_path, &new_path_size, 5, user_full_path, "/",
+                             USER_PATH_NEW, "/", message->pr_filename);
         if (tmp_path == NULL || new_path == NULL) {
             if (error != NULL) {
                 error->error = FATAL;

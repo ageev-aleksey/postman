@@ -14,8 +14,10 @@ typedef struct d_smtp_state {
     te_autofsm_state pr_fsm_state; /// Состояние протокола
     vector_recipient pr_rcpt_list; /// Список получателей
     char *pr_mail_from;            /// Отправитель письма
-    char *hello_addr;               /// Адрес сервера предоставленный в HELO/EHLO
+    char *hello_addr;              /// Адрес сервера предоставленный в HELO/EHLO
     vector_char pr_mail_data;      /// Тело письма
+    char *pr_buffer;               /// Буффер для хранения текущей обрабатываемой команды
+    size_t pr_bsize;               /// Размер буффера
 } smtp_state;
 
 typedef enum d_smtp_status {
@@ -24,6 +26,36 @@ typedef enum d_smtp_status {
     SMTP_CONTINUE,                /// Сообщение состоит из множества строк, необходимо продолжить обрабатывать строки
 } smtp_status;
 
+enum smtp_command_type {
+    SMTP_HELLO,
+    SMTP_MAILFROM,
+    SMTP_RCPTTO,
+    SMTP_DATA,
+    SMTP_RSET,
+    SMTP_VRFY,
+    SMTP_EXPN,
+    SMTP_HELP,
+    SMTP_NOOP,
+    SMTP_QUIT,
+    SMTP_INVALID_COMMAND;
+};
+
+
+typedef struct smtp_command {
+    enum smtp_command_type type;
+    char *arg;
+} smtp_command;
+
+
+
+/**
+ * Инициализация библиотеки для обработки ыьез протокола
+ */
+void smtp_lib_init();
+/**
+ * Освобождение всех ресурсов из под библиотеки
+ */
+void smtp_lib_free();
 /**
  * Инициализация состояния для протокола smtp
  * @param smtp - описатель состояния

@@ -11,7 +11,9 @@
 #include <netinet/in.h>
 #define __USE_MISC
 #include <arpa/inet.h>
+#include <stdarg.h>
 #define ERROR (-1)
+#define UTIL_MAX_NUMBER_OF_VARIANT_PARAMETERS 50
 
 const char ERROR_SUCCESS[] = "Success";
 const char UTIL_ERROR_ALLOCATED_MEMORY[] = "Error allocated memory";
@@ -128,5 +130,79 @@ bool get_addr(struct sockaddr_in* addr, char *ip, size_t buffer_size, uint16_t *
     }
     inet_ntop(AF_INET, &addr->sin_addr, ip, buffer_size);
     *port = ntohs(addr->sin_port);
+    return true;
+}
+
+#define SPACE_SYMBOLS_CHECK(ptr_, index_) \
+((ptr_)[(index_)] == ' ' || (ptr_)[(index_)] == '\n' || (ptr_)[(index_)] == '\r' || (ptr_)[(index_)] == '\t')
+
+// TODO (ageev)  добавить проверки
+bool trim_str(const char* src, char **dst, size_t src_size, size_t *dst_size) {
+    size_t begin = 0;
+    size_t end = src_size-1;
+    for(; SPACE_SYMBOLS_CHECK(src, begin) && (begin < src_size); ++begin) {}
+    for(; SPACE_SYMBOLS_CHECK(src, end) && (begin >= 0); --end) {}
+    if (begin < end) {
+        size_t new_size = end - begin + 1;
+        if (*dst_size < new_size) {
+            free(*dst);
+            *dst = malloc(sizeof(char)*new_size);
+            *dst_size = new_size;
+        }
+        memcpy(*dst, src + begin, new_size);
+        *dst[new_size-1] = '\0';
+    } else {
+        if (*dst_size == 0) {
+            free(*dst);
+            *dst = malloc(sizeof(char)*1);
+            *dst_size = 1;
+        }
+        *dst[0] = '\0';
+    }
+    return true;
+}
+
+bool sub_str(const char* src, char *dst, size_t begin, size_t end) {
+    for (size_t i = begin; i < end; ++i) {
+        dst[i-begin] = src[i];
+    };
+    return true;
+}
+
+
+bool char_make_buf_concat(char **buffer, size_t *bsize, size_t nargs, const char *str, ...) {
+    size_t result_size = 0;
+    size_t size_array[UTIL_MAX_NUMBER_OF_VARIANT_PARAMETERS];
+    size_t length_size_array = nargs;
+
+    va_list va;
+    va_start(va, str);
+    size_array[0] = strlen(str);
+    result_size += size_array[0];
+    for (size_t i = 1; i < nargs; ++i) {
+        const char *ptr = va_arg(va, const char*);
+        size_array[i] = strlen(ptr);
+        result_size += size_array[i];
+    }
+    result_size++; // учет последнего нулевого символа в строке
+    va_end(va);
+    if (*bsize < result_size) {
+        free(*buffer);
+        *buffer = s_malloc(sizeof(char)*result_size, NULL);
+        *bsize = result_size;
+    }
+    if (*buffer == NULL) {
+        *buffer = NULL;
+        return false;
+    }
+    strcpy(*buffer, str);
+    va_start(va, str);
+    size_t offset = 0;
+    for (size_t i = 1; i < nargs; ++i) {
+        offset += size_array[i-1];
+        const char *ptr = va_arg(va, const char*);
+        strcpy(*buffer + offset, ptr);
+    }
+    va_end(va);
     return true;
 }

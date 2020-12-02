@@ -1,9 +1,11 @@
 #include "maildir/message.h"
 #include "maildir/maildir.h"
+#include "util.h"
 
 #include <stdio.h>
 #include <unistd.h>
 #include <errno.h>
+
 
 #define CHECK_PTR(ptr_, error_, error_message_) \
 do {                                    \
@@ -24,7 +26,7 @@ const char MAILDIR_MESSAGE_ERROR_PARAMETER_IS_NULL[] = "ptr of parameter functio
 const char MAILDIR_MESSAGE_ERROR_WRITE_TO_FILE[] = "error write buffer to file";
 const char MAILDIR_MESSAGE_INVALID_SIZE_PARAMETER[] = "error size of buffer equal zero";
 
-extern bool pr_maildir_char_make_buf_concat(char **buffer, size_t *bsize, size_t nargs,  const char *str, ...);
+
 extern bool pr_maildir_make_full_path(maildir_user *user, char **result_path, error_t *error);
 
 bool pr_maildir_message_make_full_path(maildir_message *msg, message_type path_type, char **result_path, error_t *error) {
@@ -35,11 +37,11 @@ bool pr_maildir_message_make_full_path(maildir_message *msg, message_type path_t
         goto exit;
     }
     if (path_type == NEW) {
-        if (!pr_maildir_char_make_buf_concat(result_path, &size, 5, user_path, "/", USER_PATH_NEW, "/", msg->pr_filename)) {
+        if (!char_make_buf_concat(result_path, &size, 5, user_path, "/", USER_PATH_NEW, "/", msg->pr_filename)) {
             goto exit;
         }
     } else if (path_type == TMP) {
-        if (!pr_maildir_char_make_buf_concat(result_path, &size, 5, user_path, "/", USER_PATH_TMP, "/", msg->pr_filename)) {
+        if (!char_make_buf_concat(result_path, &size, 5, user_path, "/", USER_PATH_TMP, "/", msg->pr_filename)) {
             goto exit;
         }
     }

@@ -1,4 +1,5 @@
 ROOT= $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
+#ROOT= ./
 INCLUDE_DIR = include
 SRC_DIR = src
 TEST_DIR = test
@@ -20,7 +21,7 @@ include $(TEST_DIR)/Makefile
 include $(REPORT_DIR)/Makefile
 
 
-all: server unit_tests $(SYSTEM_TEST_TARGETS)
+all: server unit_tests $(SYSTEM_TEST_TARGETS) report
 
 ut: unit_tests
 
