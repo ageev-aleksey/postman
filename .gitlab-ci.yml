@@ -15,17 +15,14 @@ server_build:
     - apt-get install libcunit1 libcunit1-dev --yes
     - apt-get install gcc-4.8  --yes
     - apt-get install lcov make --yes
+    - apt-get install autogen --yes
   script:
     - cd server
-    - make mkdir
-    - make all
+    - make test_mkdir
+    - make unit_tests
   artifacts:
     paths:
-      - server/bin/server.out
-      - server/bin/test.out
-      - server/main.gcno
-      - server/build
-      - server/report/tex/main.pdf
+      - server/bin/unit_tests.out
     expire_in: 1 hrs
 
 server_unit_testig:
@@ -37,7 +34,7 @@ server_unit_testig:
     - apt-get install lcov --yes
   script:
     - cd server
-    - valgrind --leak-check=full ./bin/test.out
+    - valgrind --leak-check=full ./bin/unit_tests.out
     - lcov -t "server testing code coverage" -o server_coverage.info -c -d .
     - genhtml -o report server_coverage.info 
     - make start_system_test
