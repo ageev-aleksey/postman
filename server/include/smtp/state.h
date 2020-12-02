@@ -37,7 +37,7 @@ enum smtp_command_type {
     SMTP_HELP,
     SMTP_NOOP,
     SMTP_QUIT,
-    SMTP_INVALID_COMMAND;
+    SMTP_INVALID_COMMAND
 };
 
 

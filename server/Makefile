@@ -10,7 +10,7 @@ REPORT_DIR = report
 OPTION_COMPILE_UNIT_TESTS = ON
 INCLUDES = -I$(ROOT)$(INCLUDE_DIR)
 CC = gcc-4.8
-CCFLAGS = -std=c99 -DDEBUG -g  #--coverage #-Wall -Werror
+CCFLAGS = -std=gnu99 -DDEBUG -g  #--coverage #-Wall -Werror
 
 mkdir:
 	mkdir -p $(BIN_DIR)
