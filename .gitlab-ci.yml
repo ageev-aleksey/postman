@@ -14,13 +14,14 @@ server_build:
   script:
     - cd server
     - make mkdir
-    - make
+    - make all
   artifacts:
     paths:
       - server/bin/server.out
       - server/bin/test.out
       - server/main.gcno
       - server/build
+      - server/report/tex/main.pdf
     expire_in: 1 hrs
 
 server_unit_testig:
