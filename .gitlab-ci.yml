@@ -1,3 +1,4 @@
+image: ubuntu:16.04
 stages:
   - build
   - unit_testing
