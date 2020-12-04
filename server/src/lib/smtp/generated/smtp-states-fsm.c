@@ -252,168 +252,168 @@ autofsm_step(
     switch (trans) {
     case AUTOFSM_TR_BEGIN_TRANSACTION_HELO:
         /* START == BEGIN_TRANSACTION_HELO == DO NOT CHANGE THIS COMMENT */
-        nxtSt = HANDLE_BEGIN_TRANSACTION_HELO();
+//        nxtSt = HANDLE_BEGIN_TRANSACTION_HELO();
         /* END   == BEGIN_TRANSACTION_HELO == DO NOT CHANGE THIS COMMENT */
         break;
 
 
     case AUTOFSM_TR_BEGIN_TRANSACTION_QUIT:
         /* START == BEGIN_TRANSACTION_QUIT == DO NOT CHANGE THIS COMMENT */
-        nxtSt = HANDLE_BEGIN_TRANSACTION_QUIT();
+//        nxtSt = HANDLE_BEGIN_TRANSACTION_QUIT();
         /* END   == BEGIN_TRANSACTION_QUIT == DO NOT CHANGE THIS COMMENT */
         break;
 
 
     case AUTOFSM_TR_BEGIN_TRANSACTION_RCPT:
         /* START == BEGIN_TRANSACTION_RCPT == DO NOT CHANGE THIS COMMENT */
-        nxtSt = HANDLE_BEGIN_TRANSACTION_RCPT();
+//        nxtSt = HANDLE_BEGIN_TRANSACTION_RCPT();
         /* END   == BEGIN_TRANSACTION_RCPT == DO NOT CHANGE THIS COMMENT */
         break;
 
 
     case AUTOFSM_TR_BEGIN_TRANSACTION_RSET:
         /* START == BEGIN_TRANSACTION_RSET == DO NOT CHANGE THIS COMMENT */
-        nxtSt = HANDLE_BEGIN_TRANSACTION_RSET();
+//        nxtSt = HANDLE_BEGIN_TRANSACTION_RSET();
         /* END   == BEGIN_TRANSACTION_RSET == DO NOT CHANGE THIS COMMENT */
         break;
 
 
     case AUTOFSM_TR_BEGIN_TRANSACTION_TEST:
         /* START == BEGIN_TRANSACTION_TEST == DO NOT CHANGE THIS COMMENT */
-        nxtSt = HANDLE_BEGIN_TRANSACTION_TEST();
+//        nxtSt = HANDLE_BEGIN_TRANSACTION_TEST();
         /* END   == BEGIN_TRANSACTION_TEST == DO NOT CHANGE THIS COMMENT */
         break;
 
 
     case AUTOFSM_TR_CLIENT_INIT_HELO:
         /* START == CLIENT_INIT_HELO == DO NOT CHANGE THIS COMMENT */
-        nxtSt = HANDLE_CLIENT_INIT_HELO();
+//        nxtSt = HANDLE_CLIENT_INIT_HELO();
         /* END   == CLIENT_INIT_HELO == DO NOT CHANGE THIS COMMENT */
         break;
 
 
     case AUTOFSM_TR_CLIENT_INIT_MAIL:
         /* START == CLIENT_INIT_MAIL == DO NOT CHANGE THIS COMMENT */
-        nxtSt = HANDLE_CLIENT_INIT_MAIL();
+ //       nxtSt = HANDLE_CLIENT_INIT_MAIL();
         /* END   == CLIENT_INIT_MAIL == DO NOT CHANGE THIS COMMENT */
         break;
 
 
     case AUTOFSM_TR_CLIENT_INIT_QUIT:
         /* START == CLIENT_INIT_QUIT == DO NOT CHANGE THIS COMMENT */
-        nxtSt = HANDLE_CLIENT_INIT_QUIT();
+//        nxtSt = HANDLE_CLIENT_INIT_QUIT();
         /* END   == CLIENT_INIT_QUIT == DO NOT CHANGE THIS COMMENT */
         break;
 
 
     case AUTOFSM_TR_CLIENT_INIT_RSET:
         /* START == CLIENT_INIT_RSET == DO NOT CHANGE THIS COMMENT */
-        nxtSt = HANDLE_CLIENT_INIT_RSET();
+//        nxtSt = HANDLE_CLIENT_INIT_RSET();
         /* END   == CLIENT_INIT_RSET == DO NOT CHANGE THIS COMMENT */
         break;
 
 
     case AUTOFSM_TR_CLIENT_INIT_TEST:
         /* START == CLIENT_INIT_TEST == DO NOT CHANGE THIS COMMENT */
-        nxtSt = HANDLE_CLIENT_INIT_TEST();
+//        nxtSt = HANDLE_CLIENT_INIT_TEST();
         /* END   == CLIENT_INIT_TEST == DO NOT CHANGE THIS COMMENT */
         break;
 
 
     case AUTOFSM_TR_INIT_HELO:
         /* START == INIT_HELO == DO NOT CHANGE THIS COMMENT */
-        nxtSt = HANDLE_INIT_HELO();
+//        nxtSt = HANDLE_INIT_HELO();
         /* END   == INIT_HELO == DO NOT CHANGE THIS COMMENT */
         break;
 
 
     case AUTOFSM_TR_INIT_QUIT:
         /* START == INIT_QUIT == DO NOT CHANGE THIS COMMENT */
-        nxtSt = HANDLE_INIT_QUIT();
+//        nxtSt = HANDLE_INIT_QUIT();
         /* END   == INIT_QUIT == DO NOT CHANGE THIS COMMENT */
         break;
 
 
     case AUTOFSM_TR_INIT_RSET:
         /* START == INIT_RSET == DO NOT CHANGE THIS COMMENT */
-        nxtSt = HANDLE_INIT_RSET();
+//        nxtSt = HANDLE_INIT_RSET();
         /* END   == INIT_RSET == DO NOT CHANGE THIS COMMENT */
         break;
 
 
     case AUTOFSM_TR_INIT_TEST:
         /* START == INIT_TEST == DO NOT CHANGE THIS COMMENT */
-        nxtSt = HANDLE_INIT_TEST();
+//        nxtSt = HANDLE_INIT_TEST();
         /* END   == INIT_TEST == DO NOT CHANGE THIS COMMENT */
         break;
 
 
     case AUTOFSM_TR_INVALID:
         /* START == INVALID == DO NOT CHANGE THIS COMMENT */
-        exit(autofsm_invalid_transition(autofsm_state, trans_evt));
+//        exit(autofsm_invalid_transition(autofsm_state, trans_evt));
         /* END   == INVALID == DO NOT CHANGE THIS COMMENT */
         break;
 
 
     case AUTOFSM_TR_READ_DATA_END:
         /* START == READ_DATA_END == DO NOT CHANGE THIS COMMENT */
-        nxtSt = HANDLE_READ_DATA_END();
+//        nxtSt = HANDLE_READ_DATA_END();
         /* END   == READ_DATA_END == DO NOT CHANGE THIS COMMENT */
         break;
 
 
     case AUTOFSM_TR_READ_DATA_READ:
         /* START == READ_DATA_READ == DO NOT CHANGE THIS COMMENT */
-        nxtSt = HANDLE_READ_DATA_READ();
+//        nxtSt = HANDLE_READ_DATA_READ();
         /* END   == READ_DATA_READ == DO NOT CHANGE THIS COMMENT */
         break;
 
 
     case AUTOFSM_TR_TRANSACTION_DATA:
         /* START == TRANSACTION_DATA == DO NOT CHANGE THIS COMMENT */
-        nxtSt = HANDLE_TRANSACTION_DATA();
+//        nxtSt = HANDLE_TRANSACTION_DATA();
         /* END   == TRANSACTION_DATA == DO NOT CHANGE THIS COMMENT */
         break;
 
 
     case AUTOFSM_TR_TRANSACTION_HELO:
         /* START == TRANSACTION_HELO == DO NOT CHANGE THIS COMMENT */
-        nxtSt = HANDLE_TRANSACTION_HELO();
+//        nxtSt = HANDLE_TRANSACTION_HELO();
         /* END   == TRANSACTION_HELO == DO NOT CHANGE THIS COMMENT */
         break;
 
 
     case AUTOFSM_TR_TRANSACTION_QUIT:
         /* START == TRANSACTION_QUIT == DO NOT CHANGE THIS COMMENT */
-        nxtSt = HANDLE_TRANSACTION_QUIT();
+//        nxtSt = HANDLE_TRANSACTION_QUIT();
         /* END   == TRANSACTION_QUIT == DO NOT CHANGE THIS COMMENT */
         break;
 
 
     case AUTOFSM_TR_TRANSACTION_RCPT:
         /* START == TRANSACTION_RCPT == DO NOT CHANGE THIS COMMENT */
-        nxtSt = HANDLE_TRANSACTION_RCPT();
+//        nxtSt = HANDLE_TRANSACTION_RCPT();
         /* END   == TRANSACTION_RCPT == DO NOT CHANGE THIS COMMENT */
         break;
 
 
     case AUTOFSM_TR_TRANSACTION_RSET:
         /* START == TRANSACTION_RSET == DO NOT CHANGE THIS COMMENT */
-        nxtSt = HANDLE_TRANSACTION_RSET();
+//        nxtSt = HANDLE_TRANSACTION_RSET();
         /* END   == TRANSACTION_RSET == DO NOT CHANGE THIS COMMENT */
         break;
 
 
     case AUTOFSM_TR_TRANSACTION_TEST:
         /* START == TRANSACTION_TEST == DO NOT CHANGE THIS COMMENT */
-        nxtSt = HANDLE_TRANSACTION_TEST();
+//        nxtSt = HANDLE_TRANSACTION_TEST();
         /* END   == TRANSACTION_TEST == DO NOT CHANGE THIS COMMENT */
         break;
 
 
     default:
         /* START == BROKEN MACHINE == DO NOT CHANGE THIS COMMENT */
-        exit(autofsm_invalid_transition(autofsm_state, trans_evt));
+        autofsm_invalid_transition(autofsm_state, trans_evt);
         /* END   == BROKEN MACHINE == DO NOT CHANGE THIS COMMENT */
     }
 

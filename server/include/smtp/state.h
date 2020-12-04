@@ -3,27 +3,37 @@
 #include "vector.h"
 #include "vector_structures.h"
 
-typedef struct d_recipient {
+typedef struct smtp_mailbox {
     char *user_name;
     char *server_name;
-} recipient;
+} smtp_mailbox;
 
-VECTOR_DECLARE(vector_recipient, recipient);
+VECTOR_DECLARE(vector_smtp_mailbox, smtp_mailbox);
+
+enum smtp_address_type {
+    SMTP_ADDRESS_TYPE_IPv4, SMTP_ADDRESS_TYPE_IPv6, SMTP_ADDRESS_TYPE_DOMAIN, SMTP_ADDRESS_TYPE_NONE
+};
+
+typedef struct smtp_address {
+    char *address;
+    enum smtp_address_type type;
+} smtp_address;
 
 typedef struct d_smtp_state {
-    te_autofsm_state pr_fsm_state; /// Состояние протокола
-    vector_recipient pr_rcpt_list; /// Список получателей
-    char *pr_mail_from;            /// Отправитель письма
-    char *hello_addr;              /// Адрес сервера предоставленный в HELO/EHLO
-    vector_char pr_mail_data;      /// Тело письма
-    char *pr_buffer;               /// Буффер для хранения текущей обрабатываемой команды
-    size_t pr_bsize;               /// Размер буффера
+    te_autofsm_state pr_fsm_state;    /// Состояние протокола
+    vector_smtp_mailbox pr_rcpt_list; /// Список получателей
+    smtp_mailbox pr_mail_from;        /// Отправитель письма
+    smtp_address pr_hello_addr;       /// Адрес сервера предоставленный в HELO/EHLO
+    vector_char pr_mail_data;         /// Тело письма
+    char *pr_buffer;                  /// Буффер для хранения текущей обрабатываемой команды
+    size_t pr_bsize;                  /// Размер буффера
 } smtp_state;
 
 typedef enum d_smtp_status {
-    SMTP_ERROR,                   /// Произошла ошибка во время обработки сообщения
-    SMTP_OK,                      /// Сообщение полностью обработано
-    SMTP_CONTINUE,                /// Сообщение состоит из множества строк, необходимо продолжить обрабатывать строки
+    SMTP_STATUS_ERROR,                   /// Произошла ошибка во время обработки сообщения
+    SMTP_STATUS_OK,                      /// Сообщение полностью обработано
+    SMTP_STATUS_WARNING,                 /// Сообщение полностью обраотано, но ответ для клиента отрицательный
+    SMTP_STATUS_CONTINUE,                /// Сообщение состоит из множества строк, необходимо продолжить обрабатывать строки
 } smtp_status;
 
 enum smtp_command_type {
@@ -42,14 +52,16 @@ enum smtp_command_type {
 
 
 typedef struct smtp_command {
+    bool status;
     enum smtp_command_type type;
-    char *arg;
+    te_autofsm_event event;
+    void *arg;
 } smtp_command;
 
 
 
 /**
- * Инициализация библиотеки для обработки ыьез протокола
+ * Инициализация библиотеки для обработки smtp протокола
  */
 void smtp_lib_init();
 /**

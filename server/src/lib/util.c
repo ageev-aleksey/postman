@@ -103,7 +103,7 @@ int make_server_socket(const char *ip, int port, error_t *error) {
     }
     return sock;
 
-exit_error:
+    exit_error:
     close(sock);
     if (error != NULL) {
         error->error = FATAL;
@@ -162,10 +162,12 @@ bool trim_str(const char* src, char **dst, size_t src_size, size_t *dst_size) {
     return true;
 }
 
-bool sub_str(const char* src, char *dst, size_t begin, size_t end) {
-    for (size_t i = begin; i < end; ++i) {
+bool sub_str(const char* const src, char * const dst, size_t begin, size_t end) {
+    size_t i = begin;
+    for (; i < end; ++i) {
         dst[i-begin] = src[i];
     };
+    dst[i-begin] = '\0';
     return true;
 }
 
@@ -204,5 +206,54 @@ bool char_make_buf_concat(char **buffer, size_t *bsize, size_t nargs, const char
         strcpy(*buffer + offset, ptr);
     }
     va_end(va);
+    return true;
+}
+
+bool split_str(const char *str, char *array_str[], int num_split, char sep) {
+    return split_sub_str(str, 0, UTIL_STR_END, array_str, num_split, sep);
+}
+
+
+bool split_sub_str(const char *str, int begin, int end, char *array_str[], int num_split, char sep) {
+    if(str == NULL || array_str == NULL) {
+        return false;
+    }
+    size_t begin_sub = begin;
+    size_t end_sub = begin;
+    size_t i = 0;
+    bool is = false;
+    if (end == UTIL_STR_END) {
+        is = i < num_split &&  str[end_sub] != '\0';
+    } else {
+        is = i < num_split &&  str[end_sub] != '\0' && end_sub < end;
+    }
+
+    while(is) {
+        if(str[end_sub] == sep) {
+            array_str[i] = malloc(sizeof(char)*(end_sub-begin_sub+1));
+            sub_str(str, array_str[i], begin_sub, end_sub);
+            i++;
+            begin_sub = end_sub+1;
+        }
+        end_sub++;
+
+        if (end == UTIL_STR_END) {
+            is = i < num_split &&  str[end_sub] != '\0';
+        } else {
+            is = i < (num_split-1) &&  str[end_sub] != '\0' && end_sub < end;
+        }
+    }
+
+    if (end == UTIL_STR_END) {
+        size_t len = strlen(str + begin_sub)+1;
+        array_str[i] = malloc(sizeof(char)*len);
+        strcpy(array_str[i], str + begin_sub);
+        array_str[i][len-1] = '\0';
+    } else {
+        size_t len = strlen(str + begin_sub)+1;
+        array_str[i] = malloc(sizeof(char)*len);
+        sub_str(str,  array_str[i], begin_sub, end);
+    }
+
     return true;
 }

@@ -3,6 +3,7 @@
 //
 #include "smtp_regex_test.h"
 #include "smtp/regex.h"
+#include "smtp/state.h"
 #include <sys/types.h>
 #include <regex.h>
 #include <stdio.h>
@@ -10,9 +11,11 @@
 #include <CUnit/Basic.h>
 
 int smtp_regex_test_init() {
+    smtp_lib_init();
     return 0;
 }
 int smtp_regex_test_clean() {
+    smtp_lib_free();
     return 0;
 }
 
@@ -196,4 +199,55 @@ exit:
     regfree(&reg_rcpt);
     regfree(&reg_domain);
 
+}
+
+extern struct smtp_command pr_smtp_hello_proc(smtp_state *smtp, char *buff);
+void smtp_hello_test() {
+    char ip[]  = "192.168.1.1";
+    char line[] = "ehlo [192.168.1.1]";
+    char domain[] = "test.domain.ru";
+    char line2[] = "ehlo test.domain.ru";
+    smtp_state smtp;
+    smtp_init(&smtp, NULL);
+    struct smtp_command command = pr_smtp_hello_proc(&smtp, line);
+    smtp_address *addr = command.arg;
+    CU_ASSERT_TRUE(command.status);
+    CU_ASSERT_EQUAL(addr->type, SMTP_ADDRESS_TYPE_IPv4);
+    CU_ASSERT_STRING_EQUAL(addr->address, ip);
+    free(addr->address);
+    free(addr);
+
+    command = pr_smtp_hello_proc(&smtp, line2);
+    addr = command.arg;
+    CU_ASSERT_TRUE(command.status);
+    CU_ASSERT_EQUAL(addr->type, SMTP_ADDRESS_TYPE_DOMAIN);
+    CU_ASSERT_STRING_EQUAL(addr->address, domain);
+    free(addr->address);
+    free(addr);
+
+    smtp_free(&smtp);
+}
+
+extern struct smtp_command pr_smtp_mailfrom_proc(smtp_state *smtp, char *buff);
+void smtp_mailform_test() {
+    char line[] = "mail from: <>";
+    char line2[] = "mail from: <@server1.ru, @server2.com: user@domain.ru>";
+    char server_name[] = "domain.ru";
+    char user_name[] = "user";
+    smtp_state smtp;
+    smtp_init(&smtp, NULL);
+
+    struct smtp_command command = pr_smtp_mailfrom_proc(&smtp, line);
+    CU_ASSERT_TRUE(command.status);
+    CU_ASSERT_PTR_NULL(command.arg);
+
+    command = pr_smtp_mailfrom_proc(&smtp, line2);
+    smtp_mailbox *mailbox = command.arg;
+    CU_ASSERT_TRUE(command.status);
+    CU_ASSERT_STRING_EQUAL(mailbox->server_name, server_name)
+    CU_ASSERT_STRING_EQUAL(mailbox->user_name, user_name)
+    free(mailbox->user_name);
+    free(mailbox->server_name);
+    free(mailbox);
+    smtp_free(&smtp);
 }

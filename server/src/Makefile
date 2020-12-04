@@ -6,6 +6,7 @@ MAILDIR_SRC_PATH = $(LIB_DIR)/maildir
 ADDITIONAl_SRC_PATH = $(LIB_DIR)
 SMTP_PROTO_SRC_PATH = $(LIB_DIR)/smtp
 SMTP_FSM_SRC_PATH = $(SMTP_PROTO_SRC_PATH)/generated
+SMTP_ADDITIONAL_INCLUDE = -I$(CWD)/$(SMTP_FSM_SRC_PATH)
 
 EVENT_LOOP_SRC = ${shell find  $(CWD)/$(EVENT_LOOP_SRC_PATH) -name "*.c"}
 LOG_SRC = ${shell find  $(CWD)/$(LOG_SRC_PATH) -name "*.c"}
@@ -80,7 +81,7 @@ $(BUILD_DIR)/smtp/generated/%.o: $(CWD)/$(SMTP_FSM_SRC_PATH)/%.c
 	$(CC) $(CCFLAGS) $(AUTOGEN_FLAGS) $< $(INCLUDES) -I$(CWD)/$(SMTP_FSM_SRC_PATH) $(LINKS) -o $@ -c
 
 $(BUILD_DIR)/smtp/%.o: $(CWD)/$(SMTP_PROTO_SRC_PATH)/%.c
-	$(CC) $(CCFLAGS) $< $(INCLUDES) -I$(CWD)/$(SMTP_FSM_SRC_PATH)  $(LINKS) -o $@ -c
+	$(CC) $(CCFLAGS) $< $(INCLUDES) $(SMTP_ADDITIONAL_INCLUDE)  $(LINKS) -o $@ -c
 
 
 $(BIN_DIR)/libsmtpprotocol.a: src_mkdir $(SMTP_PROTO_OBJS) $(CWD)/$(SMTP_FSM_SRC_PATH)/smtp-state-fsm.c $(BUILD_DIR)/smtp/generated/smtp-states-fsm.o

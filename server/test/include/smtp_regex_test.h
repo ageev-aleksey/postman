@@ -14,4 +14,7 @@ void smtp_regex_domain_route_list_test();
 void smtp_regex_mail_from_test();
 void smtp_regex_rcpt_to_test();
 
+void smtp_hello_test();
+void smtp_mailform_test();
+
 #endif //SERVER_SMTP_REGEX_TEST_H

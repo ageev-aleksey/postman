@@ -9,8 +9,8 @@
 #include "error_t.h"
 #include <netinet/in.h>
 
-#define IP_BUFFER_LEN 18 //< Минимальный размер буффера для записи ip адреса в виде десятичных числе через точку
-
+#define IP_BUFFER_LEN 18  /// Минимальный размер буффера для записи ip адреса в виде десятичных числе через точку
+#define UTIL_STR_END (-1) /// Указатель на конец строки
 /**
  * Выделение памяти с ее обнулением
  * @param size - количество байт для выделения
@@ -69,6 +69,28 @@ bool sub_str(const char* src, char *dst, size_t begin, size_t end);
  * @return успешность операции
  */
 bool char_make_buf_concat(char **buffer, size_t *bsize, size_t nargs, const char *str, ...);
+
+/**
+ * Разбивание строки на т трок по символу
+ * @param str разбиваемая строка
+ * @param array_str указатль, в который будет записан указатель на миссив строк (автоматическое выделение памяти)
+ * @param sep символ, по которому выполняется разбиение строки
+ * @return
+ */
+bool split_str(const char *str, char *array_str[], int num_split, char sep);
+
+/**
+ * Разбивка подстроки строки по символу
+ * @param str - строка, которая будет разбиваться
+ * @param begin - индекс с которого начинать разбиение
+ * @param end - индекс указывающий за элемент строки, до которого выполнять разбиение
+ *              (Для указания конца строки, используется значение UTIL_STR_END)
+ * @param array_str - массив, указателей на строки. Память под строки будет автоматически выделена
+ * @param num_split - размер массива array_str - макисмально число выполняемых разбиений
+ * @param sep - символ разделитель, по которому будет выполнено разбиение строки
+ * @return
+ */
+bool split_sub_str(const char *str, int begin, int end, char *array_str[], int num_split, char sep);
 
 
 #endif //SERVER_UTIL_H
