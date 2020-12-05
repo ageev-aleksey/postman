@@ -175,7 +175,13 @@ bool smtp_regex_test_init_c() {
                                 smtp_hello_test) ||
             NULL == CU_add_test(pSuite,
                                 "parsing command 'mail from'",
-                                smtp_mailform_test))
+                                smtp_mailform_test) ||
+            NULL == CU_add_test(pSuite,
+                                "parsing command 'rcpt to'",
+                                smtp_rcptto_test) ||
+            NULL == CU_add_test(pSuite,
+                                "check good command sequence",
+                                smtp_protocol_good_sequence))
     {
         return false;
     }

@@ -16,5 +16,8 @@ void smtp_regex_rcpt_to_test();
 
 void smtp_hello_test();
 void smtp_mailform_test();
+void smtp_rcptto_test();
+void smtp_protocol_good_sequence();
+
 
 #endif //SERVER_SMTP_REGEX_TEST_H

@@ -22,8 +22,8 @@ typedef struct smtp_address {
 typedef struct d_smtp_state {
     te_autofsm_state pr_fsm_state;    /// Состояние протокола
     vector_smtp_mailbox pr_rcpt_list; /// Список получателей
-    smtp_mailbox pr_mail_from;        /// Отправитель письма
-    smtp_address pr_hello_addr;       /// Адрес сервера предоставленный в HELO/EHLO
+    smtp_mailbox *pr_mail_from;        /// Отправитель письма
+    smtp_address *pr_hello_addr;       /// Адрес сервера предоставленный в HELO/EHLO
     vector_char pr_mail_data;         /// Тело письма
     char *pr_buffer;                  /// Буффер для хранения текущей обрабатываемой команды
     size_t pr_bsize;                  /// Размер буффера

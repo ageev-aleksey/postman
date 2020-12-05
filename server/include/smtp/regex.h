@@ -6,7 +6,7 @@
 //#define RE_HELLO_ADDR "(" RE_DOMAIN ")|(" RE_ADDRESS_LITERAL ")"
 #define RE_DOMAIN_LITERAL "<" RE_DOMAIN ">"
 #define RE_AT_DOMAIN "@" RE_DOMAIN
-#define RE_MAILBOX "[[:alnum:]]+" RE_AT_DOMAIN
+#define RE_MAILBOX "[[:alnum:]]+" RE_AT_DOMAIN // TODO (ageev) если имя содеожит '_' то регулярное выражение не сопоставляется
 //#define RE_PATH "<((" RE_AT_DOMAIN ",)*("RE_AT_DOMAIN":)){0,1}" RE_MAIL_BOX ">"
 #define RE_ROUTE_PATH "((" RE_AT_DOMAIN "[[:space:]]*,[[:space:]]*)*" RE_AT_DOMAIN "[[:space:]]*:[[:space:]]*){0,1}"
 #define RE_PATH "<" RE_ROUTE_PATH RE_MAILBOX ">"

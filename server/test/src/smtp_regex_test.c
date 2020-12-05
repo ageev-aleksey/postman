@@ -251,3 +251,52 @@ void smtp_mailform_test() {
     free(mailbox);
     smtp_free(&smtp);
 }
+extern struct smtp_command pr_smtp_rcptto_proc(smtp_state *smtp, char *buff);
+void smtp_rcptto_test() {
+    char line[] = "rcpt to: <@server1.ru: hello@email.ru>";
+    char server_name[] = "email.ru";
+    char user_name[] = "hello";
+    smtp_state smtp;
+    smtp_init(&smtp, NULL);
+    struct smtp_command command = pr_smtp_rcptto_proc(&smtp, line);
+    CU_ASSERT_TRUE(command.status);
+
+    smtp_mailbox *mailbox = command.arg;
+    CU_ASSERT_STRING_EQUAL(mailbox->server_name, server_name);
+    CU_ASSERT_STRING_EQUAL(mailbox->user_name, user_name);
+    free(mailbox->user_name);
+    free(mailbox->server_name);
+    free(mailbox);
+
+    smtp_free(&smtp);
+}
+
+void smtp_protocol_good_sequence() {
+    char hello[] = "ehlo [127.0.0.1]\r\n";
+    char mailfrom[] = "mail from: <testuser@test.domain.com.ru>\r\n";
+    char rcptto1[] = "rcpt to: <@good.ru, @domain200.org, @email.ru: otheruser@server.ru>\r\n";
+    char rcptto2[] = "rcpt to: <support@n1.server.ru>\r\n";
+    char data[] = "data\r\n";
+    char buffer1[] = "This is important email.\r\n";
+    char buffer2[] = "text text text text\r\n.\r\n";
+
+    smtp_state smtp;
+    smtp_init(&smtp, NULL);
+    char *reply = NULL;
+    smtp_status s = smtp_parse(&smtp, hello, &reply, NULL);
+    CU_ASSERT_EQUAL(s, SMTP_STATUS_OK);
+    s = smtp_parse(&smtp, mailfrom, &reply, NULL);
+    CU_ASSERT_EQUAL(s, SMTP_STATUS_OK);
+    s = smtp_parse(&smtp, rcptto1, &reply, NULL);
+    CU_ASSERT_EQUAL(s, SMTP_STATUS_OK);
+    s = smtp_parse(&smtp, rcptto2, &reply, NULL);
+    CU_ASSERT_EQUAL(s, SMTP_STATUS_OK);
+    s = smtp_parse(&smtp, data, &reply, NULL);
+    CU_ASSERT_EQUAL(s, SMTP_STATUS_OK);
+    s = smtp_parse(&smtp, buffer1, &reply, NULL);
+    CU_ASSERT_EQUAL(s, SMTP_STATUS_CONTINUE);
+    s = smtp_parse(&smtp, buffer2, &reply, NULL);
+    CU_ASSERT_EQUAL(s, SMTP_STATUS_CONTINUE);
+
+    smtp_free(&smtp);
+}

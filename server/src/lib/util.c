@@ -142,6 +142,7 @@ bool trim_str(const char* src, char **dst, size_t src_size, size_t *dst_size) {
     size_t end = src_size-1;
     for(; SPACE_SYMBOLS_CHECK(src, begin) && (begin < src_size); ++begin) {}
     for(; SPACE_SYMBOLS_CHECK(src, end) && (begin >= 0); --end) {}
+    end++;
     if (begin < end) {
         size_t new_size = end - begin + 1;
         if (*dst_size < new_size) {
@@ -150,7 +151,7 @@ bool trim_str(const char* src, char **dst, size_t src_size, size_t *dst_size) {
             *dst_size = new_size;
         }
         memcpy(*dst, src + begin, new_size);
-        *dst[new_size-1] = '\0';
+        (*dst)[new_size-1] = '\0';
     } else {
         if (*dst_size == 0) {
             free(*dst);
