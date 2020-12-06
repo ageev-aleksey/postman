@@ -59,7 +59,8 @@ server_report:
     - apt-get install libcunit1 libcunit1-dev --yes
     - apt-get install lcov --yes
   script:
-    - lcov -t "server testing code coverage" -o coverage_report.info -c -d .
+    - cd server
+    - lcov -t "server_coverage" -o coverage_report.info -c -d .
     - make report 
   artifacts:
     paths:
