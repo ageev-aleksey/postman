@@ -16,7 +16,7 @@ DOT = dot
 #find src -name "*.c"
 
 
-report: lcov_tex unit_tests_tex $(PATH_INCLUDE_TEX)/smtp_fsm.pdf cflow $(PATH_INCLUDE_TEX)/make.pdf regex_to_tex
+report: unit_tests_tex lcov_tex $(PATH_INCLUDE_TEX)/smtp_fsm.pdf cflow $(PATH_INCLUDE_TEX)/make.pdf regex_to_tex
 	cd $(PATH_TEX) && $(PDF) $(PATH_TEX)/main.tex
 
 lcov_tex: $(ROOT)/$(COV_REPORT)
