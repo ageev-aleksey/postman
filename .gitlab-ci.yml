@@ -34,6 +34,7 @@ server_build:
 server_unit_testig:
   stage: unit_testing
   before_script:
+    - sudo su
     - apt-get update --yes
     - apt-get install valgrind --yes
     - apt-get install aptitude --yes
@@ -58,6 +59,7 @@ server_report:
   stage: report
   image: thomasweise/docker-texlive-full:latest
   before_script:
+    - sudo su
     - apt-get update --yes
     - apt-get install valgrind --yes
     - apt-get install aptitude --yes
