@@ -5,7 +5,7 @@
 #ifndef SERVER_MESSAGE_H
 #define SERVER_MESSAGE_H
 
-#include <bits/types/FILE.h>
+#include <stdio.h>
 #include "vector_structures.h"
 #include <sys/queue.h>
 #include <linux/limits.h>

@@ -2,7 +2,7 @@
 #include "maildir/maildir.h"
 #include "util.h"
 
-#include <stdio.h>
+
 #include <unistd.h>
 #include <errno.h>
 
