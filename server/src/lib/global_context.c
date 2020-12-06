@@ -53,7 +53,7 @@ bool server_config_init(const char *path) {
     global_config_server.hello_msg_size =
             asprintf(&global_config_server.hello_msg, "220 %s The Postman Server v%d.%d",
                      domain, POSTMAN_VERSION_MAJOR, POSTMAN_VERSION_MINOR);
-    TAILQ_INIT(&global_config_server.users);
+    users_list__init(&global_config_server.users);
     err_t  error;
     if (!maildir_init(&global_config_server.md, maildir_path, &error)) {
         LOG_ERROR("maildir: %s", error.message);
@@ -74,12 +74,7 @@ void server_config_free() {
     free(global_config_server.ip);
     free(global_config_server.log_file_path);
     free(global_config_server.hello_msg);
-
-    while (!TAILQ_EMPTY(&global_config_server.users)) {
-        user_context_entry  *ptr = TAILQ_FIRST(&global_config_server.users);
-        TAILQ_REMOVE(&global_config_server.users, ptr, entries);
-        free(ptr);
-    }
+    users_list__free(&global_config_server.users);
 }
 
 bool user_init(user_context *context, struct sockaddr_in *addr, int sock) {
@@ -114,42 +109,92 @@ void user_free(user_context *context)  {
     }
 }
 
-struct user_context_entry* users_find(users_list *users, int sock) {
-    user_context_entry *ptr = NULL;
-    TAILQ_FOREACH(ptr, users, entries) {
-        if (ptr->context.socket == sock) {
-            return ptr;
+bool users_list__init(users_list *users) {
+    TAILQ_INIT(&users->pr_list);
+    pthread_mutex_init(&users->pr_mutex, NULL);
+    return true;
+}
+
+void users_list__free(users_list *users) {
+    if (users != NULL) {
+        pthread_mutex_destroy(&users->pr_mutex);
+        while (!TAILQ_EMPTY(&users->pr_list)) {
+            struct user_context_entry *ptr = TAILQ_FIRST(&users->pr_list);
+            TAILQ_REMOVE(&users->pr_list, ptr, pr_entries);
+            user_free(ptr->pr_context);
+            free(ptr->pr_context);
+            free(ptr);
         }
     }
-    return NULL;
 }
 
-void users_delete(users_list *users, int sock) {
-    user_context_entry *ptr = users_find(users, sock);
-    TAILQ_REMOVE(users, ptr, entries);
-    user_free(&ptr->context);
-    free(ptr);
+bool users_list__add(users_list *users, user_context **user) {
+    user_context_entry *entry = malloc(sizeof(user_context_entry));
+    entry->pr_context = *user;
+    pthread_mutex_lock(&users->pr_mutex);
+    TAILQ_INSERT_TAIL(&users->pr_list, entry, pr_entries);
+    pthread_mutex_unlock(&users->pr_mutex);
+    *user = NULL;
 }
 
-void users_delete_by_ptr(users_list *users, user_context_entry *ptr) {
-    TAILQ_REMOVE(users, ptr, entries);
-    user_free(&ptr->context);
-    free(ptr);
+bool users_list__user_find_by_sock(users_list *users, user_accessor *accessor, int sock) {
+    user_context_entry *ptr = NULL;
+    bool is_found = false;
+    pthread_mutex_lock(&users->pr_mutex);
+    TAILQ_FOREACH(ptr, &users->pr_list, pr_entries) {
+        if (ptr->pr_context->socket == sock) {
+            TAILQ_REMOVE(&users->pr_list, ptr, pr_entries);
+            is_found = true;
+            break;
+        }
+    }
+    pthread_mutex_unlock(&users->pr_mutex);
+
+    if (is_found) {
+        accessor->user = ptr->pr_context;
+        accessor->pr_list_entry = ptr;
+        accessor->pr_users_list = users;
+    }
+
+    return is_found;
 }
+
+void user_accessor_release(user_accessor *accessor) {
+    if (accessor != NULL && accessor->user != NULL &&
+        accessor->pr_users_list != NULL && accessor->pr_list_entry != NULL)
+    {
+        pthread_mutex_lock(&accessor->pr_users_list->pr_mutex);
+        TAILQ_INSERT_TAIL(&accessor->pr_users_list->pr_list, accessor->pr_list_entry, pr_entries);
+        pthread_mutex_unlock(&accessor->pr_users_list->pr_mutex);
+        accessor->pr_list_entry = NULL;
+        accessor->pr_users_list = NULL;
+        accessor->user = NULL;
+    }
+
+}
+
+void users_list__delete_user(user_accessor *accessor) {
+    free(accessor->pr_list_entry);
+    accessor->pr_users_list = NULL;
+    accessor->pr_list_entry = NULL;
+}
+
+
 
 void handler_hello_write(event_loop *el, int client_socket, char* buffer, int size, int writing, client_status status, err_t error);
 
 void handler_accept(event_loop *el, int acceptor, int client_socket, struct sockaddr_in client_addr, err_t error) {
-    user_context_entry *user = malloc(sizeof(user_context_entry));
-    if (user == NULL) {
+    user_context *context = malloc(sizeof(user_context));
+    if (context == NULL) {
         LOG_ERROR("%s", "Error alloc memory");
         exit(-1);
     }
-    if (!user_init(&user->context, &client_addr, client_socket)) {
+    if (!user_init(context, &client_addr, client_socket)) {
         return;
     }
-    TAILQ_INSERT_TAIL(&global_config_server.users, user, entries);
-    LOG_INFO("user connect [%s:%d]", user->context.addr.ip, user->context.addr.port);
+    LOG_INFO("user connect [%s:%d]", context->addr.ip, context->addr.port);
+    users_list__add(&global_config_server.users, &context);
+
     err_t err;
     el_async_write(el, client_socket,
                    global_config_server.hello_msg, global_config_server.hello_msg_size,
@@ -176,9 +221,14 @@ void handler_write(event_loop *el, int client_socket, char* buffer, int size, in
 }
 
 void user_disconnected(int sock) {
-    user_context_entry *ptr = users_find(&global_config_server.users, sock);
-    LOG_INFO("user close connection [%s:%d]", ptr->context.addr.ip, ptr->context.addr.port);
-    users_delete_by_ptr(&global_config_server.users, ptr);
+    user_accessor acc;
+    if (users_list__user_find_by_sock(&global_config_server.users, &acc, sock)) {
+        LOG_INFO("user close connection [%s:%d]", acc.user->addr.ip, acc.user->addr.port);
+        users_list__delete_user(&acc);
+        user_free(acc.user);
+    } else {
+        LOG_ERROR("user bys socket [%d] not found", sock);
+    }
 }
 
 void handler_hello_write(event_loop *el, int client_socket, char* buffer, int size, int writing, client_status status, err_t error) {
@@ -203,13 +253,27 @@ void handler_read(event_loop *el, int client_socket, char *buffer, int size, cli
         user_disconnected(client_socket);
         return;
     }
+    user_accessor acc = users_list__user_find_by_sock(&global_config_server.users, client_socket);
+    if (acc.user != NULL) {
 
-    err_t err;
-    el_async_write(el, client_socket,
-                  global_config_server.hello_msg, global_config_server.hello_msg_size,
-                  handler_write, &err);
-    if (err.error) {
-        LOG_ERROR("el_async_read: %s", err.message);
+        //записываем данные в буфер
+        err_t err;
+        for(int j = 0; buffer[j] != '\0'; j++) {
+            VECTOR_PUSH_BACK(char, &acc.user->buffer, buffer[j], err);
+            if (err.error) {
+                LOG_ERROR("vector push back: %s", err.message);
+            }
+        }
+
+        user_accessor_release(&acc);
+        el_async_write(el, client_socket,
+                       global_config_server.hello_msg, global_config_server.hello_msg_size,
+                       handler_write, &err);
+        if (err.error) {
+            LOG_ERROR("el_async_read: %s", err.message);
+        }
+    } else {
+        LOG_ERROR("not found user by socket [%d]", client_socket);
     }
 }
 
