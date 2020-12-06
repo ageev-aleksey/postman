@@ -10,7 +10,7 @@ REPORT_DIR = report
 RESOURCE_PATH = resource
 OPTION_COMPILE_UNIT_TESTS = ON
 INCLUDES = -I$(ROOT)$(INCLUDE_DIR)
-CC = gcc
+CC = gcc-4.8
 CCFLAGS = -std=gnu99 -DDEBUG -D_GNU_SOURCE -g --coverage #-Wall -Werror
 
 mkdir:
