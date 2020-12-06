@@ -40,7 +40,7 @@ $(BUILD_DIR)/event_loop/%.o: $(CWD)/$(EVENT_LOOP_SRC_PATH)/%.c
 $(BIN_DIR)/libeventloop.a: src_mkdir $(EVENT_LOOP_OBJS)
 	ar rc $@ $(EVENT_LOOP_OBJS)
 
-lib_event_loop: $(BIN_DIR)/lib_event_loop.a
+lib_event_loop: $(BIN_DIR)/libeventloop.a
 
 
 #log

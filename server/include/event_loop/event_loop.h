@@ -45,19 +45,19 @@ typedef struct _async_error {
 
 
 
-
 typedef struct _event_loop {
-    sockets_queue *_acceptors_queue; // Список сокетов ожидающих принятия подключения
-    int _index_acepptors_start; // Индекс в pollfd[] с которого начинаются сокеты-приемщики
-    registered_events_queue *_registered_events; // Зарегистрированные обработчики событий
-    occurred_event_queue *_occurred_events; // Произошедшие события
-    pthread_t _thread; // поток менеджера событий
-    pthread_mutex_t _mutex_occurred_events; // Защита очереди произошедших событий
-    pthread_mutex_t _mutex_registered_events; // Защита списка зарегистрированных обработчиков событий
-    pthread_mutex_t _mutex_acceptors_queue;
-    pthread_mutex_t _mutex_is_run; // Защита флага is_run
-    int _is_run; // флаг работы менеджера. Если 1 то менеджер работает.
-    error_global_handler _global_handler; // Обрабочтик событий не остносящийся к событиям.
+    sockets_queue *_acceptors_queue;                 /// Список сокетов ожидающих принятия подключения
+    int _index_acepptors_start;                      /// Индекс в pollfd[] с которого начинаются сокеты-приемщики
+    registered_events_queue *_registered_events;     /// Зарегистрированные обработчики событий
+    timer_event_list *_timer_events;                 /// Список зарегистрированных событий таймера
+    occurred_event_queue *_occurred_events;          /// Произошедшие события
+    pthread_t _thread;                               /// поток менеджера событий
+    pthread_mutex_t _mutex_occurred_events;          /// Защита очереди произошедших событий
+    pthread_mutex_t _mutex_registered_events;        /// Защита списка зарегистрированных обработчиков событий
+    pthread_mutex_t _mutex_acceptors_queue;          /// зашита очереди сокетов принимающих подключение
+    pthread_mutex_t _mutex_is_run;                   /// Защита флага is_run
+    int _is_run;                                     /// флаг работы менеджера. Если 1 то менеджер работает.
+    error_global_handler _global_handler;            /// Вызывается всегда при возникновении любой ошибки внутри цикла событий
 } event_loop;
 
 //PUBLIC
@@ -73,7 +73,7 @@ event_loop* el_init(error_t *error);
   * Инициализация цикла событий и его запуск.
   * Поведение функции зависит от значение параметра mode:
   *     - ONE_THREAD - в одном потоке будет работать менеджер событий и их обработчик.
-  *         функция будет заблокирована до тех пор, пока цикл событий не будет остановлен (@see el_stop)
+  *         функция будет заблокирована до тех пор, пока цикл событий не будет остановлен (el_stop)
   *     - OWN_THREAD - для менеджера событий будет создан отдельный поток. Функция сразу вернет управление.
   *         Обработка происходящих событий должна вестить вручную (вызовом функции el_run).
   *         Таким образом менеджер событий и обработчик соыбтий работают в разных потоках.
@@ -96,7 +96,7 @@ void el_close(event_loop* loop);
  * Если существует некоторое событие, то для него будет вызван обработчик в том потоке,
  * в котором была вызвана данная функция. Если события отсутсвуют,
  * то тогда функция вернет ошибку NOT_FOUND в параметре error
- * @param loop - уикл событий, для которого необходимо обработать произошедшие события
+ * @param loop - цикл событий, для которого необходимо обработать произошедшие события
  * @param error - статус выполнения операции
  * @return  true - если был вызван обработчик события; false - если обработчик события не был вызван
  * @remark thread save
@@ -130,7 +130,7 @@ bool el_async_read(event_loop* loop, int sock, char *buffer, int size, sock_read
 /**
  * Регистрация обработчика события "Запись данных в сокет" для указанного сокета.
  * Соект должен быть настроен, как неблокирующий. Если сокет был получен врезультате вызова обработчкиа
- * события "подключение нового клиента" (@see el_async_accept) то сокет уже имеет соответсвующие настройки.
+ * события "подключение нового клиента" (el_async_accept) то сокет уже имеет соответсвующие настройки.
  * С ним ни чего делать не нужно.
  * @param loop цикл событий, в котором зарегистрировать данное событие
  * @param sock неблокирующий сокет, для которого регистрировать событие
@@ -142,8 +142,25 @@ bool el_async_read(event_loop* loop, int sock, char *buffer, int size, sock_read
  */
 bool el_async_write(event_loop* loop, int sock, void *output_buffer, int bsize,
                     sock_write_handler,  error_t *error);
-// TODO (ageev) выполнить реализцию события "Истек таймер"
-// bool el_timer(event_loop* loop, int sock, unsigned int ms, sock_timer_handler);
+
+/**
+ * Регистрация обработчика события "Для соекта истек таймер"
+ * @param loop
+ * @param sock
+ * @param ms
+ * @return
+ */
+bool el_timer(event_loop* loop, int sock, unsigned int seconds, sock_timer_handler handler,
+              timer_event_entry **descriptor, error_t *error);
+
+/**
+ * Отключение таймера и осовбождение памяти.
+ * @param loop
+ * @param descriptor
+ * @return
+ */
+bool el_timer_free(event_loop* loop, timer_event_entry *descriptor);
+
 /**
  * Остановка цикла событий
  * @param loop  цикл событий, который необходимо остановить

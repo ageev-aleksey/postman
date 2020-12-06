@@ -3,6 +3,7 @@ stages:
   - build
   - unit_testing
   - functional_testing
+  - report
 
 
 server_build:
@@ -23,6 +24,9 @@ server_build:
   artifacts:
     paths:
       - server/bin/unit_tests.out
+      - /server/build
+      - /server/main.gcda
+      - /server/main.gcno
     expire_in: 1 hrs
 
 server_unit_testig:
@@ -40,6 +44,27 @@ server_unit_testig:
    # - make start_system_test
   artifacts:
     paths:
-      - server/report
+      - server/bin/unit_tests.out
+      - /server/build
+      - /server/main.gcda
+      - /server/main.gcno
     expire_in: 1 hrs 
+
+server_report:
+  stage: report
+  image: thomasweise/docker-texlive-full:latest
+  before_script:
+    - apt-get update --yes
+    - apt-get install valgrind --yes
+    - apt-get install libcunit1 libcunit1-dev --yes
+    - apt-get install lcov --yes
+  script:
+    - lcov -t "server testing code coverage" -o coverage_report.info -c -d .
+    - make report 
+  artifacts:
+    paths:
+      - server/report
+
+
+
 

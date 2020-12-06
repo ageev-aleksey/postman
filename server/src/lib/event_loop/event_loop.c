@@ -2,6 +2,7 @@
 #include "protocol/buffered_queue.h"
 #include "error_t.h"
 #include "util.h"
+#include "event_t.h"
 
 #include <stdio.h>
 #include <poll.h>
@@ -144,6 +145,8 @@ event_loop* el_init(error_t *error) {
     }
     loop->_global_handler = pr_default_global_handler;
     loop->_registered_events = NULL;
+    loop->_timer_events = s_malloc(sizeof(timer_event_list), error);
+    TAILQ_INIT(loop->_timer_events);
     loop->_acceptors_queue = NULL;
     loop->_occurred_events = NULL;
     error_t err;
@@ -211,6 +214,14 @@ void pr_el_close(event_loop *loop) {
     pthread_mutex_destroy(&loop->_mutex_is_run);
     pthread_mutex_destroy(&loop->_mutex_acceptors_queue);
     req_free(loop->_registered_events);
+
+    while (!TAILQ_EMPTY(loop->_timer_events)) {
+        timer_event_entry *ptr = TAILQ_FIRST(loop->_timer_events);
+        TAILQ_REMOVE(loop->_timer_events, ptr, entries);
+        free(ptr);
+    }
+    free(loop->_timer_events);
+
     sq_free(loop->_acceptors_queue);
     oeq_free(loop->_occurred_events);
     free(loop);
@@ -300,6 +311,29 @@ bool el_run(event_loop* loop, error_t *error) {
     event_t *event = NULL;
     error_t err_queue;
     ERROR_SUCCESS(&err_queue);
+
+
+    PTHREAD_CHECK(pthread_mutex_lock(&loop->_mutex_registered_events), error);
+    timer_event_entry *ptr = NULL;
+    TAILQ_FOREACH(ptr, loop->_timer_events, entries) {
+        time_t t = time(NULL);
+        if ((ptr->event.time_start + ptr->event.period) <= t && (ptr->event.is_processed == false)
+            && (ptr->event.has_delete == false))
+        {
+            ptr->event.is_processed = true;
+            PTHREAD_CHECK(pthread_mutex_unlock(&loop->_mutex_registered_events), error);
+            ptr->event.handler(loop, ptr->event.socket, ptr);
+            PTHREAD_CHECK(pthread_mutex_lock(&loop->_mutex_registered_events), error);
+            ptr->event.is_processed = false;
+            ptr->event.time_start = time(NULL);
+        }
+
+        if (ptr->event.has_delete) {
+            TAILQ_REMOVE(loop->_timer_events, ptr, entries);
+            free(ptr);
+        }
+    }
+    PTHREAD_CHECK(pthread_mutex_unlock(&loop->_mutex_registered_events), error);
 
     PTHREAD_CHECK(pthread_mutex_lock(&loop->_mutex_occurred_events), error);
     if (TAILQ_EMPTY(loop->_occurred_events)) {
@@ -436,6 +470,55 @@ bool el_async_write(event_loop* loop, int sock, void *output_buffer, int bsize,
         return false;
     }
     return is_res;
+}
+
+bool el_timer(event_loop* loop, int sock, unsigned int seconds, sock_timer_handler handler, timer_event_entry **descriptor, error_t *error) {
+    if (loop == NULL) {
+        if (error != NULL) {
+            error->error = FATAL;
+            error->message = EL_EVENT_LOOP_PTR_IS_NULL;
+        }
+        return false;
+    }
+    if (descriptor == NULL) {
+        if (error != NULL) {
+            error->error = FATAL;
+            error->message = EL_PARAMETER_IS_NULL;
+        }
+        return false;
+    }
+
+    timer_event_entry *entry = s_malloc(sizeof(timer_event_entry), error);
+    if (entry != NULL) {
+        entry->event.socket = sock;
+        entry->event.period = seconds;
+        entry->event.handler = handler;
+        entry->event.is_processed = false;
+        entry->event.has_delete = false;
+        entry->event.time_start = time(NULL);
+        *descriptor = entry;
+        pthread_mutex_lock(&loop->_mutex_registered_events);
+
+        TAILQ_INSERT_TAIL(loop->_timer_events, entry, entries);
+
+        pthread_mutex_unlock(&loop->_mutex_registered_events);
+    } else {
+        return false;
+    }
+    return true;
+}
+
+bool el_timer_free(event_loop* loop, timer_event_entry *descriptor) {
+    pthread_mutex_lock(&loop->_mutex_registered_events);
+    timer_event_entry *ptr = NULL;
+    TAILQ_FOREACH(ptr, loop->_timer_events, entries) {
+        if (ptr == descriptor) {
+            ptr->event.has_delete = true;
+            break;
+        }
+    }
+    pthread_mutex_unlock(&loop->_mutex_registered_events);
+    return true;
 }
 
 bool pr_create_pollfd(event_loop* loop, struct pollfd **fd_array, int *size, error_t *error) {
