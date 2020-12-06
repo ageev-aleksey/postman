@@ -1,4 +1,14 @@
 .idea/
 build/
 bin/
+coverage_report/
+*.gcda
+*.gcno
+doxygen/
+server/report/tex/include/
+server/test_report/
+*.info
+*.aux
+*.log
+*.pdf
 

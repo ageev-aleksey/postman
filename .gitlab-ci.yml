@@ -1,0 +1,73 @@
+image: ubuntu:16.04
+stages:
+  - build
+  - unit_testing
+  - functional_testing
+  - report
+
+
+server_build:
+  stage: build
+  before_script:
+    - apt-get update --yes
+    - apt-get install -y software-properties-common
+    - add-apt-repository ppa:ubuntu-toolchain-r/test
+    - apt-get update --yes
+    - apt-get install libcunit1 libcunit1-dev --yes
+    - apt-get install gcc-4.8  --yes
+    - apt-get install lcov make --yes
+    - apt-get install autogen --yes
+  script:
+    - cd server
+    - make test_mkdir
+    - make unit_tests
+  artifacts:
+    paths:
+      - server/bin/unit_tests.out
+      - /server/build
+      - /server/main.gcda
+      - /server/main.gcno
+    expire_in: 1 hrs
+
+server_unit_testig:
+  stage: unit_testing
+  before_script:
+    - sudo su
+    - apt-get update --yes
+    - apt-get install valgrind --yes
+    - apt-get install libcunit1 libcunit1-dev --yes
+    - apt-get install lcov --yes
+  script:
+    - cd server
+    - valgrind --leak-check=full ./bin/unit_tests.out
+   # - lcov -t "server testing code coverage" -o server_coverage.info -c -d .
+   # - genhtml -o report server_coverage.info 
+   # - make start_system_test
+  artifacts:
+    paths:
+      - server/bin/unit_tests.out
+      - /server/build
+      - /server/main.gcda
+      - /server/main.gcno
+    expire_in: 1 hrs 
+
+server_report:
+  stage: report
+  image: thomasweise/docker-texlive-full:latest
+  before_script:
+    - sudo su
+    - apt-get update --yes
+    - apt-get install valgrind --yes
+    - apt-get install libcunit1 libcunit1-dev --yes
+    - apt-get install lcov --yes
+  script:
+    - cd server
+    - lcov -t "server_coverage" -o coverage_report.info -c -d .
+    - make report 
+  artifacts:
+    paths:
+      - server/report
+
+
+
+

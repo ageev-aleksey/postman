@@ -5,6 +5,15 @@
 #ifndef SERVER_EVENT_LOOP_TEST_H
 #define SERVER_EVENT_LOOP_TEST_H
 
-void test_init();
+int event_loop_test_init();
+int event_loop_test_clean();
+
+void event_loop_initialize_test();
+void create_pollfd_array_test();
+void create_pollin_occurred_events_test();
+void create_pollout_occurred_events_test();
+void process_sock_read_event_test();
+void process_sock_write_event_test();
+void process_sock_accept_event_test();
 
 #endif //SERVER_EVENT_LOOP_TEST_H
