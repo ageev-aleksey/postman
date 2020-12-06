@@ -19,8 +19,11 @@ DOT = dot
 report: lcov_tex unit_tests_tex $(PATH_INCLUDE_TEX)/smtp_fsm.pdf cflow $(PATH_INCLUDE_TEX)/make.pdf regex_to_tex
 	cd $(PATH_TEX) && $(PDF) $(PATH_TEX)/main.tex
 
-lcov_tex: 
-	$(COV_TEXGEN) $(ROOT)/$(COV_REPORT) -o $(PATH_INCLUDE_TEX)/lcov
+lcov_tex: $(ROOT)/$(COV_REPORT)
+	$(COV_TEXGEN) $< -o $(PATH_INCLUDE_TEX)/lcov
+
+$(ROOT)/$(COV_REPORT): 
+	lcov -t "server testing code coverage" -o $@ -c -d .
 
 unit_tests_tex: unit_tests 
 	valgrind --log-file=$(PATH_INCLUDE_TEX)/valgrind_out.tex $(UNIT_TEST_EXE) > $(PATH_INCLUDE_TEX)/unit_test_out.tex
