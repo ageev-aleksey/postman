@@ -83,6 +83,10 @@ bool pr_log_wait_and_extract_messages(log_context *context, log_message_queue **
     timeout.tv_nsec = context->timeout * MS_TO_NS;
     while (TAILQ_EMPTY(context->messages)) {
         pthread_cond_timedwait(&context->cv, &context->mutex_messages, &timeout);
+        if (!pr_log_is_run(context)) {
+            pthread_mutex_unlock(&context->mutex_messages);
+            return false;
+        }
     }
     *msg = context->messages;
     *size = context->num_messages;
@@ -98,7 +102,7 @@ vector_messages* pr_log_convert_msgq_to_msgv(log_message_queue *queue, int size)
     if (msgv == NULL) {
         return NULL;
     }
-    error_t  error;
+    err_t  error;
     VECTOR_INIT_WITH_RESERVE(log_message, msgv, size, error);
     if(error.error) {
         return NULL;
@@ -154,8 +158,12 @@ void* pr_log_thread(void *ptr) {
     while (pr_log_is_run(context)) {
         log_message_queue *messages = NULL;
         size_t msg_size = 0;
-        pr_log_wait_and_extract_messages(context, &messages, &msg_size);
+        if (!pr_log_wait_and_extract_messages(context, &messages, &msg_size)) {
+            fprintf(stderr, "LOG EXIT OK\n");
+            return NULL;
+        }
         if (messages == NULL) {
+            fprintf(stderr, "LOG ERROR\n");
             return NULL;
         }
         pr_messages_print(context, messages, msg_size);
@@ -192,7 +200,7 @@ bool log_init(log_context **context) {
     if (con->printers == NULL) {
         goto error;
     }
-    error_t  err;
+    err_t  err;
     VECTOR_INIT(printer_t, con->printers, err);
     if (err.error) {
         goto error;

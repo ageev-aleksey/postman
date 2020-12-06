@@ -38,15 +38,15 @@ typedef struct d_maildir_messages_list d_maildir_messages_list;
 ///Осовбождение памяти из под структуры
 void maildir_message_free(maildir_message *msg);
 /// Удаление файла
-bool maildir_message_release(maildir_message *msg, error_t *error);
+bool maildir_message_release(maildir_message *msg, err_t *error);
 /// Заверешение работы с файлом, после того как вся нужная информация будет записана
 /// Выполняет перенос файла из папки tmp в new
-bool maildir_message_finalize(maildir_message *msg, error_t *error);
+bool maildir_message_finalize(maildir_message *msg, err_t *error);
 
-bool maildir_message_get_user(maildir_message *msg, maildir_user **user, error_t *error);
+bool maildir_message_get_user(maildir_message *msg, maildir_user **user, err_t *error);
 /// Чтение из файла в буфер
 bool maildir_message_read(maildir_message *msg, char **buffer);
 /// Запись буфера в файл
-bool maildir_message_write(maildir_message *msg, const char *buffer, size_t b_len, error_t *error);
+bool maildir_message_write(maildir_message *msg, const char *buffer, size_t b_len, err_t *error);
 
 #endif //SERVER_MESSAGE_H

@@ -2,47 +2,61 @@
 // Created by nrx on 23.10.2020.
 //
 
-#include "util.h"
+#include "global_context.h"
+#include "log/context.h"
 #include "event_loop/event_loop.h"
-#include "vector.h"
-#include <sys/queue.h>
-#include <search.h>
-
 #include <stdio.h>
-#include <string.h>
-
+#include <unistd.h>
 #define ERROR (-1)
 #define OK 0
 #define BUFFER_READ 5
 
-
 int main() {
-    error_t error;
-    contexts = s_malloc(sizeof(vector_context), &error);
-    if (error.error) {
-        printf("%s\n", error.message);
-        return ERROR;
-    }
-    VECTOR_INIT(client_context, contexts, error);
-    if (error.error) {
-        printf("%s\n", error.message);
-        return ERROR;
-    }
-    event_loop *loop = el_init(&error);
-    if (error.error) {
-        printf("%s\n", error.message);
-        return ERROR;
-    }
-    int master_socket = make_server_socket("127.0.0.1", 8080, &error);
-    if (error.error) {
-        printf("%s\n", error.message);
-        return ERROR;
-    }
-    el_async_accept(loop, master_socket, accept_handler, NULL);
+    int status = OK;
+    int master_socket = ERROR;
+    LOG_INIT();
+    smtp_lib_init();
 
-    el_open(loop, ONE_THREAD, NULL);
+    LOG_INFO("%s", "server start init...");
+    if (!server_config_init("./config.cfg")) {
+        status = ERROR;
+        return ERROR;
+    }
 
-    return 0;
+    err_t error;
+    event_loop *el = el_init(&error);
+    if (el == NULL) {
+        status = ERROR;
+        LOG_ERROR("event_loop init: %s", error.message);
+        goto exit;
+    }
+    master_socket = make_server_socket(global_config_server.ip,
+                                           global_config_server.port,
+                                           &error);
+    if (master_socket == ERROR) {
+        status = ERROR;
+        LOG_ERROR("create server socket: %s", error.message);
+        goto exit;
+    }
+    el_async_accept(el, master_socket, handler_accept, &error);
+    if (error.error) {
+        status = ERROR;
+        LOG_ERROR("el_async_accept: %s", error.message);
+        goto exit;
+    }
+    LOG_INFO("%s", "Server init");
+    el_open(el, ONE_THREAD, &error);
+
+
+exit:
+    if (master_socket != ERROR) {
+        close(master_socket);
+    }
+    el_close(el);
+    server_config_free();
+    smtp_lib_free();
+    LOG_FREE();
+    return status;
 }
 
 
@@ -72,8 +86,8 @@ int main() {
 //    } \
 //} while(0);
 //
-//void read_handler(struct _event_loop* loop, int socket, char *buffer, int size, client_status status, error_t er);
-//void write_handler(struct _event_loop* loop, int socket, char* buffer, int size, int writing,  error_t error) {
+//void read_handler(struct _event_loop* loop, int socket, char *buffer, int size, client_status status, err_t er);
+//void write_handler(struct _event_loop* loop, int socket, char* buffer, int size, int writing,  err_t error) {
 //    printf(" -- Send -> %d \n", writing);
 //    free(buffer);
 //    buffer = s_malloc(500, NULL);
@@ -81,7 +95,7 @@ int main() {
 //
 //}
 //
-//void read_handler(struct _event_loop* loop, int socket, char *buffer, int size, client_status status, error_t er) {
+//void read_handler(struct _event_loop* loop, int socket, char *buffer, int size, client_status status, err_t er) {
 //    if (status == DISCONNECTED) {
 //        // client disconnect
 //        close(socket);
@@ -95,7 +109,7 @@ int main() {
 //
 //
 //
-//void accept_handler(struct _event_loop* loop, int acceptor, int client_socket, struct sockaddr_in client_addr, error_t error) {
+//void accept_handler(struct _event_loop* loop, int acceptor, int client_socket, struct sockaddr_in client_addr, err_t error) {
 //    if (error.error) {
 //        printf("error");
 //    }
@@ -110,7 +124,7 @@ int main() {
 //int main() {
 ////    int i = hcreate(10);
 ////
-//    error_t error;
+//    err_t error;
 //    event_loop *loop = el_init(&error);
 //    if (error.error) {
 //        printf("%s", error.message);

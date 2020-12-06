@@ -25,16 +25,16 @@ typedef enum _client_status {
 
 struct _event_loop;
 struct timer_event_entry;
-typedef void (*sock_accept_handler)(struct _event_loop*, int acceptor, int client_socket, struct sockaddr_in client_addr, error_t);
-typedef void (*sock_read_handler)(struct _event_loop* loop, int socket, char *buffer, int size, client_status, error_t);
-typedef void (*sock_write_handler)(struct _event_loop*, int socket, char* buffer, int size, int writing, client_status,  error_t);
+typedef void (*sock_accept_handler)(struct _event_loop*, int acceptor, int client_socket, struct sockaddr_in client_addr, err_t);
+typedef void (*sock_read_handler)(struct _event_loop* loop, int socket, char *buffer, int size, client_status, err_t);
+typedef void (*sock_write_handler)(struct _event_loop*, int socket, char* buffer, int size, int writing, client_status, err_t);
 typedef void (*sock_timer_handler)(struct _event_loop*, int socket, struct timer_event_entry *descriptor);
 //typedef void (*buff_deleter)(void *buffer, int bsize);
 
 typedef struct _sock_event {
     event_type type;
     int socket;
-    error_t error;
+    err_t error;
 } sock_event;
 
 typedef struct pr_sock_timer_event {

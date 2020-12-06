@@ -17,7 +17,7 @@
  * @param error - статус выполения операции
  * @return - указатель на выделенный буффер
  */
-void* s_malloc(size_t size, error_t *error);
+void* s_malloc(size_t size, err_t *error);
 
 /**
  * Создание сокета прослушивающего соединение
@@ -26,18 +26,20 @@ void* s_malloc(size_t size, error_t *error);
  * @param error - статус выполнения операции
  * @return - файловый дескриптор сокета или -1 при ошибке
  */
-int make_server_socket(const char *ip, int port, error_t *error);
+int make_server_socket(const char *ip, int port, err_t *error);
 
+
+typedef struct client_addr {
+    char ip[IP_BUFFER_LEN];
+    int16_t  port;
+} client_addr;
 /**
- * Формирование читаемого адреса клиента (ip, port)
- * @param addr - структура описывающая адрес клиента
- * @param ip - буффер достаточного размера для записи ip адреса.
- * Минимальный размер буффера определяется константой IP_BUFFER_LEN
- * @param port - указатель на переменную в которую будет записан порт
- * @param error - статус выполнения операции
- * @return true - операция вполнена успешно; false - произошла ошибка при выполнении операции
+ *
+ * @param addr
+ * @param error
+ * @return
  */
-bool get_addr(struct sockaddr_in* addr, char *ip,size_t ip_buffer_len,  uint16_t *port, error_t *error);
+client_addr get_addr(struct sockaddr_in* addr, err_t *error);
 
 /**
  * Удаление лишних пробельных символов по краям строки (слева и справа)

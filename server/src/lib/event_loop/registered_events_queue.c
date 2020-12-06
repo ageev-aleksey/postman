@@ -31,8 +31,8 @@ registered_events_entry* pr_req_get_sock(registered_events_queue *queue, int soc
     return el;
 }
 
-registered_events_queue* req_init(error_t *error) {
-    error_t err;
+registered_events_queue* req_init(err_t *error) {
+    err_t err;
     registered_events_queue* ptr = s_malloc(sizeof(registered_events_queue), &err);
     if (err.error) {
         if (error != NULL) {
@@ -45,7 +45,7 @@ registered_events_queue* req_init(error_t *error) {
     return ptr;
 }
 
-bool pr_req_init_before_add(registered_events_queue* queue, int socket, registered_events_entry **entry, error_t *error) {
+bool pr_req_init_before_add(registered_events_queue* queue, int socket, registered_events_entry **entry, err_t *error) {
     CHECK_AND_RETURN(queue, error, REQ_QUEUE_IS_NULL);
     if (socket < 0) {
         if (error != NULL) {
@@ -56,7 +56,7 @@ bool pr_req_init_before_add(registered_events_queue* queue, int socket, register
     }
 
     registered_events_entry *ptr = pr_req_get_sock(queue, socket);
-    error_t err;
+    err_t err;
     if (ptr == NULL) {
 
         ptr = s_malloc(sizeof(registered_events_entry), &err);
@@ -85,9 +85,9 @@ bool pr_req_init_before_add(registered_events_queue* queue, int socket, register
     return true;
 }
 
-bool req_push_accept(registered_events_queue* queue, int socket, event_sock_accept *event, error_t *error) {
+bool req_push_accept(registered_events_queue* queue, int socket, event_sock_accept *event, err_t *error) {
     registered_events_entry *ptr = NULL;
-    error_t err;
+    err_t err;
     ERROR_SUCCESS(&err);
     event->event.socket = socket;
     pr_req_init_before_add(queue, socket, &ptr, &err);
@@ -112,9 +112,9 @@ bool req_push_accept(registered_events_queue* queue, int socket, event_sock_acce
 }
 
 
-bool req_push_read(registered_events_queue* queue, int socket, event_sock_read *event, error_t *error) {
+bool req_push_read(registered_events_queue* queue, int socket, event_sock_read *event, err_t *error) {
     registered_events_entry *ptr = NULL;
-    error_t err;
+    err_t err;
     ERROR_SUCCESS(&err);
     event->event.socket = socket;
     pr_req_init_before_add(queue, socket, &ptr, &err);
@@ -137,9 +137,9 @@ bool req_push_read(registered_events_queue* queue, int socket, event_sock_read *
 }
 
 
-bool req_push_write(registered_events_queue* queue, int socket, event_sock_write *event, error_t *error) {
+bool req_push_write(registered_events_queue* queue, int socket, event_sock_write *event, err_t *error) {
     registered_events_entry *ptr = NULL;
-    error_t err;
+    err_t err;
     ERROR_SUCCESS(&err);
     event->event.socket = socket;
     pr_req_init_before_add(queue, socket, &ptr, &err);
@@ -161,8 +161,8 @@ bool req_push_write(registered_events_queue* queue, int socket, event_sock_write
     return true;
 }
 
-event_t* pr_req_pop(registered_events_queue* queue, int socket, error_t *error,
-                   void(*element_pop)(events_queue *queue, event_t **event, error_t *error)) {
+event_t* pr_req_pop(registered_events_queue* queue, int socket, err_t *error,
+                    void(*element_pop)(events_queue *queue, event_t **event, err_t *error)) {
     CHECK_AND_RETURN(queue, error, REQ_QUEUE_IS_NULL);
     if (socket < 0) {
         if (error != NULL) {
@@ -208,13 +208,13 @@ event_t* pr_req_pop(registered_events_queue* queue, int socket, error_t *error,
 
 /////////////////////////////
 
-void pr_pop_accept_handler(events_queue *ptr, event_t **event, error_t *error) {
+void pr_pop_accept_handler(events_queue *ptr, event_t **event, err_t *error) {
     event_sock_accept *accept = NULL;
     eq_pop_accept(ptr, &accept, error);
     *event = (event_t*) accept;
 }
 
-event_sock_accept* req_pop_accept(registered_events_queue* queue, int socket, error_t *error) {
+event_sock_accept* req_pop_accept(registered_events_queue* queue, int socket, err_t *error) {
     event_t* ptr = pr_req_pop(queue, socket, error, pr_pop_accept_handler);
 
     if (ptr != NULL) {
@@ -228,13 +228,13 @@ event_sock_accept* req_pop_accept(registered_events_queue* queue, int socket, er
 }
 
 ///////////////////////////
-void pr_pop_read_handler(events_queue *ptr, event_t **event, error_t *error) {
+void pr_pop_read_handler(events_queue *ptr, event_t **event, err_t *error) {
     event_sock_read *read = NULL;
     eq_pop_read(ptr, &read, error);
     *event = (event_t*) read;
 }
 
-event_sock_read* req_pop_read(registered_events_queue* queue, int socket, error_t *error) {
+event_sock_read* req_pop_read(registered_events_queue* queue, int socket, err_t *error) {
     event_t* ptr = pr_req_pop(queue, socket, error, pr_pop_read_handler);
 
     if (ptr != NULL) {
@@ -248,13 +248,13 @@ event_sock_read* req_pop_read(registered_events_queue* queue, int socket, error_
 
 ///////////////////////////
 
-void pr_pop_write_handler(events_queue *ptr, event_t **event, error_t *error) {
+void pr_pop_write_handler(events_queue *ptr, event_t **event, err_t *error) {
     event_sock_write *read = NULL;
     eq_pop_write(ptr, &read, error);
     *event = (event_t*) read;
 }
 
-event_sock_write* req_pop_write(registered_events_queue* queue, int socket, error_t *error) {
+event_sock_write* req_pop_write(registered_events_queue* queue, int socket, err_t *error) {
     event_t* ptr = pr_req_pop(queue, socket, error, pr_pop_write_handler);
 
     if(ptr != NULL) {
@@ -267,7 +267,7 @@ event_sock_write* req_pop_write(registered_events_queue* queue, int socket, erro
 }
 
 
-int req_reg(registered_events_queue* queue, int socket, error_t *error) {
+int req_reg(registered_events_queue* queue, int socket, err_t *error) {
     if (queue == NULL) {
         if (error != NULL) {
             error->error = FATAL;

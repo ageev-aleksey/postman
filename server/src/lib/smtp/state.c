@@ -89,11 +89,11 @@ void smtp_lib_free() {
     regfree(&pr_smtp_reg_postmaster);
 }
 
-bool smtp_init(smtp_state *smtp, error_t *error) {
+bool smtp_init(smtp_state *smtp, err_t *error) {
     CHECK_PTR(smtp, error, SMTP_DESCRIPTOR_IS_NULL);
     ERROR_SUCCESS(error);
     smtp->pr_fsm_state = AUTOFSM_ST_INIT;
-    error_t  err;
+    err_t  err;
     VECTOR_INIT(smtp_mailbox, &smtp->pr_rcpt_list, err);
     VECTOR_ERROR(err, error);
     smtp->pr_hello_addr = NULL;
@@ -387,7 +387,7 @@ smtp_status pr_smtp_command_rcpto(smtp_state *smtp, smtp_command *command) {
     if (command->status == true) {
         pr_smtp_make_response(smtp, SMTP_CODE_OK, SMTP_CODE_OK_MSG);
         smtp_mailbox *rcpt = (smtp_mailbox*) command->arg;
-        error_t err;
+        err_t err;
         VECTOR_PUSH_BACK(smtp_mailbox, &smtp->pr_rcpt_list, *rcpt, err); // rcpt копируется
         free(rcpt);
         command->arg = NULL;
@@ -404,7 +404,7 @@ smtp_status pr_smtp_command_data(smtp_state *smtp, smtp_command *command) {
     return SMTP_STATUS_OK;
 }
 
-smtp_status smtp_parse(smtp_state *smtp, const char *message, char **buffer_reply, error_t *error) {
+smtp_status smtp_parse(smtp_state *smtp, const char *message, char **buffer_reply, err_t *error) {
     CHECK_PTR(smtp, error, SMTP_DESCRIPTOR_IS_NULL);
     CHECK_PTR(smtp, error, SMTP_MESSAGE_IS_NULL);
     ERROR_SUCCESS(error);
@@ -444,7 +444,7 @@ smtp_status smtp_parse(smtp_state *smtp, const char *message, char **buffer_repl
         if (strcmp(SMTP_DATA_END, message) == 0) {
             smtp->pr_fsm_state = autofsm_step(smtp->pr_fsm_state, AUTOFSM_EV_END, NULL);
         } else {
-            error_t  err;
+            err_t  err;
             for (int j = 0; message[j] != '\0'; j++) {
                 VECTOR_PUSH_BACK(char, &smtp->pr_mail_data, message[j], err);
             }

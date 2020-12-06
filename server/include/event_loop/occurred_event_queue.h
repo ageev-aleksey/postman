@@ -27,13 +27,13 @@ typedef struct _occurred_event_queue occurred_event_queue;
  * @param error
  * @return
  */
-occurred_event_queue* oeq_init(error_t *error);
-int oeq_size(occurred_event_queue *queue, error_t *error);
-bool oeq_pop_begin(occurred_event_queue *queue, event_t **event, error_t *error);
-bool oeq_pop_back(occurred_event_queue *queue, event_t **event, error_t *error);
+occurred_event_queue* oeq_init(err_t *error);
+int oeq_size(occurred_event_queue *queue, err_t *error);
+bool oeq_pop_begin(occurred_event_queue *queue, event_t **event, err_t *error);
+bool oeq_pop_back(occurred_event_queue *queue, event_t **event, err_t *error);
 
-bool oeq_push_begin(occurred_event_queue *queue, event_t *event, error_t *error);
-bool oeq_push_back(occurred_event_queue *queue, event_t *event, error_t *error);
+bool oeq_push_begin(occurred_event_queue *queue, event_t *event, err_t *error);
+bool oeq_push_back(occurred_event_queue *queue, event_t *event, err_t *error);
 /**
  * Осовбождение памяти из подвсех элементов и очереди
  * @param queue очередь, из под которой необходимо освободить память.

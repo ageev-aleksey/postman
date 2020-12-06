@@ -92,7 +92,7 @@ bool pr_maildir_path_syntax_check(char *path) {
     return true;
 }
 
-bool pr_maildir_make_dir(char *path, int mode, error_t *error) {
+bool pr_maildir_make_dir(const char *path, int mode, err_t *error) {
     if (mkdir(path, mode) != 0) {
         if (error != NULL) {
             error->error = ERRNO;
@@ -104,7 +104,7 @@ bool pr_maildir_make_dir(char *path, int mode, error_t *error) {
     return true;
 }
 
-bool pr_maildir_make_root_structure(maildir *md, char* path, error_t *error) {
+bool pr_maildir_make_root_structure(maildir *md, const char* path, err_t *error) {
 
     if (pr_maildir_make_dir(path, RWX_MODE, error)) {
         char *servers_path = pr_maildir_char_concatenate(2, path, SERVERS_ROOT_NAME_PART);
@@ -117,7 +117,7 @@ bool pr_maildir_make_root_structure(maildir *md, char* path, error_t *error) {
     return false;
 }
 
-bool pr_maildir_next_dirent_entry(DIR *dir, struct dirent *entry, struct dirent **result, error_t *error) {
+bool pr_maildir_next_dirent_entry(DIR *dir, struct dirent *entry, struct dirent **result, err_t *error) {
     int res = readdir_r(dir, entry, result);
     if (res != 0) {
         if (error != NULL) {
@@ -130,7 +130,7 @@ bool pr_maildir_next_dirent_entry(DIR *dir, struct dirent *entry, struct dirent 
     return true;
 }
 
-bool pr_maildir_check_is_dir(char *full_path, bool *result, error_t *error) {
+bool pr_maildir_check_is_dir(char *full_path, bool *result, err_t *error) {
     *result = false;
     struct stat entry_info;
     if (stat(full_path, &entry_info) != 0) {
@@ -148,7 +148,7 @@ bool pr_maildir_check_is_dir(char *full_path, bool *result, error_t *error) {
     return true;
 }
 
-bool pr_maildir_check_user_structure(char *full_path, bool cur_must_exist, error_t *error) {
+bool pr_maildir_check_user_structure(char *full_path, bool cur_must_exist, err_t *error) {
     bool is_new_dir_found = false;
     bool is_cur_dir_found = false;
     bool is_tmp_dir_found = false;
@@ -230,7 +230,7 @@ bool pr_maildir_check_user_structure(char *full_path, bool cur_must_exist, error
 }
 
 
-bool pr_maildir_check_server_structure(char *server_full_path, error_t *error) {
+bool pr_maildir_check_server_structure(char *server_full_path, err_t *error) {
     DIR *dir = opendir(server_full_path);
     if (dir == NULL) {
         if (error != NULL) {
@@ -281,7 +281,7 @@ bool pr_maildir_check_server_structure(char *server_full_path, error_t *error) {
     return true;
 }
 
-bool pr_maildir_check_other_servers_structure(char *server_full_path, error_t *error) {
+bool pr_maildir_check_other_servers_structure(char *server_full_path, err_t *error) {
     DIR *dir = opendir(server_full_path);
     if (dir == NULL) {
         if(error != NULL) {
@@ -326,7 +326,7 @@ bool pr_maildir_check_other_servers_structure(char *server_full_path, error_t *e
     return true;
 }
 
-bool pr_maildir_check_root_structure(maildir *md, DIR *dir, error_t *error) {
+bool pr_maildir_check_root_structure(maildir *md, DIR *dir, err_t *error) {
     struct dirent entry;
     struct dirent *result;
     bool servers_dir_is_founded = false;
@@ -383,7 +383,7 @@ bool pr_maildir_check_root_structure(maildir *md, DIR *dir, error_t *error) {
     return true;
 }
 
-bool pr_maildir_relative_to_absolute_path(maildir *md, char *path, error_t *error) {
+bool pr_maildir_relative_to_absolute_path(maildir *md, char *path, err_t *error) {
     char *buffer = s_malloc(PATH_MAX+1, error);
     if (buffer == NULL) {
         return false;
@@ -400,7 +400,7 @@ bool pr_maildir_relative_to_absolute_path(maildir *md, char *path, error_t *erro
     return true;
 }
 
-bool maildir_init(maildir *md, char* path, error_t *error) {
+bool maildir_init(maildir *md, const char* path, err_t *error) {
     CHECK_PTR(md, error, MAILDIR_MD_PTR_NULL);
     CHECK_PTR(path, error, MAILDIR_MD_PTR_NULL);
     ERROR_SUCCESS(error);
@@ -439,14 +439,14 @@ void maildir_free(maildir *md) {
     }
     free(md->pr_path);
 }
-bool maildir_release(maildir *md, error_t *error) {
+bool maildir_release(maildir *md, err_t *error) {
     CHECK_PTR(md, error, MAILDIR_MD_PTR_NULL);
     // TODO (ageev) реализовать очистку папки maildir
     return true;
 }
 
 
-bool maildir_server_list(maildir *md, maildir_servers_list *servers_list, error_t *error) {
+bool maildir_server_list(maildir *md, maildir_servers_list *servers_list, err_t *error) {
     CHECK_PTR(md, error, MAILDIR_MD_PTR_NULL);
     CHECK_PTR(servers_list, error, MAILDIR_ERROR_PTR_OF_SERVER_LIST_IS_NULL);
     char *path = pr_maildir_char_concatenate(2 , md->pr_path, SERVERS_ROOT_NAME_PART);
@@ -493,7 +493,7 @@ bool maildir_server_list(maildir *md, maildir_servers_list *servers_list, error_
     return true;
 }
 
-bool maildir_get_self_server(maildir *md, maildir_server *server, error_t *error) {
+bool maildir_get_self_server(maildir *md, maildir_server *server, err_t *error) {
     CHECK_PTR(md, error, MAILDIR_MD_PTR_NULL);
     CHECK_PTR(server, error, MAILDIR_ERROR_PTR_OF_SERVER_IS_NULL);
     server->pr_server_domain[0] = '\0';
@@ -501,7 +501,7 @@ bool maildir_get_self_server(maildir *md, maildir_server *server, error_t *error
     return true;
 }
 
-bool maildir_get_server_by_name(maildir *md, maildir_server *server,const char *name,  error_t *error) {
+bool maildir_get_server_by_name(maildir *md, maildir_server *server, const char *name, err_t *error) {
     CHECK_PTR(md, error, MAILDIR_MD_PTR_NULL);
     CHECK_PTR(server, error, MAILDIR_ERROR_PTR_OF_SERVER_IS_NULL);
     CHECK_PTR(name, error, MAILDIR_ERROR_PTR_OF_SERVER_NAME_IS_NULL);
@@ -539,7 +539,7 @@ bool maildir_get_server_by_name(maildir *md, maildir_server *server,const char *
 
 
 
-bool maildir_create_server(maildir *md, maildir_server *server, char *server_domain, error_t *error) {
+bool maildir_create_server(maildir *md, maildir_server *server, char *server_domain, err_t *error) {
     CHECK_PTR(md, error, MAILDIR_MD_PTR_NULL);
     CHECK_PTR(server, error, MAILDIR_ERROR_PTR_OF_SERVER_IS_NULL);
     CHECK_PTR(server_domain, error, MAILDIR_ERROR_PTR_OF_SERVER_NAME_IS_NULL);
@@ -566,7 +566,7 @@ bool maildir_create_server(maildir *md, maildir_server *server, char *server_dom
     return  true;
 }
 
-bool maildir_delete_server(maildir *md, maildir_server *server, error_t *error) {
+bool maildir_delete_server(maildir *md, maildir_server *server, err_t *error) {
     // TODO (ageev) Написать функцию удаляющую все содержимое папки с сервером
     return false;
 }

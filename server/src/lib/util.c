@@ -9,7 +9,6 @@
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#define __USE_MISC
 #include <arpa/inet.h>
 #include <stdarg.h>
 #define ERROR (-1)
@@ -26,7 +25,7 @@ const char UTIL_PARAMETER_IS_NULL[] = "parameter is null";
 const char UTIL_ERROR_IP_BUFFER_SIZE[] = "invalid buffer size for writing string representation of ip address";
 
 
-void* s_malloc(size_t size, error_t *error) {
+void* s_malloc(size_t size, err_t *error) {
     void* ptr = malloc(size);
     if (ptr == NULL) {
         if (error != NULL) {
@@ -71,7 +70,7 @@ const char *errtostr(enum ErrorType type) {
     return str;
 }
 
-int make_server_socket(const char *ip, int port, error_t *error) {
+int make_server_socket(const char *ip, int port, err_t *error) {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     const char *message = ERROR_SUCCESS;
     if (sock == -1) {
@@ -112,25 +111,20 @@ int make_server_socket(const char *ip, int port, error_t *error) {
     return ERROR;
 }
 
-bool get_addr(struct sockaddr_in* addr, char *ip, size_t buffer_size, uint16_t *port, error_t *error) {
-    ERROR_SUCCESS(error);
-    if (addr == NULL || ip == NULL || port == NULL) {
+client_addr get_addr(struct sockaddr_in* addr, err_t *error) {
+    client_addr ret = {0};
+    if (addr == NULL) {
         if (error != NULL) {
             error->error = FATAL;
             error->message = UTIL_PARAMETER_IS_NULL;
         }
-        return false;
+        return ret;
     }
-    if (buffer_size < IP_BUFFER_LEN) {
-        if (error != NULL) {
-            error->error = FATAL;
-            error->message = UTIL_ERROR_IP_BUFFER_SIZE;
-        }
-        return false;
-    }
-    inet_ntop(AF_INET, &addr->sin_addr, ip, buffer_size);
-    *port = ntohs(addr->sin_port);
-    return true;
+    ERROR_SUCCESS(error);
+
+    inet_ntop(AF_INET, &addr->sin_addr, ret.ip, IP_BUFFER_LEN);
+    ret.port = ntohs(addr->sin_port);
+    return ret;
 }
 
 #define SPACE_SYMBOLS_CHECK(ptr_, index_) \

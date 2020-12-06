@@ -47,11 +47,11 @@ do {                                           \
 } while(0)
 
 
-void pr_default_global_handler(int socket, error_t error, int line, const char* function) {
+void pr_default_global_handler(int socket, err_t error, int line, const char* function) {
     // slacker!
 }
 
-bool loop_is_started(event_loop* loop, error_t *error) {
+bool loop_is_started(event_loop* loop, err_t *error) {
     int res = 0;
     ERROR_SUCCESS(error);
     PTHREAD_CHECK(pthread_mutex_lock(&loop->_mutex_is_run), error);
@@ -90,7 +90,7 @@ int queue_length_bf(bf_queue *queue) {
     return i;
 }
 
-void pr_manager_step(event_loop *loop, int fd_timeout, error_t *error) {
+void pr_manager_step(event_loop *loop, int fd_timeout, err_t *error) {
     // TODO (ageev) использовать флаг для определния, что зарегистрированне события не изменились
     //  и следовательно перестроение pollfd[] не требуется.
     /////////Псотроение массива pollfd//////////////////////
@@ -122,7 +122,7 @@ void pr_manager_step(event_loop *loop, int fd_timeout, error_t *error) {
 }
 
 void *loop_thread(void *args) {
-    error_t error;
+    err_t error;
     ERROR_SUCCESS(&error);
     event_loop *loop = (event_loop*) args;
 //    int timeout = 500; // 0.5 sec
@@ -137,7 +137,7 @@ void *loop_thread(void *args) {
     return NULL;
 }
 
-event_loop* el_init(error_t *error) {
+event_loop* el_init(err_t *error) {
     ERROR_SUCCESS(error);
     event_loop *loop = s_malloc(sizeof(event_loop), error);
     if (loop == NULL) {
@@ -149,7 +149,7 @@ event_loop* el_init(error_t *error) {
     TAILQ_INIT(loop->_timer_events);
     loop->_acceptors_queue = NULL;
     loop->_occurred_events = NULL;
-    error_t err;
+    err_t err;
     ERROR_SUCCESS(&err);
     loop->_registered_events = req_init(&err);
     if (err.error) {
@@ -235,7 +235,7 @@ void el_close(event_loop *loop) {
     }
 }
 
-bool el_stop(event_loop* loop, error_t *error) {
+bool el_stop(event_loop* loop, err_t *error) {
     ERROR_SUCCESS(error);
     if (loop == NULL) {
         if (error != NULL) {
@@ -254,7 +254,7 @@ bool el_stop(event_loop* loop, error_t *error) {
     return true;
 }
 
-bool el_open(event_loop* loop, work_mode mode, error_t *error_) {
+bool el_open(event_loop* loop, work_mode mode, err_t *error_) {
     ERROR_SUCCESS(error_);
     if (loop == NULL) {
         if (error_ != NULL) {
@@ -267,7 +267,7 @@ bool el_open(event_loop* loop, work_mode mode, error_t *error_) {
     loop->_is_run = true;
     PTHREAD_CHECK(pthread_mutex_unlock(&loop->_mutex_is_run), error_);
     if (mode == ONE_THREAD) {
-        error_t  error;
+        err_t  error;
         ERROR_SUCCESS(&error);
 
         while (loop_is_started(loop, &error)) {
@@ -305,11 +305,11 @@ void pr_sock_write_execute(event_loop *loop, event_sock_write *event) {
 }
 
 
-bool el_run(event_loop* loop, error_t *error) {
-    error_t err;
+bool el_run(event_loop* loop, err_t *error) {
+    err_t err;
     ERROR_SUCCESS(&err);
     event_t *event = NULL;
-    error_t err_queue;
+    err_t err_queue;
     ERROR_SUCCESS(&err_queue);
 
 
@@ -370,8 +370,8 @@ bool el_run(event_loop* loop, error_t *error) {
 }
 
 
-bool el_async_accept(event_loop* loop, int sock, sock_accept_handler handler, error_t *error) {
-    error_t err;
+bool el_async_accept(event_loop* loop, int sock, sock_accept_handler handler, err_t *error) {
+    err_t err;
     ERROR_SUCCESS(&err);
     PTHREAD_CHECK(pthread_mutex_lock(&loop->_mutex_acceptors_queue), error);
     sq_add(loop->_acceptors_queue, sock, handler, &err);
@@ -385,8 +385,8 @@ bool el_async_accept(event_loop* loop, int sock, sock_accept_handler handler, er
     return true;
 }
 
-bool el_async_read(event_loop* loop, int sock, char *buffer, int size, sock_read_handler handler, error_t *error) {
-    error_t err;
+bool el_async_read(event_loop* loop, int sock, char *buffer, int size, sock_read_handler handler, err_t *error) {
+    err_t err;
     ERROR_SUCCESS(&err);
     if (loop == NULL) {
         if (error != NULL) {
@@ -430,7 +430,7 @@ bool el_async_read(event_loop* loop, int sock, char *buffer, int size, sock_read
 }
 
 bool el_async_write(event_loop* loop, int sock, void *output_buffer, int bsize,
-                    sock_write_handler handler,  error_t *error) {
+                    sock_write_handler handler, err_t *error) {
     if (loop == NULL) {
         if (error != NULL) {
             error->error = FATAL;
@@ -446,7 +446,7 @@ bool el_async_write(event_loop* loop, int sock, void *output_buffer, int bsize,
         return false;
     }
     ERROR_SUCCESS(error);
-    error_t err;
+    err_t err;
     ERROR_SUCCESS(&err);
     event_sock_write *write = s_malloc(sizeof(event_sock_write), error);
     if (write == NULL) {
@@ -472,7 +472,7 @@ bool el_async_write(event_loop* loop, int sock, void *output_buffer, int bsize,
     return is_res;
 }
 
-bool el_timer(event_loop* loop, int sock, unsigned int seconds, sock_timer_handler handler, timer_event_entry **descriptor, error_t *error) {
+bool el_timer(event_loop* loop, int sock, unsigned int seconds, sock_timer_handler handler, timer_event_entry **descriptor, err_t *error) {
     if (loop == NULL) {
         if (error != NULL) {
             error->error = FATAL;
@@ -521,8 +521,8 @@ bool el_timer_free(event_loop* loop, timer_event_entry *descriptor) {
     return true;
 }
 
-bool pr_create_pollfd(event_loop* loop, struct pollfd **fd_array, int *size, error_t *error) {
-    error_t  err;
+bool pr_create_pollfd(event_loop* loop, struct pollfd **fd_array, int *size, err_t *error) {
+    err_t  err;
     ERROR_SUCCESS(&err);
 
     PTHREAD_CHECK(pthread_mutex_lock(&loop->_mutex_registered_events), &err);
@@ -586,9 +586,9 @@ bool pr_create_pollfd(event_loop* loop, struct pollfd **fd_array, int *size, err
 }
 
 
-bool pr_create_pollin_event(event_loop *loop, struct pollfd *fd, int index, error_t *error) {
+bool pr_create_pollin_event(event_loop *loop, struct pollfd *fd, int index, err_t *error) {
     fd->revents &= ~POLLIN;
-    error_t err;
+    err_t err;
     ERROR_SUCCESS(&err);
     bool statusExecute = true;
     // Проверка: Является ли сокет ацептором
@@ -680,9 +680,9 @@ bool pr_create_pollin_event(event_loop *loop, struct pollfd *fd, int index, erro
     return statusExecute;
 }
 
-bool pr_create_pollout_event(event_loop *loop, struct pollfd *fd, int index, error_t *error) {
+bool pr_create_pollout_event(event_loop *loop, struct pollfd *fd, int index, err_t *error) {
     fd->revents &= ~POLLOUT;
-    error_t  err;
+    err_t  err;
     ERROR_SUCCESS(&err);
 
     PTHREAD_CHECK(pthread_mutex_lock(&loop->_mutex_registered_events), error);
@@ -745,7 +745,7 @@ bool pr_create_pollout_event(event_loop *loop, struct pollfd *fd, int index, err
     return true;
 }
 
-bool el_reg_global_error_handler(event_loop *loop, error_global_handler handler, error_t *error) {
+bool el_reg_global_error_handler(event_loop *loop, error_global_handler handler, err_t *error) {
     if (loop == NULL) {
         if (error != NULL) {
             error->error = FATAL;

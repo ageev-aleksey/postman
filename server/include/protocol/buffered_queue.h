@@ -22,7 +22,7 @@ typedef struct _bf_queue bf_queue;
  * @param error - статус выполнения
  * @return true - операция вполнена успешно; false - произошла ошибка при выполнении операции
  */
-bool bfq_init(bf_queue **queue, error_t *error);
+bool bfq_init(bf_queue **queue, err_t *error);
 /**
  * Создание новго буффера, который будет возвращен через параметр
  * @param queue - список буфферов
@@ -30,7 +30,7 @@ bool bfq_init(bf_queue **queue, error_t *error);
  * @param error - статаус выполнения операции
  * @return true - операция вполнена успешно; false - произошла ошибка при выполнении операции
  */
-bool bfq_add(bf_queue *queue,  char **buffer, error_t *error);
+bool bfq_add(bf_queue *queue, char **buffer, err_t *error);
 /**
  * Сумарный размер всех буфферов.
  * Каждый буффер имеет размер BFQ_BUFFER_SIZE. Данная функйия вернет через параметр size
@@ -43,7 +43,7 @@ bool bfq_add(bf_queue *queue,  char **buffer, error_t *error);
  * @param error - статус выполнения
  * @return true - операция вполнена успешно; false - произошла ошибка при выполнении операции
  */
-bool bfq_size(bf_queue *queue, int *size, error_t *error);
+bool bfq_size(bf_queue *queue, int *size, err_t *error);
 /**
  * Выделение массива размером, который возвращает функцция bfq_size. И заполнение его данными из буферов списка.
  * Выполняется копирование данных из буферов в массив, который автоматически выделяется.
@@ -52,7 +52,7 @@ bool bfq_size(bf_queue *queue, int *size, error_t *error);
  * @param error - статус выполения
  * @return true - операция вполнена успешно; false - произошла ошибка при выполнении операции
  */
-bool bfq_glue(bf_queue *queue, char **ptr, error_t *error);
+bool bfq_glue(bf_queue *queue, char **ptr, err_t *error);
 /**
  * Поиск последовательности символов в списке буфферов, начиная с конца
  * @param queue
@@ -62,7 +62,7 @@ bool bfq_glue(bf_queue *queue, char **ptr, error_t *error);
  * @param error
  * @return
  */
-bool bfq_search(bf_queue *queue, char *symbols, size_t size, size_t *index_start, size_t index_stop, error_t *error);
+bool bfq_search(bf_queue *queue, char *symbols, size_t size, size_t *index_start, size_t index_stop, err_t *error);
 /**
  * Освобождение свсех ресурсов из под списка буферов
  * @param queue - список буферов

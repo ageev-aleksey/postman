@@ -20,7 +20,7 @@ int registered_events_queue_test_clean() {
 
 void registered_events_queue_push_accept_test() {
     int socket = 10;
-    error_t error;
+    err_t error;
     ERROR_SUCCESS(&error);
     registered_events_queue *queue = req_init(&error);
     ERROR_ASSERT(error);
@@ -44,7 +44,7 @@ void registered_events_queue_push_accept_test() {
 
 void registered_events_queue_push_read_test() {
     int socket = 10;
-    error_t error;
+    err_t error;
     ERROR_SUCCESS(&error);
     registered_events_queue *queue = req_init(&error);
     ERROR_ASSERT(error);
@@ -67,7 +67,7 @@ void registered_events_queue_push_read_test() {
 
 void registered_events_queue_push_write_test() {
     int socket = 10;
-    error_t error;
+    err_t error;
     ERROR_SUCCESS(&error);
     registered_events_queue *queue = req_init(&error);
     ERROR_ASSERT(error);
@@ -90,7 +90,7 @@ void registered_events_queue_push_write_test() {
 
 void registered_events_queue_pop_accept_test() {
     int socket = 10;
-    error_t error;
+    err_t error;
     ERROR_SUCCESS(&error);
     registered_events_queue *queue = req_init(&error);
     ERROR_ASSERT(error);
@@ -127,7 +127,7 @@ void registered_events_queue_pop_accept_test() {
 
 void registered_events_queue_pop_read_test() {
     int socket = 10;
-    error_t error;
+    err_t error;
     ERROR_SUCCESS(&error);
     registered_events_queue *queue = req_init(&error);
     ERROR_ASSERT(error);
@@ -165,7 +165,7 @@ void registered_events_queue_pop_read_test() {
 
 void registered_events_queue_pop_write_test() {
     int socket = 10;
-    error_t error;
+    err_t error;
     ERROR_SUCCESS(&error);
     registered_events_queue *queue = req_init(&error);
     ERROR_ASSERT(error);
@@ -202,7 +202,7 @@ void registered_events_queue_pop_write_test() {
 
 void registered_events_queue_bitmask_test() {
     int socket = 10;
-    error_t error;
+    err_t error;
     ERROR_SUCCESS(&error);
     registered_events_queue *queue = req_init(&error);
 

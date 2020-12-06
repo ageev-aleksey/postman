@@ -18,14 +18,14 @@ const char SQ_QUEUE_IS_NULL[] = "pointer of queue is null";
 
 
 
-sockets_queue* sq_init(error_t *error) {
+sockets_queue* sq_init(err_t *error) {
     sockets_queue *ptr = s_malloc(sizeof(sockets_queue), error);
 
     TAILQ_INIT(ptr);
     return ptr;
 }
 
-bool sq_add(sockets_queue *queue, int socket, sock_accept_handler handler, error_t *error) {
+bool sq_add(sockets_queue *queue, int socket, sock_accept_handler handler, err_t *error) {
     if (queue == NULL) {
         if (error != NULL) {
             error->error = FATAL;
@@ -64,7 +64,7 @@ bool sq_add(sockets_queue *queue, int socket, sock_accept_handler handler, error
         return false;
     }
 
-    error_t er;
+    err_t er;
     el = s_malloc(sizeof(socket_entry), &er);
     if (er.error) {
         *error = er;
@@ -81,7 +81,7 @@ bool sq_add(sockets_queue *queue, int socket, sock_accept_handler handler, error
 }
 
 
-socket_entry* pr_sq_get(sockets_queue *queue, int socket, error_t *error) {
+socket_entry* pr_sq_get(sockets_queue *queue, int socket, err_t *error) {
     if (queue == NULL) {
         if (error != NULL) {
             error->error = FATAL;
@@ -110,7 +110,7 @@ socket_entry* pr_sq_get(sockets_queue *queue, int socket, error_t *error) {
     return el;
 }
 
-sock_accept_handler sq_get(sockets_queue *queue, int socket, error_t *error) {
+sock_accept_handler sq_get(sockets_queue *queue, int socket, err_t *error) {
     socket_entry *el = pr_sq_get(queue, socket, error);
     if (el == NULL) {
         return NULL;

@@ -74,7 +74,7 @@ void smtp_lib_free();
  * @param error
  * @return статус выполнения операции
  */
-bool smtp_init(smtp_state *smtp, error_t *error);
+bool smtp_init(smtp_state *smtp, err_t *error);
 void smtp_free(smtp_state *smtp);
 
 /**
@@ -91,7 +91,7 @@ void smtp_free(smtp_state *smtp);
  *                  необходимо переадть оставшиеся части (отклик не формируется!)
  *           На каждыое действие в SMTP формируется протокольный отклик, если не указано иного
  */
-smtp_status smtp_parse(smtp_state *smtp, const char *message, char **buffer_reply, error_t *error);
+smtp_status smtp_parse(smtp_state *smtp, const char *message, char **buffer_reply, err_t *error);
 /**
  * Перенос буфера теал сообщения. После вызова этой функции буфером владеет пользователь. Он должен освободить ресурсы
  * @param smtp
@@ -99,6 +99,6 @@ smtp_status smtp_parse(smtp_state *smtp, const char *message, char **buffer_repl
  * @param error
  * @return
  */
-bool smtp_move_buffer(smtp_state *smtp, char **buffer, error_t *error);
+bool smtp_move_buffer(smtp_state *smtp, char **buffer, err_t *error);
 
 

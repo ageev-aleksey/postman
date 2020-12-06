@@ -18,7 +18,7 @@ int main() {
         printf("Error allocated memory\n");
         return ERROR;
     }
-    error_t  error;
+    err_t  error;
     if (!maildir_init(md, MD_PATH, &error)) {
         if (error.error == ERRNO) {
             printf("Error maildir init: %s\n", strerror(error.errno_value));

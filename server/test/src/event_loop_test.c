@@ -17,7 +17,7 @@ int event_loop_test_clean() {
 }
 
 void event_loop_initialize_test() {
-    error_t  error;
+    err_t  error;
     ERROR_SUCCESS(&error);
     event_loop *loop = el_init(&error);
     ERROR_ASSERT(error);
@@ -27,7 +27,7 @@ void event_loop_initialize_test() {
 void create_pollfd_array_test() {
     int socket1 = 10;
     int socket2 = 20;
-    error_t error;
+    err_t error;
     ERROR_SUCCESS(&error);
     event_loop *loop = el_init(&error);
     ERROR_ASSERT(error);
@@ -104,7 +104,7 @@ void create_pollin_occurred_events_test() {
 //    int socket1 = 10;
 //    int socket2 = 20;
 //
-//    error_t error;
+//    err_t error;
 //    ERROR_SUCCESS(&error);
 //    event_loop *loop = el_init(&error);
 //    ERROR_ASSERT(error);

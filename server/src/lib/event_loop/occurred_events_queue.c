@@ -7,8 +7,8 @@ const char OEQ_QUEUE_IS_EMPTY[] = "ptr of occurred event queue is empty";
 const char OEQ_PUSH_ARGUMENT_IS_NULL[] = "ptr of element wil bi pushing in occurred event queue is null";
 
 
-occurred_event_queue* oeq_init(error_t *error) {
-    error_t err;
+occurred_event_queue* oeq_init(err_t *error) {
+    err_t err;
     ERROR_SUCCESS(&err);
     occurred_event_queue *q = s_malloc(sizeof(occurred_event_queue), &err);
     if (error != NULL) {
@@ -18,7 +18,7 @@ occurred_event_queue* oeq_init(error_t *error) {
     return q;
  }
 
-bool oeq_pop_begin(occurred_event_queue *queue, event_t **event, error_t *error) {
+bool oeq_pop_begin(occurred_event_queue *queue, event_t **event, err_t *error) {
     CHECK_AND_RETURN(queue, error, OEQ_QUEUE_IS_NULL);
     CHECK_AND_RETURN(event, error, OEQ_RETURN_ARGUMENT_IS_NULL);
     if (TAILQ_EMPTY(queue)) {
@@ -37,7 +37,7 @@ bool oeq_pop_begin(occurred_event_queue *queue, event_t **event, error_t *error)
     return true;
 }
 
-bool oeq_pop_back(occurred_event_queue *queue, event_t **event, error_t *error) {
+bool oeq_pop_back(occurred_event_queue *queue, event_t **event, err_t *error) {
     CHECK_AND_RETURN(queue, error, OEQ_QUEUE_IS_NULL);
     CHECK_AND_RETURN(event, error, OEQ_RETURN_ARGUMENT_IS_NULL);
     if (TAILQ_EMPTY(queue)) {
@@ -57,10 +57,10 @@ bool oeq_pop_back(occurred_event_queue *queue, event_t **event, error_t *error) 
 }
 
 
-bool oeq_push_begin(occurred_event_queue *queue, event_t *event, error_t *error) {
+bool oeq_push_begin(occurred_event_queue *queue, event_t *event, err_t *error) {
     CHECK_AND_RETURN(queue, error, OEQ_QUEUE_IS_NULL);
     CHECK_AND_RETURN(event, error, OEQ_PUSH_ARGUMENT_IS_NULL);
-    error_t err;
+    err_t err;
     ERROR_SUCCESS(&err);
     occurred_event_entry *ptr = s_malloc(sizeof(occurred_event_entry), &err);
     if (err.error) {
@@ -75,10 +75,10 @@ bool oeq_push_begin(occurred_event_queue *queue, event_t *event, error_t *error)
     return true;
 }
 
-bool oeq_push_back(occurred_event_queue *queue, event_t *event, error_t *error) {
+bool oeq_push_back(occurred_event_queue *queue, event_t *event, err_t *error) {
     CHECK_AND_RETURN(queue, error, OEQ_QUEUE_IS_NULL);
     CHECK_AND_RETURN(event, error, OEQ_PUSH_ARGUMENT_IS_NULL);
-    error_t err;
+    err_t err;
     ERROR_SUCCESS(&err);
     occurred_event_entry *ptr = s_malloc(sizeof(occurred_event_entry), &err);
     if (err.error) {

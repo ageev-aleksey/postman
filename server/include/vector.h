@@ -25,7 +25,7 @@ extern const char VECTOR_INVALID_SIZE_VALUE[];
 // * @param error - статус выполнения
 // * @return true - операция вполнена успешно; false - произошла ошибка при выполнении операции
 // */
-//bool vector_inti(vector_t *vector, error_t *error);
+//bool vector_inti(vector_t *vector, err_t *error);
 ///**
 // * Добавить последовательность байт в конец
 // * @param vector

@@ -22,13 +22,13 @@ typedef struct d_maildir_server {
     maildir *pr_md;
 } maildir_server;
 
-bool pr_maildir_server_init(maildir_server *server, error_t *error);
+bool pr_maildir_server_init(maildir_server *server, err_t *error);
 void maildir_server_free(maildir_server *server);
-bool maildir_server_is_self(maildir_server *server, bool *res, error_t *error);
-bool maildir_server_domain(maildir_server *server, char **domain, error_t *error);
-bool maildir_server_users(maildir_server *server, maildir_users_list *users, error_t *error);
-bool maildir_server_create_user(maildir_server *server, maildir_user *user, const char *username, error_t *error);
-bool maildir_server_user(maildir_server *server, maildir_user *user, const char *username, error_t *error);
+bool maildir_server_is_self(maildir_server *server, bool *res, err_t *error);
+bool maildir_server_domain(maildir_server *server, char **domain, err_t *error);
+bool maildir_server_users(maildir_server *server, maildir_users_list *users, err_t *error);
+bool maildir_server_create_user(maildir_server *server, maildir_user *user, const char *username, err_t *error);
+bool maildir_server_user(maildir_server *server, maildir_user *user, const char *username, err_t *error);
 
 
 

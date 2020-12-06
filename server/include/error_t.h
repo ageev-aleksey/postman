@@ -24,7 +24,7 @@ typedef struct _error_t {
     const char *message;
     enum ErrorType error;
     int errno_value;
-} error_t;
+} err_t;
 
 const char *errtostr(enum ErrorType type);
 
@@ -47,7 +47,7 @@ do {             \
 
 #define CHECK_AND_RETURN(_q_, _err_, _msg_)     \
 do {                            \
-    error_t err;                            \
+    err_t err;                            \
     err.error = OK;                         \
     err.message = ERROR_SUCCESS; \
     CHECK((_q_), &err, (_msg_));          \

@@ -26,7 +26,7 @@
  * socket - файловый дескриптор (сокет) при работе с котроым возникал ошибка
  * error - что произошло
  */
-typedef void (*error_global_handler)(int socket, error_t error, int line_execute, const char* function_execute);
+typedef void (*error_global_handler)(int socket, err_t error, int line_execute, const char* function_execute);
 
 typedef enum __work_mode {
     ONE_THREAD, //< Менеджер очереди и обработка произошедших событий будет выполнятся в одном потоке
@@ -67,7 +67,7 @@ typedef struct _event_loop {
  * @param error - статус выполнения операции
  * @return указатель на event_loop при успехе; NULL - если возникла ошибка
  */
-event_loop* el_init(error_t *error);
+event_loop* el_init(err_t *error);
 
  /**
   * Инициализация цикла событий и его запуск.
@@ -84,7 +84,7 @@ event_loop* el_init(error_t *error);
   * @remark  Не предназначен для запуска из множества потоков.
   * Создание несколько менеджеров событий не поддерживается.
   */
-bool el_open(event_loop*, work_mode mode,  error_t *error);
+bool el_open(event_loop*, work_mode mode, err_t *error);
 /**
  * Освобождение ресусров
  * @param loop - цикл событий из подкоторого необходимо освободить ресурсы
@@ -101,7 +101,7 @@ void el_close(event_loop* loop);
  * @return  true - если был вызван обработчик события; false - если обработчик события не был вызван
  * @remark thread save
  */
-bool el_run(event_loop* loop,  error_t *error);
+bool el_run(event_loop* loop, err_t *error);
 /**
  * Регистрация обработчика осбытия "Подключение нового клиента" для сокета.
  * Соект должен быть настроен, как неблокирующий и быть слушающим.
@@ -111,7 +111,7 @@ bool el_run(event_loop* loop,  error_t *error);
  * @return true - операция заврешилась успешно; false -  операция завершилась с ошибкой.
  * @remark thread save
  */
-bool el_async_accept(event_loop* loop, int sock, sock_accept_handler,  error_t *error);
+bool el_async_accept(event_loop* loop, int sock, sock_accept_handler, err_t *error);
 /**
  * Регистрация обработчика события "Чтение данных из сокета" для указанного сокета.
  * Соект должен быть настроен, как неблокирующий. Если сокет был получен врезультате вызова обработчкиа
@@ -125,7 +125,7 @@ bool el_async_accept(event_loop* loop, int sock, sock_accept_handler,  error_t *
  * @return true - операция заврешилась успешно; false -  операция завершилась с ошибкой.
  * @remark thread save
  */
-bool el_async_read(event_loop* loop, int sock, char *buffer, int size, sock_read_handler,  error_t *error);
+bool el_async_read(event_loop* loop, int sock, char *buffer, int size, sock_read_handler, err_t *error);
 
 /**
  * Регистрация обработчика события "Запись данных в сокет" для указанного сокета.
@@ -141,7 +141,7 @@ bool el_async_read(event_loop* loop, int sock, char *buffer, int size, sock_read
  * @remark thread save
  */
 bool el_async_write(event_loop* loop, int sock, void *output_buffer, int bsize,
-                    sock_write_handler,  error_t *error);
+                    sock_write_handler, err_t *error);
 
 /**
  * Регистрация обработчика события "Для соекта истек таймер"
@@ -151,7 +151,7 @@ bool el_async_write(event_loop* loop, int sock, void *output_buffer, int bsize,
  * @return
  */
 bool el_timer(event_loop* loop, int sock, unsigned int seconds, sock_timer_handler handler,
-              timer_event_entry **descriptor, error_t *error);
+              timer_event_entry **descriptor, err_t *error);
 
 /**
  * Отключение таймера и осовбождение памяти.
@@ -167,7 +167,7 @@ bool el_timer_free(event_loop* loop, timer_event_entry *descriptor);
  * @param error статуст выполнения операции
  * @return true - операция заврешилась успешно; false -  операция завершилась с ошибкой.
  */
-bool el_stop(event_loop* loop,  error_t *error);
+bool el_stop(event_loop* loop, err_t *error);
 
 /**
  * Регистрация глобального обработчика ошибок. Имеются набор ошибок, которые необходимо обрабатывать
@@ -178,12 +178,12 @@ bool el_stop(event_loop* loop,  error_t *error);
  * @param error - возрват ошибок, которые могут произойти при добавлении обработчика
  * @return true - операция заврешилась успешно; false -  операция завершилась с ошибкой.
  */
-bool el_reg_global_error_handler(event_loop *loop, error_global_handler hander, error_t *error);
+bool el_reg_global_error_handler(event_loop *loop, error_global_handler hander, err_t *error);
 
 // PRIVATE
-bool pr_create_pollfd(event_loop* loop, struct pollfd **fd_array, int *size, error_t *error);
-bool pr_create_pollin_event(event_loop *loop, struct pollfd *fd, int index, error_t *error);
-bool pr_create_pollout_event(event_loop *loop, struct pollfd *fd_array, int index, error_t *error);
+bool pr_create_pollfd(event_loop* loop, struct pollfd **fd_array, int *size, err_t *error);
+bool pr_create_pollin_event(event_loop *loop, struct pollfd *fd, int index, err_t *error);
+bool pr_create_pollout_event(event_loop *loop, struct pollfd *fd_array, int index, err_t *error);
 
 
 #define QUEUE_SIZE(entry_type, queue, field, res) \

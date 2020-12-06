@@ -23,14 +23,14 @@ int event_queue_test_clean() {
 }
 
 events_queue *pr_init() {
-    error_t error;
+    err_t error;
     events_queue *eq = eq_init(&error);
     ERR_CHECK(error);
     return eq;
 }
 
 void event_queue_push_test() {
-    error_t error;
+    err_t error;
     events_queue *eq = pr_init();
     event_sock_accept *accept = s_malloc(sizeof(event_sock_accept), &error);
     ERR_CHECK(error);
@@ -52,7 +52,7 @@ void event_queue_push_test() {
 }
 
 void event_queue_double_push_test() {
-    error_t error;
+    err_t error;
     events_queue *eq = pr_init();
     event_sock_accept *accept = s_malloc(sizeof(event_sock_accept), &error);
     ERR_CHECK(error);
@@ -77,7 +77,7 @@ void event_queue_double_push_test() {
 }
 
 void event_queue_pop_test() {
-    error_t error;
+    err_t error;
     events_queue *eq = pr_init();
     event_sock_write *event = s_malloc(sizeof(event_sock_write), &error);
     ERR_CHECK(error);
@@ -93,7 +93,7 @@ void event_queue_pop_test() {
 }
 
 void event_queue_empty_pop_test() {
-    error_t error;
+    err_t error;
     events_queue *eq = pr_init();
     event_sock_write *event = s_malloc(sizeof(event_sock_write), &error);
     ERR_CHECK(error);

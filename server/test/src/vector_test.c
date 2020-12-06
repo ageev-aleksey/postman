@@ -19,7 +19,7 @@ int vector_test_clean() {
 
 void vector_test_push_with_allocating() {
     vector_int *my_vector = s_malloc(sizeof(vector_int), NULL);
-    error_t error;
+    err_t error;
     VECTOR_INIT(int, my_vector, error);
 
 //    do {                                                \
@@ -49,7 +49,7 @@ void vector_test_push_with_allocating() {
     VECTOR_PUSH_BACK(int, my_vector, 12, error);
     for (int i = 0; i < 12; i++) {
         int *el = NULL;
-        error_t error2;
+        err_t error2;
         VECTOR_GET(my_vector, i, el, error2);
         ERROR_ASSERT(error2);
         CU_ASSERT_PTR_NOT_NULL(el);
@@ -61,7 +61,7 @@ void vector_test_push_with_allocating() {
 
 void vector_test_get_by_error_index() {
     vector_int *my_vector = s_malloc(sizeof(vector_int), NULL);
-    error_t error;
+    err_t error;
     VECTOR_INIT(int, my_vector, error);
     VECTOR_PUSH_BACK(int, my_vector, 1, error);
     VECTOR_PUSH_BACK(int, my_vector, 2, error);
@@ -78,7 +78,7 @@ void vector_test_get_by_error_index() {
 
 void vector_test_get_subvector_full_copy() {
     vector_int *my_vector = s_malloc(sizeof(vector_int), NULL);
-    error_t error;
+    err_t error;
     VECTOR_INIT(int, my_vector, error);
     VECTOR_PUSH_BACK(int, my_vector, 1, error);
     VECTOR_PUSH_BACK(int, my_vector, 2, error);
@@ -98,7 +98,7 @@ void vector_test_get_subvector_full_copy() {
 
 void vector_test_get_subvector_first_part_copy() {
     vector_int *my_vector = s_malloc(sizeof(vector_int), NULL);
-    error_t error;
+    err_t error;
     VECTOR_INIT(int, my_vector, error);
     VECTOR_PUSH_BACK(int, my_vector, 10, error);
     VECTOR_PUSH_BACK(int, my_vector, 9, error);
@@ -127,7 +127,7 @@ void vector_test_get_subvector_first_part_copy() {
 }
 void vector_test_get_subvector_second_part_copy() {
     vector_int *my_vector = s_malloc(sizeof(vector_int), NULL);
-    error_t error;
+    err_t error;
     VECTOR_INIT(int, my_vector, error);
     VECTOR_PUSH_BACK(int, my_vector, 10, error);
     VECTOR_PUSH_BACK(int, my_vector, 9, error);

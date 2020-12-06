@@ -42,9 +42,9 @@ const char MAILDIR_MESSAGE_ERROR_GENERATE_FILENAME[] = "error creating unique fi
 const char MAILDIR_MESSAGE_ERROR_CREATE_FILE[] = "error crating file of message";
 
 extern char* pr_maildir_char_concatenate(size_t n, const char *str, ...);
-extern bool pr_maildir_next_dirent_entry(DIR *dir, struct dirent *entry, struct dirent **result, error_t *error);
+extern bool pr_maildir_next_dirent_entry(DIR *dir, struct dirent *entry, struct dirent **result, err_t *error);
 
-bool pr_maildir_make_full_path(maildir_user *user, char **result_path, error_t *error) {
+bool pr_maildir_make_full_path(maildir_user *user, char **result_path, err_t *error) {
     bool is_self = false;
     size_t size = 0;
     maildir_server_is_self(user->pr_server, &is_self, error);
@@ -73,7 +73,7 @@ bool pr_maildir_make_full_path(maildir_user *user, char **result_path, error_t *
 
 }
 
-bool pr_maildir_user_opendir(char *path, DIR **dir, error_t *error) {
+bool pr_maildir_user_opendir(char *path, DIR **dir, err_t *error) {
     *dir = opendir(path);
     if (*dir == NULL) {
         if (error != NULL) {
@@ -94,7 +94,7 @@ void pr_maildir_message_filename_generate(char *file_name, char* sender_name) {
 }
 
 
-bool maildir_user_create_message(maildir_user *user, maildir_message *message, char *sender_name, error_t *error) {
+bool maildir_user_create_message(maildir_user *user, maildir_message *message, char *sender_name, err_t *error) {
     CHECK_PTR(user, error, MAILDIR_USER_PTR_IS_NULL);
     CHECK_PTR(message, error, MAILDIR_MESSAGE_PTR_IS_NULL);
     CHECK_PTR(sender_name, error, MAILDIR_MESSAGE_PTR_IS_NULL);
@@ -209,7 +209,7 @@ bool maildir_user_server(maildir_user *user, maildir_server **server) {
     return true;
 }
 
-bool maildir_user_message_list(maildir_user *user, maildir_messages_list *msg_list, error_t *error) {
+bool maildir_user_message_list(maildir_user *user, maildir_messages_list *msg_list, err_t *error) {
 //    char *path = NULL;
 //    if (!pr_maildir_make_full_path(user, &path, error)) {
 //        return false;

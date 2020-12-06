@@ -35,7 +35,7 @@ extern int REQ_WRITE_EVENT;
  * создание и инициализация структуры для хранения обработчиков событий
  * @return Инициализированная структура
  */
-registered_events_queue* req_init(error_t* error);
+registered_events_queue* req_init(err_t* error);
 /**
  * Добавление события для сокета
  * @param queue куда добавлять событе
@@ -43,9 +43,9 @@ registered_events_queue* req_init(error_t* error);
  * @param event  описать события (описатль будет скопирован)
  * @return Успешность выполнения. Возможно для одного секта добавлять только один тип событий
  */
-bool req_push_accept(registered_events_queue* queue, int socket, event_sock_accept *event, error_t *error);
-bool req_push_read(registered_events_queue* queue, int socket, event_sock_read *event, error_t *error);
-bool req_push_write(registered_events_queue* queue, int socket, event_sock_write *event, error_t *error);
+bool req_push_accept(registered_events_queue* queue, int socket, event_sock_accept *event, err_t *error);
+bool req_push_read(registered_events_queue* queue, int socket, event_sock_read *event, err_t *error);
+bool req_push_write(registered_events_queue* queue, int socket, event_sock_write *event, err_t *error);
 //
 /**
  * удаление события определенного типа для заданного сокета
@@ -61,16 +61,16 @@ bool req_push_write(registered_events_queue* queue, int socket, event_sock_write
  * @param type - тип события, которое необходимо найти
  * @return Указатель на событие из очереди или NULL если описатель отсутсвует
  */
-event_sock_accept* req_pop_accept(registered_events_queue* queue, int socket, error_t *error);
-event_sock_read* req_pop_read(registered_events_queue* queue, int socket, error_t *error);
-event_sock_write* req_pop_write(registered_events_queue* queue, int socket, error_t *error);
+event_sock_accept* req_pop_accept(registered_events_queue* queue, int socket, err_t *error);
+event_sock_read* req_pop_read(registered_events_queue* queue, int socket, err_t *error);
+event_sock_write* req_pop_write(registered_events_queue* queue, int socket, err_t *error);
 /**
  * Возвращает битовую маску зарегистрированных событий для сокета
  * @param queue - очередь зарегистрированных событий
  * @param socket - сокет для которого выполнять поиск
  * @return Битовая маска
  */
-int req_reg(registered_events_queue* queue, int socket, error_t *error);
+int req_reg(registered_events_queue* queue, int socket, err_t *error);
 
 /**
  * Освобождение память от всех зарегистрированных событий и очереди событий

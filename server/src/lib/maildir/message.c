@@ -27,9 +27,9 @@ const char MAILDIR_MESSAGE_ERROR_WRITE_TO_FILE[] = "error write buffer to file";
 const char MAILDIR_MESSAGE_INVALID_SIZE_PARAMETER[] = "error size of buffer equal zero";
 
 
-extern bool pr_maildir_make_full_path(maildir_user *user, char **result_path, error_t *error);
+extern bool pr_maildir_make_full_path(maildir_user *user, char **result_path, err_t *error);
 
-bool pr_maildir_message_make_full_path(maildir_message *msg, message_type path_type, char **result_path, error_t *error) {
+bool pr_maildir_message_make_full_path(maildir_message *msg, message_type path_type, char **result_path, err_t *error) {
     bool status = false;
     size_t size = 0;
     char *user_path = NULL;
@@ -57,7 +57,7 @@ void maildir_message_free(maildir_message *msg) {
     }
 }
 
-bool maildir_message_release(maildir_message *msg, error_t *error) {
+bool maildir_message_release(maildir_message *msg, err_t *error) {
     char *msg_path = NULL;
     if (!pr_maildir_message_make_full_path(msg, msg->pr_type, &msg_path, error)) {
         return false;
@@ -74,7 +74,7 @@ bool maildir_message_release(maildir_message *msg, error_t *error) {
     return true;
 }
 
-bool maildir_message_finalize(maildir_message *msg, error_t *error) {
+bool maildir_message_finalize(maildir_message *msg, err_t *error) {
     bool status = false;
     if (msg->pr_type == NEW) {
         return true;
@@ -115,12 +115,12 @@ bool maildir_message_finalize(maildir_message *msg, error_t *error) {
     return status;
 }
 
-bool maildir_message_get_user(maildir_message *msg, maildir_user **user, error_t *error) {
+bool maildir_message_get_user(maildir_message *msg, maildir_user **user, err_t *error) {
     *user = msg->pr_user;
     return true;
 }
 
-bool maildir_message_write(maildir_message *msg, const char *buffer, size_t b_len, error_t *error) {
+bool maildir_message_write(maildir_message *msg, const char *buffer, size_t b_len, err_t *error) {
     CHECK_PTR(msg, error, MAILDIR_MESSAGE_ERROR_MSG_DESCRIPTOR_IS_NULL);
     CHECK_PTR(buffer, error, MAILDIR_MESSAGE_ERROR_PARAMETER_IS_NULL);
     if (b_len == 0) {

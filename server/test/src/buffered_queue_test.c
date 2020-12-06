@@ -16,7 +16,7 @@ void buffered_queue_test_add_search() {
 }
 void buffered_queue_test_glue() {
 //    bf_queue *queue;
-//    error_t error;
+//    err_t error;
 //    bfq_init(&queue, &error);
 //    ERROR_ASSERT(error);
 //    bfq_add()

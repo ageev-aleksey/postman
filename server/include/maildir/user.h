@@ -34,7 +34,7 @@ typedef struct d_maildir_server maildir_server;
 
 
 // Инициализация структуры
-//bool pr_maildir_user_init(maildir_user *user, maildir_server *server, char *user_name,  error_t *error);
+//bool pr_maildir_user_init(maildir_user *user, maildir_server *server, char *user_name,  err_t *error);
 void maildir_user_free(maildir_user *user);
 //bool maildir_user_release(maildir_user *user);
 // Свойства пользователя
@@ -43,7 +43,7 @@ bool maildir_user_login(maildir_user *user, char **login);
 //  - Сервер
 bool maildir_user_server(maildir_user *user, maildir_server **server);
 //  - Сообщения
-bool maildir_user_create_message(maildir_user *user, maildir_message *message, char *sender_name, error_t *error);
-bool maildir_user_message_list(maildir_user *user, maildir_messages_list *msg_list, error_t *error);
+bool maildir_user_create_message(maildir_user *user, maildir_message *message, char *sender_name, err_t *error);
+bool maildir_user_message_list(maildir_user *user, maildir_messages_list *msg_list, err_t *error);
 
 #endif //SERVER_USER_H

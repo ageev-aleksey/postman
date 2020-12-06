@@ -37,9 +37,9 @@ extern char* pr_maildir_char_concatenate(size_t n, const char *str, ...);
 
 extern const char MAILDIR_ERROR_CONCATENATE_PATHS[];
 
-extern bool pr_maildir_next_dirent_entry(DIR *dir, struct dirent *entry, struct dirent **result, error_t *error);
+extern bool pr_maildir_next_dirent_entry(DIR *dir, struct dirent *entry, struct dirent **result, err_t *error);
 
-bool maildir_server_is_self(maildir_server *server, bool *res, error_t *error) {
+bool maildir_server_is_self(maildir_server *server, bool *res, err_t *error) {
     CHECK_PTR(server, error, MAILDIR_SERVER_ERROR_SERVER_PTR_IS_NULL);
     CHECK_PTR(res, error, MAILDIR_SERVER_ERROR_ARGUMENT_PTR_IS_NULL);
 
@@ -62,7 +62,7 @@ bool pr_maildir_server_path(maildir_server *server, char **path) {
 }
 
 
-bool maildir_server_users(maildir_server *server, maildir_users_list *users, error_t *error) {
+bool maildir_server_users(maildir_server *server, maildir_users_list *users, err_t *error) {
     CHECK_PTR(server, error, MAILDIR_SERVER_ERROR_SERVER_PTR_IS_NULL);
     CHECK_PTR(users, error, MAILDIR_SERVER_ERROR_ARGUMENT_PTR_IS_NULL);
 
@@ -109,7 +109,7 @@ bool maildir_server_users(maildir_server *server, maildir_users_list *users, err
     return true;
 }
 
-bool maildir_server_domain(maildir_server *server, char **domain, error_t *error) {
+bool maildir_server_domain(maildir_server *server, char **domain, err_t *error) {
     CHECK_PTR(server, error, MAILDIR_SERVER_ERROR_SERVER_PTR_IS_NULL);
     CHECK_PTR(domain, error, MAILDIR_SERVER_ERROR_ARGUMENT_PTR_IS_NULL);
     ERROR_SUCCESS(error);
@@ -117,7 +117,7 @@ bool maildir_server_domain(maildir_server *server, char **domain, error_t *error
     return true;
 }
 
-bool pr_maildir_server_mkdir(char *path, error_t *error, const char *error_message) {
+bool pr_maildir_server_mkdir(char *path, err_t *error, const char *error_message) {
     if (mkdir(path, S_IRWXU) != 0) {
         if (error != NULL) {
             error->error = ERRNO;
@@ -129,7 +129,7 @@ bool pr_maildir_server_mkdir(char *path, error_t *error, const char *error_messa
     return true;
 }
 
-bool maildir_server_create_user(maildir_server *server, maildir_user *user, const char *username, error_t *error) {
+bool maildir_server_create_user(maildir_server *server, maildir_user *user, const char *username, err_t *error) {
     CHECK_PTR(server, error, MAILDIR_SERVER_ERROR_SERVER_PTR_IS_NULL);
     CHECK_PTR(user, error, MAILDIR_SERVER_ERROR_ARGUMENT_PTR_IS_NULL);
     CHECK_PTR(username, error, MAILDIR_SERVER_ERROR_ARGUMENT_PTR_IS_NULL);
@@ -218,7 +218,7 @@ void maildir_server_free(maildir_server *server) {
     }
 }
 
-bool maildir_server_user(maildir_server *server, maildir_user *user, const char *username, error_t *error) {
+bool maildir_server_user(maildir_server *server, maildir_user *user, const char *username, err_t *error) {
     CHECK_PTR(server, error, MAILDIR_SERVER_ERROR_SERVER_PTR_IS_NULL);
     CHECK_PTR(user, error, MAILDIR_SERVER_ERROR_ARGUMENT_PTR_IS_NULL);
     CHECK_PTR(username, error, MAILDIR_SERVER_ERROR_ARGUMENT_PTR_IS_NULL);

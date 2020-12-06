@@ -42,20 +42,20 @@ typedef struct d_maildir {
 } maildir;
 
 
-bool maildir_init(maildir *md, char* path, error_t *error);
+bool maildir_init(maildir *md, const char* path, err_t *error);
 void maildir_free(maildir *md);
-bool maildir_release(maildir *md, error_t *error);
+bool maildir_release(maildir *md, err_t *error);
 // USERS
 //bool maildir_get_users_list(maildir *md, maildir_users_list *users_list);
 //// ??? bool maildir_get_user(maildir *md, maildir_user **user);
 //bool maildir_create_user(maildir *md, maildir_user *user);
 //bool maildir_delete_user(maildir *md, maildir_user *user);
 // SERVERS
-bool maildir_server_list(maildir *md, maildir_servers_list *servers_list, error_t *error);
-bool maildir_get_self_server(maildir *md, maildir_server *server, error_t *error);
-bool maildir_get_server_by_name(maildir *md, maildir_server *server,const char *name,  error_t *error);
-bool maildir_create_server(maildir *md, maildir_server *server, char *server_name, error_t *error);
-bool maildir_delete_server(maildir *md, maildir_server *server, error_t *error);
+bool maildir_server_list(maildir *md, maildir_servers_list *servers_list, err_t *error);
+bool maildir_get_self_server(maildir *md, maildir_server *server, err_t *error);
+bool maildir_get_server_by_name(maildir *md, maildir_server *server, const char *name, err_t *error);
+bool maildir_create_server(maildir *md, maildir_server *server, char *server_name, err_t *error);
+bool maildir_delete_server(maildir *md, maildir_server *server, err_t *error);
 // LOGGING
 bool maildir_set_logger_handlers(maildir *md, struct maildir_log_handlers *handlers);
 
