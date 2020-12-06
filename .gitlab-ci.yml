@@ -13,6 +13,8 @@ server_build:
     - apt-get install -y software-properties-common
     - add-apt-repository ppa:ubuntu-toolchain-r/test
     - apt-get update --yes
+    - apt-get install aptitude --yes
+    - aptitude install libconfig8-dev
     - apt-get install libcunit1 libcunit1-dev --yes
     - apt-get install gcc-4.8  --yes
     - apt-get install lcov make --yes
@@ -34,6 +36,8 @@ server_unit_testig:
   before_script:
     - apt-get update --yes
     - apt-get install valgrind --yes
+    - apt-get install aptitude --yes
+    - aptitude install libconfig8-dev
     - apt-get install libcunit1 libcunit1-dev --yes
     - apt-get install lcov --yes
   script:
@@ -56,6 +60,8 @@ server_report:
   before_script:
     - apt-get update --yes
     - apt-get install valgrind --yes
+    - apt-get install aptitude --yes
+    - aptitude install libconfig8-dev
     - apt-get install libcunit1 libcunit1-dev --yes
     - apt-get install lcov --yes
   script:
