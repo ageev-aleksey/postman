@@ -9,15 +9,14 @@ stages:
 server_build:
   stage: build
   before_script:
-    - sudo su
-    - apt-get update --yes
-    - apt-get install -y software-properties-common
-    - add-apt-repository ppa:ubuntu-toolchain-r/test
-    - apt-get update --yes
-    - apt-get install libcunit1 libcunit1-dev --yes
-    - apt-get install gcc-4.8  --yes
-    - apt-get install lcov make --yes
-    - apt-get install autogen --yes
+    - sudo apt-get update --yes
+    - sudo apt-get install -y software-properties-common
+    - sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+    - sudo apt-get update --yes
+    - sudo apt-get install libcunit1 libcunit1-dev --yes
+    - sudo apt-get install gcc-4.8  --yes
+    - sudo apt-get install lcov make --yes
+    - sudo apt-get install autogen --yes
   script:
     - cd server
     - make test_mkdir
