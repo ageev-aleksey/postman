@@ -29,7 +29,10 @@ LIB_MAILDIR_PATH = $(BIN_DIR)/libmaildir.a
 LIB_ADDITIONAL_PATH = $(BIN_DIR)/libadditional.a
 LIB_SMTP_PROTO_PATH = $(BIN_DIR)/libsmtpprotocol.a
 
-ALL_SERVER_LIBS_PATH = $(BIN_DIR)/libeventloop.a $(BIN_DIR)/liblog.a  $(BIN_DIR)/libadditional.a $(BIN_DIR)/libsmtpprotocol.a
+ALL_SERVER_LIBS_PATH = $(BIN_DIR)/libeventloop.a $(BIN_DIR)/liblog.a \
+ 						$(BIN_DIR)/libadditional.a $(BIN_DIR)/libsmtpprotocol.a \
+ 						$(BIN_DIR)/libmaildir.a
+
 LINKING_SERVER_LIBS = -leventloop -llog -ladditional -lsmtpprotocol -lmaildir -lconfig
 AUTOGEN_FLAGS = -DTEST_CHECK_OPTS `autoopts-config cflags` -Wno-implicit-function-declaration
 
