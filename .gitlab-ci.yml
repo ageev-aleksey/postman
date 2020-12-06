@@ -25,10 +25,10 @@ server_build:
     - make unit_tests
   artifacts:
     paths:
-      - server/bin/unit_tests.out
-      - /server/build
-      - /server/main.gcda
-      - /server/main.gcno
+      - server/bin/
+      - server/build
+      - server/main.gcda
+      - server/main.gcno
     expire_in: 1 hrs
 
 server_unit_testig:
@@ -48,10 +48,10 @@ server_unit_testig:
    # - make start_system_test
   artifacts:
     paths:
-      - server/bin/unit_tests.out
-      - /server/build
-      - /server/main.gcda
-      - /server/main.gcno
+      - server/bin/
+      - server/build
+      - server/main.gcda
+      - server/main.gcno
     expire_in: 1 hrs 
 
 server_report:
