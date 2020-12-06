@@ -15,10 +15,12 @@
 
 #define POSTMAN_VERSION_MAJOR 0
 #define POSTMAN_VERSION_MINOR 1
+#define TEMPORARY_BUFFER_SIZE 512
 
 typedef struct user_context {
     smtp_state smtp;
     vector_char  buffer;
+    char tmp_buffer[TEMPORARY_BUFFER_SIZE];
     int socket;
     client_addr addr;
 } user_context;
@@ -52,7 +54,7 @@ struct {
     struct users_list users;
     char *hello_msg;
     size_t hello_msg_size;
-} global_config_server;
+} server_config;
 
 bool server_config_init(const char *path);
 void server_config_free();

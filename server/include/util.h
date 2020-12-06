@@ -31,7 +31,7 @@ int make_server_socket(const char *ip, int port, err_t *error);
 
 typedef struct client_addr {
     char ip[IP_BUFFER_LEN];
-    int16_t  port;
+    uint16_t  port;
 } client_addr;
 /**
  *

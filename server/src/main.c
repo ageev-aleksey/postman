@@ -30,9 +30,9 @@ int main() {
         LOG_ERROR("event_loop init: %s", error.message);
         goto exit;
     }
-    master_socket = make_server_socket(global_config_server.ip,
-                                           global_config_server.port,
-                                           &error);
+    master_socket = make_server_socket(server_config.ip,
+                                       server_config.port,
+                                       &error);
     if (master_socket == ERROR) {
         status = ERROR;
         LOG_ERROR("create server socket: %s", error.message);

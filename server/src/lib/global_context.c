@@ -44,37 +44,37 @@ bool server_config_init(const char *path) {
         return false;
     }
 
-    global_config_server.ip = malloc(sizeof(char)*strlen(host));
-    global_config_server.self_server_name = malloc(sizeof(char)*strlen(domain));
-    strcpy(global_config_server.ip, host);
-    strcpy(global_config_server.self_server_name, domain);
-    global_config_server.log_file_path = NULL;
-    global_config_server.port = port;
-    global_config_server.hello_msg_size =
-            asprintf(&global_config_server.hello_msg, "220 %s The Postman Server v%d.%d",
+    server_config.ip = malloc(sizeof(char) * strlen(host));
+    server_config.self_server_name = malloc(sizeof(char) * strlen(domain));
+    strcpy(server_config.ip, host);
+    strcpy(server_config.self_server_name, domain);
+    server_config.log_file_path = NULL;
+    server_config.port = port;
+    server_config.hello_msg_size =
+            asprintf(&server_config.hello_msg, "220 %s The Postman Server v%d.%d",
                      domain, POSTMAN_VERSION_MAJOR, POSTMAN_VERSION_MINOR);
-    users_list__init(&global_config_server.users);
+    users_list__init(&server_config.users);
     err_t  error;
-    if (!maildir_init(&global_config_server.md, maildir_path, &error)) {
+    if (!maildir_init(&server_config.md, maildir_path, &error)) {
         LOG_ERROR("maildir: %s", error.message);
         return false;
     }
 
     LOG_INFO("\nConfig loaded: \n -- host: %s\n -- port: %d\n -- domain: %s\n -- maildir: %s",
-             global_config_server.ip,
-             global_config_server.port,
-             global_config_server.self_server_name,
+             server_config.ip,
+             server_config.port,
+             server_config.self_server_name,
              maildir_path);
     config_destroy(&cfg);
     return true;
 }
 
 void server_config_free() {
-    free(global_config_server.self_server_name);
-    free(global_config_server.ip);
-    free(global_config_server.log_file_path);
-    free(global_config_server.hello_msg);
-    users_list__free(&global_config_server.users);
+    free(server_config.self_server_name);
+    free(server_config.ip);
+    free(server_config.log_file_path);
+    free(server_config.hello_msg);
+    users_list__free(&server_config.users);
 }
 
 bool user_init(user_context *context, struct sockaddr_in *addr, int sock) {
@@ -193,11 +193,11 @@ void handler_accept(event_loop *el, int acceptor, int client_socket, struct sock
         return;
     }
     LOG_INFO("user connect [%s:%d]", context->addr.ip, context->addr.port);
-    users_list__add(&global_config_server.users, &context);
+    users_list__add(&server_config.users, &context);
 
     err_t err;
     el_async_write(el, client_socket,
-                   global_config_server.hello_msg, global_config_server.hello_msg_size,
+                   server_config.hello_msg, server_config.hello_msg_size,
                    handler_hello_write, &err);
     if (err.error) {
         LOG_ERROR("el_async_write: %s", err.message);
@@ -213,8 +213,8 @@ void handler_write(event_loop *el, int client_socket, char* buffer, int size, in
     err_t err;
     free(buffer);
     el_async_read(el, client_socket,
-                   global_config_server.hello_msg, global_config_server.hello_msg_size,
-                   handler_read, &err);
+                  server_config.hello_msg, server_config.hello_msg_size,
+                  handler_read, &err);
     if (err.error) {
         LOG_ERROR("el_async_read: %s", err.message);
     }
@@ -222,7 +222,7 @@ void handler_write(event_loop *el, int client_socket, char* buffer, int size, in
 
 void user_disconnected(int sock) {
     user_accessor acc;
-    if (users_list__user_find_by_sock(&global_config_server.users, &acc, sock)) {
+    if (users_list__user_find_by_sock(&server_config.users, &acc, sock)) {
         LOG_INFO("user close connection [%s:%d]", acc.user->addr.ip, acc.user->addr.port);
         users_list__delete_user(&acc);
         user_free(acc.user);
@@ -236,15 +236,19 @@ void handler_hello_write(event_loop *el, int client_socket, char* buffer, int si
         user_disconnected(client_socket);
         return;
     }
-
-
-    err_t err;
-    el_async_read(el, client_socket,
-                  global_config_server.hello_msg, global_config_server.hello_msg_size,
-                  handler_read, &err);
-    if (err.error) {
-        LOG_ERROR("el_async_read: %s", err.message);
+    user_accessor acc;
+    if (users_list__user_find_by_sock(&server_config.users, &acc, client_socket)) {
+        err_t err;
+        el_async_read(el, client_socket,
+                      acc.user->tmp_buffer, server_config.hello_msg_size,
+                      handler_read, &err);
+        if (err.error) {
+            LOG_ERROR("el_async_read: %s", err.message);
+        }
+    } else {
+        LOG_ERROR("User not found by socket [%d]", client_socket);
     }
+
 }
 
 
@@ -254,7 +258,7 @@ void handler_read(event_loop *el, int client_socket, char *buffer, int size, cli
         return;
     }
     user_accessor acc;
-    if (users_list__user_find_by_sock(&global_config_server.users, &acc, client_socket)) {
+    if (users_list__user_find_by_sock(&server_config.users, &acc, client_socket)) {
 
         //записываем данные в буфер
         err_t err;
@@ -267,7 +271,7 @@ void handler_read(event_loop *el, int client_socket, char *buffer, int size, cli
 
         user_accessor_release(&acc);
         el_async_write(el, client_socket,
-                       global_config_server.hello_msg, global_config_server.hello_msg_size,
+                       server_config.hello_msg, server_config.hello_msg_size,
                        handler_write, &err);
         if (err.error) {
             LOG_ERROR("el_async_read: %s", err.message);
