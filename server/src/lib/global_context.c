@@ -253,8 +253,8 @@ void handler_read(event_loop *el, int client_socket, char *buffer, int size, cli
         user_disconnected(client_socket);
         return;
     }
-    user_accessor acc = users_list__user_find_by_sock(&global_config_server.users, client_socket);
-    if (acc.user != NULL) {
+    user_accessor acc;
+    if (users_list__user_find_by_sock(&global_config_server.users, &acc, client_socket)) {
 
         //записываем данные в буфер
         err_t err;
