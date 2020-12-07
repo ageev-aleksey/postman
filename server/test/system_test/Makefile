@@ -8,5 +8,5 @@ include $(MAILDIR_ST_DIR)/Makefile
 include $(SMTP_ST_DIR)/Makefile
 include $(EVENT_LOOP_ST_DIR)/Makefile
 
-st_mkdir: mkdir
+st_mkdir:
 	mkdir -p $(ST_BIN_DIR)
