@@ -1,3 +1,0 @@
-/home/ubuntu/pvs/pvs-postman/client/cmake-build-debug/CMakeFiles/rebuild_cache.dir
-/home/ubuntu/pvs/pvs-postman/client/cmake-build-debug/CMakeFiles/edit_cache.dir
-/home/ubuntu/pvs/pvs-postman/client/cmake-build-debug/CMakeFiles/echo.dir

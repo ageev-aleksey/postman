@@ -1,23 +1,29 @@
-BUILD_DIR=build
-BIN_DIR=$(BUILD_DIR)/bin
-SRC_DIR=./src
+ROOT= $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
+INCLUDES = -I$(ROOT)include -I/usr/include
+SRC_DIR = $(ROOT)src
+TEST_DIR = $(ROOT)test
+BIN_DIR = $(ROOT)bin
+BUILD_DIR = $(ROOT)build
+REPORT_DIR = $(ROOT)report
+RESOURCES_DIR = $(ROOT)resources
+CC = gcc
+CCFLAGS = -std=gnu99 -DDEBUG -D_GNU_SOURCE -g --coverage -Wall -Werror
+CLEAN_DIR = $(BIN_DIR) $(BUILD_DIR)
 
-CC=gcc
+include $(SRC_DIR)/Makefile
+include $(TEST_DIR)/Makefile
+include $(REPORT_DIR)/Makefile
 
-CLIENT_O=$(BUILD_DIR)/client.o
+prepare: clean src_mkdir
+	mkdir -p $(BIN_DIR)
+	mkdir -p $(BUILD_DIR)
+	cp -R $(RESOURCES_DIR) $(BIN_DIR)/resources
 
-CLIENT_C=$(SRC_DIR)/main.c
+all: mkdir build # ut build_report
 
-clear:
-	rm -R $(BUILD_DIR) -f
-	rm -R $(BIN_DIR) -f
+unit_tests: ut
 
-mkd: clear
-	mkdir $(BUILD_DIR)
-	mkdir $(BIN_DIR)
+report: build_report
 
-compile: mkd
-	$(CC) $(CLIENT_C) -c -o $(CLIENT_O)
-
-build: compile
-	$(CC) -o $(BIN_DIR)/client.bin $(CLIENT_O) -lpthread
+clean:
+	rm -R $(CLEAN_DIR) -f

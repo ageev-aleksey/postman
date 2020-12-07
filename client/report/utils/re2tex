@@ -1,0 +1,58 @@
+#!/usr/bin/python
+
+import re, sys, os, os.path
+
+
+to_replace = (('\\n','\\textbackslash{}n'), ('\\\\', '\\textbackslash{}'), ('$', '\$'), ('^', '\^{}'))
+
+#to_delete = ('(', ')', '"')
+to_delete = ('"')
+
+before = '\\texttt{'
+after = '}'
+
+tex_ext = '_re.tex'
+re_def = re.compile('\s*#define\s+(RE\w*)\s+(.+)\s*')
+
+def re_tex(re_c):
+    re_tex = re_c
+    for ch in to_delete:
+        re_tex = re_tex.replace(ch, '')
+    #for f, t in to_replace:
+    #    re_tex = re_tex.replace(f, t)
+    return re_tex
+
+
+def write_tex(file, re):
+    print >> sys.stderr, file
+    f = open(file, 'w')
+    f.write(before + re + after)
+    f.close()
+
+
+def parse(lines, dir):
+    file_name = dir + "/regex.tex"
+    with open(file_name, 'w') as f:
+        f.write("\\begin{verbatim}\n")
+        try:
+            for l in lines:
+                m = re_def.match(l)
+                if m:
+                    f.write(m.group(1) + " := " + re_tex(m.group(2)) + "\n");
+        except EOFError:
+            pass
+        f.write("\\end{verbatim}\n")
+
+
+
+
+def usage():
+    print 'Usage:', sys.argv[0], 'src_file dst_dir'
+
+
+if len(sys.argv) != 3:
+    usage()
+else:
+    parse(open(sys.argv[1], 'r').readlines(), sys.argv[2])
+
+
