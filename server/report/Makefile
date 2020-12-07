@@ -16,12 +16,12 @@ DOT = dot
 #find src -name "*.c"
 
 
-report: $(PATH_INCLUDE_TEX)/unit_test_out.tex lcov_tex $(PATH_INCLUDE_TEX)/smtp_fsm.pdf \
+report: $(PATH_INCLUDE_TEX)/unit_test_out.tex $(PATH_INCLUDE_TEX)/smtp_fsm.pdf \
 		$(PATH_INCLUDE_TEX)/cflow.pdf $(PATH_INCLUDE_TEX)/make.pdf regex_to_tex
 	cd $(PATH_TEX) && $(PDF) $(PATH_TEX)/main.tex
 
-lcov_tex: $(ROOT)/$(COV_REPORT)
-	$(COV_TEXGEN) $< -o $(PATH_INCLUDE_TEX)/lcov
+#lcov_tex: $(ROOT)/$(COV_REPORT)
+#	$(COV_TEXGEN) $< -o $(PATH_INCLUDE_TEX)/lcov
 
 $(ROOT)/$(COV_REPORT): 
 	lcov -t "server testing code coverage" -o $@ -c -d .
