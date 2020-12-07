@@ -21,7 +21,7 @@ server_build:
     - apt-get install autogen --yes
   script:
     - cd server
-    - make test_mkdir
+    - make mkdir
     - make unit_tests
   artifacts:
     paths:
@@ -67,6 +67,7 @@ server_report:
     - apt-get install autogen --yes
   script:
     - cd server
+    - make mkdir
     - make report 
   artifacts:
     paths:
