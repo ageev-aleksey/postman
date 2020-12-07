@@ -3,14 +3,14 @@ UTILS = $(CWD_REPORT)/utils
 PATH_TEX = $(CWD_REPORT)/tex
 PATH_INCLUDE_TEX = $(PATH_TEX)/include
 COV_REPORT = coverage_report.info
-COV_TEXGEN =  $(UTILS)/lcov-latex/gentex
+COV_TEXGEN = perl $(UTILS)/lcov-latex/gentex
 PDF = pdflatex
 CFLOW = cflow --level "0= "
-CFLOW2DOT = $(UTILS)/cflow2dot
+CFLOW2DOT = python $(UTILS)/cflow2dot
 CFLOWFILES = $(shell find $(ROOT)/$(SRC_DIR) -name "*.c")
-FSM2DOT = $(UTILS)/fsm2dot
+FSM2DOT = python $(UTILS)/fsm2dot
 MAKE2DOT = $(UTILS)/makefile2graph/make2graph
-RE2TEX = $(UTILS)/re2tex
+RE2TEX = python $(UTILS)/re2tex
 DOT = dot
 
 #find src -name "*.c"

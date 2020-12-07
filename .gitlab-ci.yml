@@ -65,7 +65,9 @@ server_report:
     - apt-get install libcunit1 libcunit1-dev --yes
     - apt-get install lcov --yes
     - apt-get install autogen --yes
-    - apt install graphviz --yes
+    - apt-get install graphviz --yes
+    - apt-get install python --yes
+    - apt-get install perl --yes
   script:
     - cd server
     - make mkdir
