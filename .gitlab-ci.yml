@@ -64,6 +64,7 @@ server_report:
     - aptitude install libconfig-dev -y
     - apt-get install libcunit1 libcunit1-dev --yes
     - apt-get install lcov --yes
+    - apt-get install autogen --yes
   script:
     - cd server
     - make report 
