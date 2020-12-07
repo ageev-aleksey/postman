@@ -59,8 +59,9 @@ regex_to_tex:
 	 $(RE2TEX) $(ROOT)/include/smtp/regex.h $(PATH_INCLUDE_TEX)
 
 mkdir_report:
-	mkdir -p $(PATH_TEX)/inlcude/re
-	mkdir -p $(PATH_TEX)/inlcude/lcov
+	mkdir -p $(PATH_TEX)/include
+	mkdir -p $(PATH_TEX)/include/re
+	mkdir -p $(PATH_TEX)/include/lcov
 
 #.PHONY: report lcov_tex unit_tests_tex cflow smtp_fsm_pdf $(PATH_INCLUDE_TEX)/make.dot
 
