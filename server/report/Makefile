@@ -1,4 +1,4 @@
-CWD_REPORT = $(ROOT)/report
+CWD_REPORT = $(ROOT)report
 UTILS = $(CWD_REPORT)/utils
 PATH_TEX = $(CWD_REPORT)/tex
 PATH_INCLUDE_TEX = $(PATH_TEX)/include
