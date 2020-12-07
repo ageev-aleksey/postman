@@ -69,6 +69,9 @@ server_report:
   script:
     - cd server
     - make mkdir
+    - ls -al
+    - ls -al report
+    - ls -al report/utils
     - make report 
   artifacts:
     paths:
