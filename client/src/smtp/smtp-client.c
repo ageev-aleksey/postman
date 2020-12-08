@@ -1,30 +1,71 @@
 #include "smtp-client.h"
 #include "util.h"
 
-enum smtp_status_code smtp_open(const char *server, const char *port, smtp_message **smtp_messages) {
+unsigned int receive_line(int socket_d, char *dist_buffer);
+
+state_code smtp_open(char *server, char *port, smtp_message **smtp_messages) {
     smtp_message *smtp_mes_new;
 
     if ((smtp_mes_new = calloc(1, sizeof(**smtp_messages))) == NULL) {
-        *smtp_messages = &smtp_error_memory;
-        return get_smtp_status_code(smtp_mes_new);
+        return get_smtp_state_code(smtp_mes_new);
     }
 
     *smtp_messages = smtp_mes_new;
     smtp_mes_new->socket_desc = -1;
 
-    if (smtp_connect(server, port, smtp_mes_new) < 0) {
-        set_smtp_status_code(smtp_mes_new, SMTP_STATUS_CONNECT);
-        return get_smtp_status_code(smtp_mes_new);
+    if (smtp_connect(server, port, smtp_mes_new) != 0) {
+        return get_smtp_state_code(smtp_mes_new);
     }
 
-//    if (smtp_initiate_handshake(server, smtp_mes_new) != SMTP_STATUS_OK) {
-//        set_smtp_status_code(smtp_mes_new, SMTP_STATUS_HANDSHAKE);
-//    }
+    if (smtp_handshake(smtp_mes_new) != OK) {
 
-    return smtp_mes_new->status_code;
+    }
+
+    return smtp_mes_new->state_code;
 }
 
-int smtp_connect(const char *server, const char *port, smtp_message *smtp_mes) {
+state_code smtp_handshake(smtp_message *smtp_mes) {
+    smtp_mes->state_code = HANDSHAKE;
+
+    smtp_response smtp_response = get_smtp_response(smtp_mes);
+
+    if (!is_smtp_success(smtp_response.status_code)) {
+        return smtp_mes->state_code;
+    } else {
+        printf("smtp-code: %i, smtp-message: %s\n", smtp_response.status_code, smtp_response.message);
+    }
+
+    return smtp_mes->state_code;
+}
+
+smtp_response get_smtp_response(smtp_message *smtp_mes) {
+    smtp_response smtp_response;
+    char *buffer = malloc(1000);
+    receive_line(smtp_mes->socket_desc, buffer);
+
+    char code[6];
+    size_t i = 0;
+    size_t size_str = strlen(buffer);
+    for (; i < size_str; i++) {
+        if (buffer[i] == ' ') {
+            i++;
+            break;
+        }
+        code[i] = buffer[i];
+    }
+    char *message = malloc(strlen(buffer) - i);
+    for (int j = 0; i < size_str; j++, i++) {
+        message[j] = buffer[i];
+    }
+
+    smtp_response.status_code = convert_string_to_long_int(code);
+    smtp_response.message = message;
+
+    free(buffer);
+    return smtp_response;
+}
+
+int smtp_connect(char *server, char *port, smtp_message *smtp_mes) {
     struct sockaddr_in server_addr;
     smtp_ip *smtp_ip;
     char *serv_domain;
@@ -32,6 +73,7 @@ int smtp_connect(const char *server, const char *port, smtp_message *smtp_mes) {
     int server_socket = socket(PF_INET, SOCK_STREAM, 0);
     fcntl(server_socket, F_SETFL, O_NONBLOCK);
 
+    set_smtp_state_code(smtp_mes, CONNECT);
     if (server_socket == -1) {
         perror("smtp_connect");
         return -1;
@@ -40,6 +82,7 @@ int smtp_connect(const char *server, const char *port, smtp_message *smtp_mes) {
     if ((serv_domain = malloc(sizeof(server))) == NULL) {
         return -1;
     }
+
     strcpy(serv_domain, server);
     smtp_ip = get_ip_by_hostname(serv_domain);
 
@@ -90,29 +133,25 @@ smtp_ip* get_ip_by_hostname(char *hostname)
 
     return smtp_ip;
 }
-
+//
 //enum smtp_status_code smtp_initiate_handshake(smtp_message *smtp_mes) {
 //
-//    set_smtp_read_timeout(smtp_mes, 60 * 5);
-//    if (smtp_getline(smtp_mes) == STRING_GETDELIMFD_ERROR) {
-//        return smtp_mes->status_code;
-//    }
 //
-//    if (smtp_ehlo(smtp_mes) != SMTP_STATUS_OK) {
-//        return smtp_mes->status_code;
-//    }
 //}
 
-enum smtp_status_code get_smtp_status_code(const smtp_message *smtp_mes) {
-    return smtp_mes->status_code;
+state_code get_smtp_state_code(smtp_message *smtp_mes) {
+    return smtp_mes->state_code;
 }
 
-void set_smtp_status_code(smtp_message *smtp_mes, enum smtp_status_code status_code) {
-    smtp_mes->status_code = status_code;
+void set_smtp_state_code(smtp_message *smtp_mes, state_code state_code) {
+    smtp_mes->state_code = state_code;
 }
 
-void set_smtp_read_timeout(smtp_message *smtp_mes, long seconds) {
-    smtp_mes->timeout_sec = seconds;
+bool is_smtp_success(status_code status_code) {
+    if ((status_code - 200) / 100 == 0 || (status_code - 300) / 100 == 0) {
+        return true;
+    }
+    return false;
 }
 
 //void smpt_connect() {
@@ -217,19 +256,21 @@ void set_smtp_read_timeout(smtp_message *smtp_mes, long seconds) {
 //    return server_configs;
 //}
 //
-//unsigned int receive_line(int socket_d, char *dist_buffer) {
-//    char *ptr = dist_buffer;
-//    unsigned int start_size = sizeof(dist_buffer);
-//    memset(dist_buffer, 0, start_size);
-//    unsigned int count_bytes = 0;
-//
-//    while (recv(socket_d, ptr, 1, 0) != -1) {
-//        count_bytes++;
-//        ptr++;
-//    }
-//
-//    return strlen(dist_buffer);
-//}
+
+unsigned int receive_line(int socket_d, char *dist_buffer) {
+    char *ptr = dist_buffer;
+    unsigned int start_size = sizeof(dist_buffer);
+    memset(dist_buffer, 0, start_size);
+    unsigned int count_bytes = 0;
+
+    while (recv(socket_d, ptr, 1, 0) != -1) {
+        count_bytes++;
+        ptr++;
+    }
+
+    return strlen(dist_buffer);
+}
+
 //
 //unsigned int send_message(int socket_d, char *message) {
 //    char *ptr = message;

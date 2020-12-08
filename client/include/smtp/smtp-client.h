@@ -9,35 +9,52 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <netdb.h>
+#include <stdbool.h>
 
-enum smtp_status_code {
-    SMTP_STATUS_OK = 0,
-    SMTP_STATUS_NO_MEMORY = 1,
-    SMTP_STATUS_CONNECT = 2,
-    SMTP_STATUS_HANDSHAKE = 3,
-    SMTP_STATUS_AUTH = 4,
-    SMTP_STATUS_SEND = 5,
-    SMTP_STATUS_RECV = 6,
-    SMTP_STATUS_CLOSE = 7,
-    SMTP_STATUS_SERVER_RESPONSE = 8,
-    SMTP_STATUS_PARAM = 9,
-    SMTP_STATUS_FILE = 10,
-    SMTP_STATUS_DATE = 11,
-    SMTP_STATUS_LAST
-};
+typedef enum smtp_state_code {
+    OK = 0,
+    NO_MEMORY = 1,
+    CONNECT = 2,
+    HANDSHAKE = 3,
+    AUTH = 4,
+    SEND = 5,
+    RECV = 6,
+    CLOSE = 7,
+    SERVER_RESPONSE = 8,
+    PARAM = 9,
+    SMTP_FILE = 10,
+    DATE = 11,
+    INVALID
+} state_code;
 
-enum smtp_address_type {
-    SMTP_ADDRESS_FROM = 0,
-    SMTP_ADDRESS_TO = 1,
-    SMTP_ADDRESS_CC = 2,
-    SMTP_ADDRESS_BCC = 3
-};
+typedef enum smtp_status_code {
+    SMTP_SERVICE_READY = 220,
+    SMTP_SERVICE_CLOSING = 221,
+    SMTP_REQUESTED_ACTION_TAKEN_AND_COMPLETED = 250,
+    SMTP_MESSAGE_INPUT = 354,
+    SMTP_SERVICE_IS_NOT_AVAILABLE = 421,
+    SMTP_REQUESTED_COMMAND_FAILED = 450,
+    SMTP_COMMAND_ABORTED_SERVER_ERROR = 451,
+    SMTP_COMMAND_ABORTED_INSUFFICIENT_SYSTEM_STORAGE = 452,
+    SMTP_SERVER_CANNOT_DEAL_WITH_THE_COMMAND = 455,
+    SMTP_SERVER_COULD_NOT_RECOGNIZE_COMMAND = 500,
+    SMTP_SYNTAX_ERROR_COMMAND_ARGS = 501,
+    SMTP_COMMAND_IS_NOT_IMPLEMENTED = 502,
+    SMTP_SERVER_HAS_ENCOUNTERED_A_BAD_SEQUENCE_OF_COMMANDS = 503,
+    SMTP_COMMAND_PARAMETER_IS_NOT_IMPLEMENTED = 504,
+    SMTP_HOST_NEVER_ACCEPTS_MAIL = 521,
+    SMTP_MESSAGE_COULD_NOT_BE_DELIVERED_FOR_POLICY_REASONS = 541,
+    SMTP_USER_MAILBOX_WAS_UNAVAILABLE = 550,
+    SMTP_RECIPIENT_IS_NOT_LOCAL_TO_THE_SERVER = 551,
+    SMTP_ACTION_WAS_ABORTED_DUE_TO_EXCEEDED_STORAGE_ALLOCATION = 552,
+    SMTP_MAILBOX_NAME_IS_INVALID = 553,
+    SMTP_MAILBOX_DISABLED = 554
+} status_code;
 
-enum smtp_auth_method {
-    SMTP_AUTH_NONE = 0,
-    SMTP_AUTH_PLAIN = 1,
-    SMTP_AUTH_LOGIN = 2
-};
+typedef enum smtp_address_type {
+    FROM = 0,
+    TO = 1
+} addr_type;
 
 typedef struct smtp_address {
     char *email;
@@ -64,30 +81,25 @@ typedef struct smtp_message {
     smtp_attach *attachment_list;
     size_t num_attachment;
     long timeout_sec;
-    enum smtp_status_code status_code;
+    state_code state_code;
 } smtp_message;
+
+typedef struct smtp_response {
+    status_code status_code;
+    char *message;
+} smtp_response;
 
 typedef struct smtp_ip {
     char ip[15];
     size_t num_ips;
 } smtp_ip;
 
-static smtp_message smtp_error_memory = {
-    0,
-    NULL,
-    0,
-    NULL,
-    0,
-    NULL,
-    0,
-    0,
-    SMTP_STATUS_NO_MEMORY
-};
+state_code smtp_open(char *server, char *port, smtp_message **smtp_mes);
+int smtp_connect(char *server, char *port, smtp_message *smtp_mes);
+state_code smtp_handshake(smtp_message *smtp_mes);
 
-enum smtp_status_code smtp_open(const char *server, const char *port, smtp_message **smtp_mes);
-int smtp_connect(const char *server, const char *port, smtp_message *smtp_mes);
-enum smtp_status_code smtp_initiate_handshake(smtp_message *smtp_mes);
+smtp_response get_smtp_response(smtp_message *smtp_mes);
 smtp_ip* get_ip_by_hostname(char *hostname);
-enum smtp_status_code get_smtp_status_code(const smtp_message *smtp_mes);
-void set_smtp_status_code(smtp_message *smtp_mes, enum smtp_status_code status_code);
-void set_smtp_read_timeout(smtp_message *smtp_mes, long seconds);
+state_code get_smtp_state_code(smtp_message *smtp_mes);
+void set_smtp_state_code(smtp_message *smtp_mes, state_code state_code);
+bool is_smtp_success(status_code);
