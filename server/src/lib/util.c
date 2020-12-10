@@ -81,6 +81,8 @@ int make_server_socket(const char *ip, int port, err_t *error) {
         return ERROR;
     }
     fcntl(sock, O_NONBLOCK);
+    int option = 1;
+    setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(struct sockaddr_in));
     addr.sin_family = AF_INET;
@@ -251,4 +253,48 @@ bool split_sub_str(const char *str, int begin, int end, char *array_str[], int n
     }
 
     return true;
+}
+
+int find_first_entry_str(const char *str, const char *sequence, int str_len, int seq_len) {
+    if (seq_len > str_len) {
+        return -1;
+    }
+    int seq_i = 0;
+    int i = 0;
+    for(; i < str_len; i++) {
+        if (str[i] == sequence[seq_i]) {
+            seq_i++;
+            if (seq_i == seq_len) {
+                break;
+            }
+        } else {
+            seq_i = 0;
+        }
+    }
+    if (seq_i == seq_len) {
+        return i - (seq_len-1);
+    }
+    return -1;
+}
+
+int find_revers_first_entry_str(const char *str, const char *sequence, int str_len, int seq_len) {
+    if (seq_len > str_len) {
+        return -1;
+    }
+    int seq_i = seq_len;
+    int i = str_len;
+    for(; i > 0; i--) {
+        if (str[i-1] == sequence[seq_i-1]) {
+            seq_i--;
+            if (seq_i == 0) {
+                break;
+            }
+        } else {
+            seq_i = seq_len;
+        }
+    }
+    if (seq_i == seq_len) {
+        return i+seq_len;
+    }
+    return -1;
 }

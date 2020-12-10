@@ -7,6 +7,7 @@ ADDITIONAl_SRC_PATH = $(LIB_DIR)
 SMTP_PROTO_SRC_PATH = $(LIB_DIR)/smtp
 SMTP_FSM_SRC_PATH = $(SMTP_PROTO_SRC_PATH)/generated
 SMTP_ADDITIONAL_INCLUDE = -I$(CWD)/$(SMTP_FSM_SRC_PATH)
+SERVER_SRC_PATH = $(LIB_DIR)/server
 
 EVENT_LOOP_SRC = ${shell find  $(CWD)/$(EVENT_LOOP_SRC_PATH) -name "*.c"}
 LOG_SRC = ${shell find  $(CWD)/$(LOG_SRC_PATH) -name "*.c"}
@@ -15,6 +16,7 @@ ADDITIONAl_SRC = ${shell find  $(CWD)/$(ADDITIONAl_SRC_PATH) -maxdepth 1  -name 
 SMTP_FSM_SRC = $(CWD)/$(SMTP_FSM_SRC_PATH)/smtp-states-fsm.c
 SMTP_FSM_DEF = $(CWD)/$(SMTP_PROTO_SRC_PATH)/smtp-states.def
 SMTP_PROTO_SRC = ${shell find  $(CWD)/$(SMTP_PROTO_SRC_PATH) -name "*.c"}
+SERVER_SRC = ${shell find  $(CWD)/$(SERVER_SRC_PATH) -name "*.c"}
 
 EVENT_LOOP_OBJS = $(patsubst $(CWD)/$(EVENT_LOOP_SRC_PATH)/%.c, $(BUILD_DIR)/event_loop/%.o, $(EVENT_LOOP_SRC))
 LOG_OBJS = $(patsubst $(CWD)/$(LOG_SRC_PATH)/%.c, $(BUILD_DIR)/log/%.o, $(LOG_SRC))
@@ -22,18 +24,21 @@ MAILDIR_OBJS = $(patsubst $(CWD)/$(MAILDIR_SRC_PATH)/%.c, $(BUILD_DIR)/maildir/%
 ADDITIONAL_OBJS = $(patsubst $(CWD)/$(ADDITIONAl_SRC_PATH)/%.c, $(BUILD_DIR)/%.o, $(ADDITIONAl_SRC))
 SMTP_FSM_OBJS = $(BUILD_DIR)/smtp/generated/smtp-states-fsm.o
 SMTP_PROTO_OBJS = $(patsubst $(CWD)/$(SMTP_PROTO_SRC_PATH)/%.c, $(BUILD_DIR)/smtp/%.o, $(SMTP_PROTO_SRC))
+SERVER_OBJS = $(patsubst $(CWD)/$(SERVER_SRC_PATH)/%.c, $(BUILD_DIR)/server/%.o, $(SERVER_SRC))
+
 
 LIB_EVENT_LOOP_PATH = $(BIN_DIR)/libeventloop.a
 LIB_LOG_PATH = $(BIN_DIR)/liblog.a
 LIB_MAILDIR_PATH = $(BIN_DIR)/libmaildir.a
 LIB_ADDITIONAL_PATH = $(BIN_DIR)/libadditional.a
 LIB_SMTP_PROTO_PATH = $(BIN_DIR)/libsmtpprotocol.a
+LIB_SERVER_PATH = $(BIN_DIR)/libserver.a
 
 ALL_SERVER_LIBS_PATH = $(BIN_DIR)/libeventloop.a $(BIN_DIR)/liblog.a \
  						$(BIN_DIR)/libadditional.a $(BIN_DIR)/libsmtpprotocol.a \
- 						$(BIN_DIR)/libmaildir.a
+ 						$(BIN_DIR)/libmaildir.a $(BIN_DIR)/libserver.a
 
-LINKING_SERVER_LIBS = -leventloop -llog -ladditional -lsmtpprotocol -lmaildir -lconfig
+LINKING_SERVER_LIBS = -leventloop -ladditional -lsmtpprotocol -lserver -lmaildir -lconfig -llog
 AUTOGEN_FLAGS = -DTEST_CHECK_OPTS $(shell autoopts-config ldflags) -Wno-implicit-function-declaration
 
 #event_loop
@@ -92,15 +97,21 @@ $(BIN_DIR)/libsmtpprotocol.a: $(SMTP_PROTO_OBJS) $(CWD)/$(SMTP_FSM_SRC_PATH)/smt
 
 #lib_smtp_protocol: $(BIN_DIR)/libsmtpprotocol.a
 
-#smtp_protocol
+#server_lib
+$(BUILD_DIR)/%.o: $(CWD)/$(SERVER_SRC_PATH)/%.c
+	$(CC) $(CCFLAGS) $< $(INCLUDES) $(LINKS) -o $@ -c
+
+$(BIN_DIR)/libserver.a: $(SERVER_OBJS)
+	ar rc $@ $(SERVER_OBJS)
 
 
 
 #server
 $(BIN_DIR)/server.out: $(BIN_DIR)/libeventloop.a $(BIN_DIR)/liblog.a \
                        $(BIN_DIR)/libadditional.a $(BIN_DIR)/libsmtpprotocol.a \
-                       $(BIN_DIR)/libmaildir.a $(BIN_DIR)/config.cfg
-	$(CC) $(CCFLAGS) $(INCLUDES) $(SMTP_ADDITIONAL_INCLUDE) $(CWD)/main.c -L$(BIN_DIR) $(LINKING_SERVER_LIBS) -lpthread -o $@
+                       $(BIN_DIR)/libmaildir.a $(BIN_DIR)/libserver.a \
+                       $(BIN_DIR)/config.cfg
+	$(CC) $(CCFLAGS) $(INCLUDES) $(SMTP_ADDITIONAL_INCLUDE) $(CWD)/main.c -L$(BIN_DIR) $(LINKING_SERVER_LIBS) -lpthread  -o $@
 
 $(BIN_DIR)/config.cfg:
 	cp $(RESOURCE_PATH)/config2.cfg $(BIN_DIR)/config.cfg
@@ -113,6 +124,7 @@ src_mkdir:
 	mkdir -p $(BUILD_DIR)/log
 	mkdir -p $(BUILD_DIR)/maildir
 	mkdir -p $(BUILD_DIR)/smtp/generated
+	mkdir -p $(BUILD_DIR)/server
 
 #.PHONY: lib_event_loop lib_log lib_maildir lib_additional mkdir
 

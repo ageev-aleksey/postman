@@ -51,9 +51,19 @@ exit:
     return status;
 }
 
+void maildir_message_default_init(maildir_message *msg) {
+    msg->pr_filename[0] = '\0';
+    msg->pr_user = NULL;
+    msg->pr_fd = NULL;
+    msg->pr_is_open = false;
+    msg->pr_type = NONE;
+}
+
 void maildir_message_free(maildir_message *msg) {
     if (msg->pr_is_open) {
         fclose(msg->pr_fd);
+        msg->pr_is_open = false;
+        msg->pr_fd = NULL;
     }
 }
 

@@ -13,7 +13,7 @@
 typedef struct d_maildir_user maildir_user;
 
 typedef enum d_message_type {
-    NEW, TMP
+    NEW, TMP, NONE,
 } message_type;
 
 typedef struct d_maildir_message {
@@ -35,6 +35,8 @@ LIST_HEAD(d_maildir_messages_list, d_maildir_message_entry);
 typedef struct d_maildir_messages_list d_maildir_messages_list;
 
 //bool pr_maildir_message_init(maildir_message *msg);
+
+void maildir_message_default_init(maildir_message *msg);
 ///Осовбождение памяти из под структуры
 void maildir_message_free(maildir_message *msg);
 /// Удаление файла

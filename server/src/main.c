@@ -2,7 +2,7 @@
 // Created by nrx on 23.10.2020.
 //
 
-#include "global_context.h"
+#include "server/global_context.h"
 #include "log/context.h"
 #include "event_loop/event_loop.h"
 #include <stdio.h>

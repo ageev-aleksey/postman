@@ -3,6 +3,12 @@
 #include "vector.h"
 #include "vector_structures.h"
 
+#ifndef SMTP_STATE_H_
+#define SMTP_STATE_H_
+
+#define SMTP_COMMAND_END "\r\n"
+#define SMTP_COMMAND_END_LEN 2
+
 typedef struct smtp_mailbox {
     char *user_name;
     char *server_name;
@@ -34,6 +40,7 @@ typedef enum d_smtp_status {
     SMTP_STATUS_OK,                      /// Сообщение полностью обработано
     SMTP_STATUS_WARNING,                 /// Сообщение полностью обраотано, но ответ для клиента отрицательный
     SMTP_STATUS_CONTINUE,                /// Сообщение состоит из множества строк, необходимо продолжить обрабатывать строки
+    SMTP_STATUS_DATA_END,                /// Тело письма завершено. письмо можно доставлять.
 } smtp_status;
 
 enum smtp_command_type {
@@ -92,13 +99,19 @@ void smtp_free(smtp_state *smtp);
  *           На каждыое действие в SMTP формируется протокольный отклик, если не указано иного
  */
 smtp_status smtp_parse(smtp_state *smtp, const char *message, char **buffer_reply, err_t *error);
+
+char *smtp_make_response(smtp_state *smtp, size_t code, const char* msg);
+
 /**
- * Перенос буфера теал сообщения. После вызова этой функции буфером владеет пользователь. Он должен освободить ресурсы
+ * Перенос буфера получателя сообщения. После вызова этой функции буфером владеет пользователь. Он должен освободить ресурсы
  * @param smtp
  * @param buffer
  * @param error
  * @return
  */
-bool smtp_move_buffer(smtp_state *smtp, char **buffer, err_t *error);
+bool smtp_move_buffer(smtp_state *smtp, char **buffer, size_t *blen, err_t *error);
 
+vector_smtp_mailbox* smtp_get_rcpt(smtp_state *smtp);
+smtp_mailbox* smtp_get_sender(smtp_state *smtp);
 
+#endif

@@ -76,27 +76,27 @@ void log_free(log_context *context);
 
 #define LOG_MAKE_MESSAGE(log_level_, format_, ...) \
 ({                                     \
-    log_message *message = s_malloc(sizeof(log_message), NULL); \
-    if(message != NULL) {              \
-        asprintf(&message->message, format_, __VA_ARGS__);                             \
-        message->file = __FILE__;      \
-        message->function = __FUNCTION__;                       \
-        message->line = __LINE__;                  \
-        message->level = (log_level_); \
+    log_message *_message_ = s_malloc(sizeof(log_message), NULL); \
+    if(_message_ != NULL) {              \
+        asprintf(&_message_->message, format_, __VA_ARGS__);                             \
+        _message_->file = __FILE__;      \
+        _message_->function = __FUNCTION__;                       \
+        _message_->line = __LINE__;                  \
+        _message_->level = (log_level_); \
     }              \
-    message;            \
+    _message_;            \
 })
 
 #define WRITE_LOG(log_level_, format_, ...) \
 do {                   \
   if ((log_get_level(GLOBAL_LOG_CONTEXT) >= (log_level_))) { \
-    time_t t = time(NULL);                            \
-    log_message *message = LOG_MAKE_MESSAGE(log_level_, (format_),  __VA_ARGS__); \
-    message->time = t;\
-    if (message == NULL) {                                  \
+    time_t _t_ = time(NULL);                            \
+    log_message *_message_ = LOG_MAKE_MESSAGE(log_level_, (format_),  __VA_ARGS__); \
+    if (_message_ == NULL) {                                  \
         fprintf(stderr, "LOG FATAL ERROR: error allocating memory for message struct\n");                   \
     } else {                                \
-        log_write(GLOBAL_LOG_CONTEXT, message); \
+        _message_->time = _t_;\
+        log_write(GLOBAL_LOG_CONTEXT, _message_); \
     }                    \
              \
   }  \

@@ -1,26 +1,23 @@
 //
-// Created by nrx on 05.12.2020.
+// Created by nrx on 09.12.2020.
 //
 
-#ifndef SERVER_USER_CONTEXT_H
-#define SERVER_USER_CONTEXT_H
+#ifndef SERVER_USERS_LIST_H
+#define SERVER_USERS_LIST_H
 #include "sys/queue.h"
 #include "smtp/state.h"
 #include "vector_structures.h"
 #include "maildir/maildir.h"
 #include "event_loop/event_loop.h"
 #include "util.h"
-#include <pthread.h>
-#include <libconfig.h>
 
-#define POSTMAN_VERSION_MAJOR 0
-#define POSTMAN_VERSION_MINOR 1
 #define TEMPORARY_BUFFER_SIZE 512
 
 typedef struct user_context {
     smtp_state smtp;
     vector_char  buffer;
-    char tmp_buffer[TEMPORARY_BUFFER_SIZE];
+    char read_buffer[TEMPORARY_BUFFER_SIZE];
+    vector_char write_buffer;
     int socket;
     client_addr addr;
 } user_context;
@@ -43,21 +40,6 @@ typedef struct user_accessor {
     user_context_entry *pr_list_entry;
     users_list *pr_users_list;
 } user_accessor;
-
-
-struct {
-    maildir md;
-    char *ip;
-    int16_t  port;
-    char *log_file_path;
-    char *self_server_name;
-    struct users_list users;
-    char *hello_msg;
-    size_t hello_msg_size;
-} server_config;
-
-bool server_config_init(const char *path);
-void server_config_free();
 
 /**
  * Инициализация контекста пользователя
@@ -123,10 +105,4 @@ void user_accessor_release(user_accessor *accessor);
 void users_list__delete_user(user_accessor *accessor);
 
 
-
-void user_disconnected(int sock);
-void handler_accept(event_loop *el, int acceptor, int client_socket, struct sockaddr_in client_addr, err_t error);
-void handler_write(event_loop *el, int socket, char* buffer, int size, int writing, client_status status, err_t error);
-void handler_read(event_loop *el, int socket, char *buffer, int size, client_status status, err_t error);
-void handler_timer(event_loop*, int socket, struct timer_event_entry *descriptor);
-#endif //SERVER_USER_CONTEXT_H
+#endif //SERVER_USERS_LIST_H

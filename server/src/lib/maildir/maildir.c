@@ -496,6 +496,7 @@ bool maildir_server_list(maildir *md, maildir_servers_list *servers_list, err_t 
 bool maildir_get_self_server(maildir *md, maildir_server *server, err_t *error) {
     CHECK_PTR(md, error, MAILDIR_MD_PTR_NULL);
     CHECK_PTR(server, error, MAILDIR_ERROR_PTR_OF_SERVER_IS_NULL);
+    ERROR_SUCCESS(error);
     server->pr_server_domain[0] = '\0';
     server->pr_md = md;
     return true;
@@ -505,6 +506,7 @@ bool maildir_get_server_by_name(maildir *md, maildir_server *server, const char 
     CHECK_PTR(md, error, MAILDIR_MD_PTR_NULL);
     CHECK_PTR(server, error, MAILDIR_ERROR_PTR_OF_SERVER_IS_NULL);
     CHECK_PTR(name, error, MAILDIR_ERROR_PTR_OF_SERVER_NAME_IS_NULL);
+    ERROR_SUCCESS(error);
     char *server_full_path = pr_maildir_char_concatenate(3, md->pr_path, SERVERS_ROOT_NAME_PART, name);
     if (server_full_path == NULL) {
         if (error != NULL) {
@@ -543,6 +545,7 @@ bool maildir_create_server(maildir *md, maildir_server *server, char *server_dom
     CHECK_PTR(md, error, MAILDIR_MD_PTR_NULL);
     CHECK_PTR(server, error, MAILDIR_ERROR_PTR_OF_SERVER_IS_NULL);
     CHECK_PTR(server_domain, error, MAILDIR_ERROR_PTR_OF_SERVER_NAME_IS_NULL);
+    ERROR_SUCCESS(error);
     char *path = pr_maildir_char_concatenate(3, md->pr_path, SERVERS_ROOT_NAME_PART, server_domain);
     if (path == NULL) {
         if (error != NULL) {

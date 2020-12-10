@@ -159,10 +159,6 @@ do {                                \
       \
 } while (0)
 
-/**
- * Копирование одного инициализированного вектора в другой.
- */
-#define VECTOR_COPY()
 
 #define VECTOR_SUB(_type_name_, _vector_, _new_vector_, _index_start_, _index_stop_, _error_) \
 do {                                                                    \
@@ -181,7 +177,7 @@ do {                                                                    \
         && ((_index_start_) >=0 )                                                \
         && ((_index_stop_) <= (_vector_)->size)) \
     {                                                                            \
-        size_t length = (_index_stop_) - (_index_start_) + 1;                        \
+        size_t length = (_index_stop_) - (_index_start_) + 1;                                 \
         VECTOR_INIT_WITH_RESERVE(_type_name_, _new_vector_, length, _error_);                   \
         if ((_error_).error) {                                                                     \
             break;                                                                                      \
@@ -204,6 +200,8 @@ do {                                                                    \
 /**
  *
  */
+
+#define VECTOR_CLEAR(_vector_) (_vector_)->size = 0;
 
 
 

@@ -94,5 +94,15 @@ bool split_str(const char *str, char *array_str[], int num_split, char sep);
  */
 bool split_sub_str(const char *str, int begin, int end, char *array_str[], int num_split, char sep);
 
+/**
+ * Поиск первого вохждения последовательности в строку
+ * @param str - строка, в которой ведется поиск
+ * @param sequence - последовательность, которая ищется
+ * @param str_len - длина строки
+ * @param seq_len - длина последовательности
+ * @return - индекс вхождения или -1 если вхождение не найдено
+ */
+int find_first_entry_str(const char *str, const char *sequence, int str_len, int seq_len);
+int find_revers_first_entry_str(const char *str, const char *sequence, int str_len, int seq_len);
 
 #endif //SERVER_UTIL_H

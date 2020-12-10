@@ -6,6 +6,8 @@
 #include "registered_events_queue_test.h"
 #include "vector_test.h"
 #include "smtp_regex_test.h"
+#include "users_list_test.h"
+#include "server_test.h"
 
 
 bool eq_test_init();
@@ -13,6 +15,9 @@ bool req_test_init();
 bool el_test_init();
 bool smtp_regex_test_init_c();
 bool vector_test_create();
+bool users_list_create_test();
+bool server_create_test();
+
 int main()
 {
     CU_pSuite pSuite = NULL;
@@ -25,7 +30,9 @@ int main()
         !req_test_init() ||
         !el_test_init() ||
         !vector_test_create() ||
-        !smtp_regex_test_init_c())
+        !smtp_regex_test_init_c() ||
+        !users_list_create_test() ||
+        !server_create_test())
     {
         CU_cleanup_registry();
         return CU_get_error();
@@ -182,6 +189,37 @@ bool smtp_regex_test_init_c() {
             NULL == CU_add_test(pSuite,
                                 "check good command sequence",
                                 smtp_protocol_good_sequence))
+    {
+        return false;
+    }
+    return true;
+}
+
+
+bool users_list_create_test() {
+    CU_pSuite pSuite = NULL;
+    pSuite = CU_add_suite("Users list", users_list_test_init, users_list_test_clean);
+    if (NULL == pSuite) {
+        return false;
+    }
+    if (NULL == CU_add_test(pSuite,
+                            "add element and find",
+                            users_list_add_and_find_test))
+    {
+        return false;
+    }
+    return true;
+}
+
+bool server_create_test() {
+    CU_pSuite pSuite = NULL;
+    pSuite = CU_add_suite("Server", server_test_init, server_test_clean);
+    if (NULL == pSuite) {
+        return false;
+    }
+    if (NULL == CU_add_test(pSuite,
+                            "smtp session",
+                            server_handler_smtp_test))
     {
         return false;
     }

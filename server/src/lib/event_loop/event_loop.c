@@ -420,10 +420,11 @@ bool el_async_read(event_loop* loop, int sock, char *buffer, int size, sock_read
     PTHREAD_CHECK(pthread_mutex_lock(&loop->_mutex_registered_events), error);
     req_push_read(loop->_registered_events, sock, read, &err);
     PTHREAD_CHECK(pthread_mutex_unlock(&loop->_mutex_registered_events), error);
+
+    if (error != NULL) {
+        *error= err;
+    }
     if (err.error) {
-        if (error != NULL) {
-            *error= err;
-        }
         return false;
     }
     return true;
