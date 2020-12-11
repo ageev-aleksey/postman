@@ -68,6 +68,7 @@ void maildir_message_free(maildir_message *msg) {
 }
 
 bool maildir_message_release(maildir_message *msg, err_t *error) {
+    ERROR_SUCCESS(error);
     char *msg_path = NULL;
     if (!pr_maildir_message_make_full_path(msg, msg->pr_type, &msg_path, error)) {
         return false;
@@ -85,6 +86,7 @@ bool maildir_message_release(maildir_message *msg, err_t *error) {
 }
 
 bool maildir_message_finalize(maildir_message *msg, err_t *error) {
+    ERROR_SUCCESS(error);
     bool status = false;
     if (msg->pr_type == NEW) {
         return true;
@@ -126,6 +128,7 @@ bool maildir_message_finalize(maildir_message *msg, err_t *error) {
 }
 
 bool maildir_message_get_user(maildir_message *msg, maildir_user **user, err_t *error) {
+    ERROR_SUCCESS(error);
     *user = msg->pr_user;
     return true;
 }
@@ -133,6 +136,7 @@ bool maildir_message_get_user(maildir_message *msg, maildir_user **user, err_t *
 bool maildir_message_write(maildir_message *msg, const char *buffer, size_t b_len, err_t *error) {
     CHECK_PTR(msg, error, MAILDIR_MESSAGE_ERROR_MSG_DESCRIPTOR_IS_NULL);
     CHECK_PTR(buffer, error, MAILDIR_MESSAGE_ERROR_PARAMETER_IS_NULL);
+    ERROR_SUCCESS(error);
     if (b_len == 0) {
         if (error != NULL) {
             error->error = FATAL;

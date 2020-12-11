@@ -152,7 +152,7 @@ bool maildir_server_create_user(maildir_server *server, maildir_user *user, cons
 
     size_t length = 0;
 
-    if (!char_make_buf_concat(&user_path, &length, 2, server_path, username)) {
+    if (!char_make_buf_concat(&user_path, &length, 3, server_path, "/", username)) {
         if (error != NULL) {
                 error->error = FATAL;
                 error->message = MAILDIR_ERROR_CONCATENATE_PATHS;
@@ -175,16 +175,20 @@ bool maildir_server_create_user(maildir_server *server, maildir_user *user, cons
         }
         bool is_make_dir = pr_maildir_server_mkdir(path, error, MAILDIR_SERVER_ERROR_CREATE_USER_TMP_DIR);
         if (is_make_dir) {
-            if (!char_make_buf_concat(&path, &path_length, 3, user_path, "/", USER_PATH_CUR)) {
-                if (error != NULL) {
-                    error->error = FATAL;
-                    error->message = MAILDIR_ERROR_CONCATENATE_PATHS;
+            bool is = false;
+            maildir_server_is_self(server, &is, error);
+            if (is) {
+                if (!char_make_buf_concat(&path, &path_length, 3, user_path, "/", USER_PATH_CUR)) {
+                    if (error != NULL) {
+                        error->error = FATAL;
+                        error->message = MAILDIR_ERROR_CONCATENATE_PATHS;
+                    }
+                    status = false;
+                    goto exit;
                 }
-                status = false;
-                goto exit;
-            }
 
-            is_make_dir = pr_maildir_server_mkdir(path, error, MAILDIR_SERVER_ERROR_CREATE_USER_CUR_DIR);
+                is_make_dir = pr_maildir_server_mkdir(path, error, MAILDIR_SERVER_ERROR_CREATE_USER_CUR_DIR);
+            }
 
             if (is_make_dir) {
                 if (!char_make_buf_concat(&path, &path_length, 3, user_path, "/", USER_PATH_NEW)) {
@@ -239,7 +243,7 @@ bool maildir_server_user(maildir_server *server, maildir_user *user, const char 
     }
     char *user_path = NULL;
     size_t up_length = 0;
-    if (!char_make_buf_concat(&user_path, &up_length, 2, path, username)) {
+    if (!char_make_buf_concat(&user_path, &up_length, 3, path,"/", username)) {
         if (error != NULL) {
             error->error = FATAL;
             error->message = MAILDIR_ERROR_CONCATENATE_PATHS;

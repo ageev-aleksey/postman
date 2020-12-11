@@ -529,12 +529,14 @@ bool maildir_get_server_by_name(maildir *md, maildir_server *server, const char 
                 error->message = MAILDIR_ERROR_FIND_SERVER;
             }
         }
+        free(server_full_path);
         return false;
     }
     closedir(dir);
 
     strcpy(server->pr_server_domain, name);
     server->pr_md = md;
+    free(server_full_path);
     return true;
 
 }

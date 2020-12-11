@@ -89,6 +89,11 @@ bool user_init(user_context *context, struct sockaddr_in *addr, int sock) {
             LOG_ERROR("vector_init: %s", err.message);
             return false;
         }
+        VECTOR_INIT(char, &context->write_buffer, err);
+        if (err.error) {
+            LOG_ERROR("vector_init: %s", err.message);
+            return false;
+        }
         context->socket = sock;
         context->addr = get_addr(addr, &err);
         if (err.error) {
@@ -342,7 +347,6 @@ bool send_mail(smtp_state *smtp) {
         maildir_server server;
         maildir_user user;
         maildir_message mail;
-        size_t message_len = 0;
         maildir_server_default_init(&server);
         maildir_user_default_init(&user);
         maildir_message_default_init(&mail);
@@ -393,7 +397,6 @@ bool send_mail(smtp_state *smtp) {
         maildir_message_free(&mail);
         maildir_user_free(&user);
         maildir_server_free(&server);
-        free(message);
         if (!status) {
             goto exit;
         }
@@ -401,6 +404,7 @@ bool send_mail(smtp_state *smtp) {
 
 exit:
     free(sender_mailbox_str);
+    free(message);
     return status;
 }
 
@@ -436,7 +440,15 @@ char *handler_smtp(user_context *user, char *message) {
         } else {
             reply = smtp_make_response(&user->smtp, SMTP_CODE_ERROR_IN_PROCESSING, SMTP_CODE_ERROR_IN_PROCESSING_MSG);
         }
+        return reply;
     }
 
+    if (status == SMTP_STATUS_EXIT) {
+        reply = smtp_make_response(&user->smtp, SMTP_CODE_ERROR_IN_PROCESSING, SMTP_CODE_ERROR_IN_PROCESSING_MSG);
+        return reply;
+    }
+    LOG_ERROR("%s", "undefined error");
+    reply = smtp_make_response(&user->smtp, SMTP_CODE_ERROR_IN_PROCESSING, SMTP_CODE_ERROR_IN_PROCESSING_MSG);
+    return reply;
 }
 

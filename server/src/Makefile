@@ -38,7 +38,7 @@ ALL_SERVER_LIBS_PATH = $(BIN_DIR)/libeventloop.a $(BIN_DIR)/liblog.a \
  						$(BIN_DIR)/libadditional.a $(BIN_DIR)/libsmtpprotocol.a \
  						$(BIN_DIR)/libmaildir.a $(BIN_DIR)/libserver.a
 
-LINKING_SERVER_LIBS = -leventloop -ladditional -lsmtpprotocol -lserver -lmaildir -lconfig -llog
+LINKING_SERVER_LIBS = -leventloop  -lsmtpprotocol -ladditional -lserver -lmaildir -lconfig -llog
 AUTOGEN_FLAGS = -DTEST_CHECK_OPTS $(shell autoopts-config ldflags) -Wno-implicit-function-declaration
 
 #event_loop

@@ -41,6 +41,7 @@ typedef enum d_smtp_status {
     SMTP_STATUS_WARNING,                 /// Сообщение полностью обраотано, но ответ для клиента отрицательный
     SMTP_STATUS_CONTINUE,                /// Сообщение состоит из множества строк, необходимо продолжить обрабатывать строки
     SMTP_STATUS_DATA_END,                /// Тело письма завершено. письмо можно доставлять.
+    SMTP_STATUS_EXIT,
 } smtp_status;
 
 enum smtp_command_type {

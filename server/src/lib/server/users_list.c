@@ -4,6 +4,7 @@
 void user_free(user_context *context)  {
     if (context != NULL) {
         VECTOR_FREE(&context->buffer);
+        VECTOR_FREE(&context->write_buffer);
         smtp_free(&context->smtp);
     }
 }

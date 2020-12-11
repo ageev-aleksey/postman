@@ -435,6 +435,8 @@ smtp_status smtp_parse(smtp_state *smtp, const char *message, char **buffer_repl
                     ret = pr_smtp_command_rcpto(smtp, &command);
                 } else if (command.type == SMTP_DATA) {
                     ret = pr_smtp_command_data(smtp, &command);
+                } else if(command.type == SMTP_QUIT) {
+                    ret = SMTP_STATUS_EXIT;
                 } else if (command.event == AUTOFSM_EV_TEST) {
                     smtp_make_response(smtp, SMTP_CODE_COMMAND_NOT_IMPLEMENTED,
                                        SMTP_CODE_COMMAND_NOT_IMPLEMENTED_MSG);
@@ -467,6 +469,7 @@ smtp_status smtp_parse(smtp_state *smtp, const char *message, char **buffer_repl
 
 bool smtp_move_buffer(smtp_state *smtp, char **buffer, size_t *blen, err_t *error) {
     // TODO (ageev) Плохо лазить во внутренности другой структуры
+    ERROR_SUCCESS(error);
     *buffer = smtp->pr_mail_data.array;
     *blen = VECTOR_SIZE(&smtp->pr_mail_data);
     err_t err;
