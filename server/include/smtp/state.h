@@ -25,16 +25,6 @@ typedef struct smtp_address {
     enum smtp_address_type type;
 } smtp_address;
 
-typedef struct d_smtp_state {
-    te_autofsm_state pr_fsm_state;    /// Состояние протокола
-    vector_smtp_mailbox pr_rcpt_list; /// Список получателей
-    smtp_mailbox *pr_mail_from;        /// Отправитель письма
-    smtp_address *pr_hello_addr;       /// Адрес сервера предоставленный в HELO/EHLO
-    vector_char pr_mail_data;         /// Тело письма
-    char *pr_buffer;                  /// Буффер для хранения текущей обрабатываемой команды
-    size_t pr_bsize;                  /// Размер буффера
-} smtp_state;
-
 typedef enum d_smtp_status {
     SMTP_STATUS_ERROR,                   /// Произошла ошибка во время обработки сообщения
     SMTP_STATUS_OK,                      /// Сообщение полностью обработано
@@ -43,6 +33,19 @@ typedef enum d_smtp_status {
     SMTP_STATUS_DATA_END,                /// Тело письма завершено. письмо можно доставлять.
     SMTP_STATUS_EXIT,
 } smtp_status;
+
+typedef struct d_smtp_state {
+    te_autofsm_state pr_fsm_state;    /// Состояние протокола
+    vector_smtp_mailbox pr_rcpt_list; /// Список получателей
+    smtp_mailbox *pr_mail_from;       /// Отправитель письма
+    smtp_address *pr_hello_addr;      /// Адрес сервера предоставленный в HELO/EHLO
+    vector_char pr_mail_data;         /// Тело письма
+    char *pr_buffer;                  /// Буффер для хранения текущей обрабатываемой команды
+    size_t pr_bsize;                  /// Размер буффера
+    smtp_status pr_status;            /// статус обработки последней команды
+} smtp_state;
+
+
 
 enum smtp_command_type {
     SMTP_HELLO,
@@ -114,5 +117,7 @@ bool smtp_move_buffer(smtp_state *smtp, char **buffer, size_t *blen, err_t *erro
 
 vector_smtp_mailbox* smtp_get_rcpt(smtp_state *smtp);
 smtp_mailbox* smtp_get_sender(smtp_state *smtp);
+
+smtp_status smtp_get_status(smtp_state *smtp);
 
 #endif

@@ -105,4 +105,15 @@ bool split_sub_str(const char *str, int begin, int end, char *array_str[], int n
 int find_first_entry_str(const char *str, const char *sequence, int str_len, int seq_len);
 int find_revers_first_entry_str(const char *str, const char *sequence, int str_len, int seq_len);
 
+struct sub_str_iterator {
+    int begin;
+    int  end;
+    const char *str;
+    int str_len;
+    const char *sep;
+    int sep_len;
+};
+
+bool sub_str_iterate(struct sub_str_iterator *iterator);
+
 #endif //SERVER_UTIL_H

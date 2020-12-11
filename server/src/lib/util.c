@@ -298,3 +298,25 @@ int find_revers_first_entry_str(const char *str, const char *sequence, int str_l
     }
     return -1;
 }
+
+bool sub_str_iterate(struct sub_str_iterator *iterator) {
+
+    if (iterator == NULL) {
+        return false;
+    }
+    if (iterator->str == NULL || iterator->begin > iterator->end || iterator->sep == NULL) {
+        return false;
+    }
+    int next = find_first_entry_str(iterator->str + iterator->end, iterator->sep,
+                                    iterator->str_len - iterator->end , iterator->sep_len);
+
+    if (next != -1) {
+        next += iterator->end;
+        iterator->begin = iterator->end;
+        iterator->end = next + iterator->sep_len;
+    } else {
+        iterator->begin = iterator->end;
+        iterator->end = iterator->str_len;
+    }
+    return true;
+}

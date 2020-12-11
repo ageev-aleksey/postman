@@ -5,6 +5,9 @@
 #ifndef SERVER_RESPONSE_H
 #define SERVER_RESPONSE_H
 
+#define SMTP_CODE_CLOSE_CONNECTION 221
+#define SMTP_CODE_CLOSE_CONNECTION_MSG "Service closing transmission channel"
+
 #define SMTP_CODE_OK 250
 #define SMTP_CODE_OK_MSG "Requested mail action okay, completed"
 

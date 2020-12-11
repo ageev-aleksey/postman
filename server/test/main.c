@@ -219,7 +219,10 @@ bool server_create_test() {
     }
     if (NULL == CU_add_test(pSuite,
                             "smtp session",
-                            server_handler_smtp_test))
+                            server_handler_smtp_test) ||
+            NULL == CU_add_test(pSuite,
+                                "substr iterate by sep",
+                                server_test_sub_str_iterator))
     {
         return false;
     }

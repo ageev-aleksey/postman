@@ -30,6 +30,11 @@ struct {
     size_t hello_msg_size;
 } server_config;
 
+struct pair {
+    char *buffer;
+    smtp_status status;
+};
+
 bool server_config_init(const char *path);
 void server_config_free();
 
@@ -39,5 +44,5 @@ void handler_accept(event_loop *el, int acceptor, int client_socket, struct sock
 void handler_write(event_loop *el, int socket, char* buffer, int size, int writing, client_status status, err_t error);
 void handler_read(event_loop *el, int socket, char *buffer, int size, client_status status, err_t error);
 void handler_timer(event_loop*, int socket, struct timer_event_entry *descriptor);
-char *handler_smtp(user_context *user, char *message);
+struct pair handler_smtp(user_context *user, char *message);
 #endif //SERVER_USER_CONTEXT_H

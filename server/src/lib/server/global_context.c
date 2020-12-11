@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <maildir/user.h>
 #include <maildir/message.h>
+#include <unistd.h>
 
 #define RE_CONFIG_DOMAIN "([[:alnum:]_-]+\.)*[[:alnum:]_-]+"
 
@@ -159,16 +160,25 @@ void handler_write(event_loop *el, int client_socket, char* buffer, int size, in
 //            acc.user->buffer = new_buffer;
 //        }
 
-        err_t err;
-        el_async_read(el, client_socket,
-                      acc.user->read_buffer, TEMPORARY_BUFFER_SIZE,
-                      handler_read, &err);
-        if (err.error) {
-            LOG_ERROR("el_async_read: %s", err.message);
+        smtp_status sstat = smtp_get_status(&acc.user->smtp);
+
+        if (sstat == SMTP_STATUS_EXIT) {
+            // Закрытие соединения, так как пришла команда QUIT
+            close(client_socket);
+            LOG_INFO("server close connection with user [smtp command QUIT] [%s:%d]", acc.user->addr.ip, acc.user->addr.port);
+            user_free(acc.user);
+            users_list__delete_user(&acc);
+        } else {
+            err_t err;
+            char *buffer_ptr = acc.user->read_buffer;
+            user_accessor_release(&acc);
+            el_async_read(el, client_socket,
+                          buffer_ptr, TEMPORARY_BUFFER_SIZE,
+                          handler_read, &err);
+            if (err.error) {
+                LOG_ERROR("el_async_read: %s", err.message);
+            }
         }
-
-        user_accessor_release(&acc);
-
     } else {
         LOG_ERROR("Not found user by socket [%d]", client_socket);
     }
@@ -206,6 +216,9 @@ void handler_hello_write(event_loop *el, int client_socket, char* buffer, int si
 
 }
 
+bool is_line_and(const char *str) {
+    return str[0] == '\r' && str[1] == '\n';
+}
 
 void handler_read(event_loop *loop, int client_socket, char *buffer, int size, client_status status, err_t error) {
     if (status == DISCONNECTED) {
@@ -223,39 +236,81 @@ void handler_read(event_loop *loop, int client_socket, char *buffer, int size, c
                 LOG_ERROR("vector push back: %s", err.message);
             }
         }
-        int entry_index = find_first_entry_str(VECTOR(&acc.user->buffer), SMTP_COMMAND_END,
-                                               VECTOR_SIZE(&acc.user->buffer), SMTP_COMMAND_END_LEN);
+//        int entry_index = find_first_entry_str(VECTOR(&acc.user->buffer), SMTP_COMMAND_END,
+//                                               VECTOR_SIZE(&acc.user->buffer), SMTP_COMMAND_END_LEN);
 
-        if (entry_index != -1) {
-            // Обрабатываем команду
-            VECTOR(&acc.user->buffer)[entry_index+SMTP_COMMAND_END_LEN] = '\0';
-            err_t smtp_err;
-            char *reply = handler_smtp(acc.user, VECTOR(&acc.user->buffer));
-            VECTOR_CLEAR(&acc.user->buffer);
-             if (reply != NULL) {
-                 el_async_write(loop, acc.user->socket, reply, strlen(reply),
-                                handler_write, &err);
-                 if (err.error) {
-                     LOG_ERROR("el_async_write: %s", err.message);
-                 }
-             } else {
-                // нечего отвечать, продолжаем вычитывать остальные команды
-                 el_async_read(loop, client_socket,
-                               acc.user->read_buffer, TEMPORARY_BUFFER_SIZE,
-                               handler_read, &err);
-             }
+        struct sub_str_iterator itr;
+        itr.str = VECTOR(&acc.user->buffer);
+        itr.str_len = VECTOR_SIZE(&acc.user->buffer);
+        itr.sep = SMTP_COMMAND_END;
+        itr.sep_len = SMTP_COMMAND_END_LEN;
+        itr.begin = 0;
+        itr.end = 0;
+        while(true) {
+            sub_str_iterate(&itr);
+            err_t e;
+            //char tmp =  VECTOR(&acc.user->buffer)[itr.end];
+     //       VECTOR(&acc.user->buffer)[itr.end] = '\0';
+           // if (strcmp(&VECTOR(&acc.user->buffer)[itr.end - SMTP_COMMAND_END_LEN], SMTP_COMMAND_END) == 0) {
+            if (is_line_and(&VECTOR(&acc.user->buffer)[itr.end - SMTP_COMMAND_END_LEN])) {
+                // Обрабатываем команду
+                char tmp =  VECTOR(&acc.user->buffer)[itr.end];
+                VECTOR(&acc.user->buffer)[itr.end] = '\0';
+                err_t smtp_err;
+                struct pair reply = handler_smtp(acc.user, VECTOR(&acc.user->buffer) + itr.begin);
+                VECTOR(&acc.user->buffer)[itr.end] = tmp;
+                if (reply.status == SMTP_STATUS_CONTINUE && itr.end != itr.str_len) {
+                    continue;
+                }
 
-        } else {
-            // продолжаем вычитывать команду
-            el_async_read(loop, client_socket,
-                          acc.user->read_buffer, TEMPORARY_BUFFER_SIZE,
-                          handler_read, &err);
-            if (err.error) {
-                LOG_ERROR("el_async_read: %s", err.message);
+
+                if (reply.buffer != NULL) {
+                    if (VECTOR_SIZE(&acc.user->buffer) != itr.end) {
+                        // ПРислали больше чем одна строка
+                        LOG_WARNING("the client [%s:%d] sent more than one line", acc.user->addr.ip, acc.user->addr.port);
+                    }
+                    VECTOR_CLEAR(&acc.user->buffer); // сервер при чтении заголовков воспринимает, только одну строчку
+                    user_accessor_release(&acc);
+                    el_async_write(loop, client_socket, reply.buffer, strlen(reply.buffer),
+                                   handler_write, &err);
+                    if (err.error) {
+                        LOG_ERROR("el_async_write: %s", err.message);
+                    }
+                    return;
+                } else {
+                    // нечего отвечать, продолжаем вычитывать остальные команды
+                    VECTOR_CLEAR(&acc.user->buffer);
+                    char *ptr = acc.user->read_buffer;
+                    user_accessor_release(&acc);
+                    el_async_read(loop, client_socket,
+                                  ptr, TEMPORARY_BUFFER_SIZE,
+                                  handler_read, &err);
+                    return;
+                }
+
+            } else {
+                if (itr.begin != 0) {
+                    // в конце буфера содержится неполная команда перетаскиваем ее в начало буфера
+                    char *ptr = VECTOR(&acc.user->buffer);
+                    VECTOR_CLEAR(&acc.user->buffer);
+                    for (int j = itr.begin; j < itr.end; j++) {
+                        err_t ver;
+                        VECTOR_PUSH_BACK(char, &acc.user->buffer, ptr[j], ver);
+                    }
+                }
+                // продолжаем вычитывать команду
+                char *ptr = acc.user->read_buffer;
+                user_accessor_release(&acc);
+                el_async_read(loop, client_socket,
+                              ptr, TEMPORARY_BUFFER_SIZE,
+                              handler_read, &err);
+                if (err.error) {
+                    LOG_ERROR("el_async_read: %s", err.message);
+                }
+                return;
             }
-        }
 
-        user_accessor_release(&acc);
+        }
 
     } else {
         LOG_ERROR("not found user by socket [%d]", client_socket);
@@ -408,27 +463,29 @@ exit:
     return status;
 }
 
-char *handler_smtp(user_context *user, char *message) {
-    char *reply = NULL;
+struct pair handler_smtp(user_context *user, char *message) {
+    struct pair ret;
+    ret.buffer = NULL;
     err_t  error;
-    smtp_status status  = smtp_parse(&user->smtp, message, &reply, &error);
+    ret.status  = smtp_parse(&user->smtp, message, &ret.buffer, &error);
     if (error.error) {
         LOG_ERROR("smtp_parse: %s", error.message);
     }
 
-    if (status == SMTP_STATUS_OK || status == SMTP_STATUS_WARNING) {
+    if ( ret.status == SMTP_STATUS_OK ||  ret.status == SMTP_STATUS_WARNING) {
         LOG_INFO("user [%s:%d] smtp [%s] reply : %s", user->addr.ip, user->addr.port,
-                 smtp_status_to_str(status), reply);
-        return reply;
+                 smtp_status_to_str( ret.status), ret.buffer);
+        return ret;
     }
 
-    if (status == SMTP_STATUS_CONTINUE) {
+    if (ret.status == SMTP_STATUS_CONTINUE) {
         LOG_INFO("user [%s:%d] smtp [%s] reply", user->addr.ip, user->addr.port,
-                 smtp_status_to_str(status));
-        return NULL;
+                 smtp_status_to_str(ret.status));
+        ret.buffer = NULL; // TODO fix
+        return ret;
     }
 
-    if (status == SMTP_STATUS_DATA_END) {
+    if (ret.status == SMTP_STATUS_DATA_END) {
         // Отправка письма
         vector_smtp_mailbox *recipients = smtp_get_rcpt(&user->smtp);
         vector_char rcpt = recipients_to_string(recipients);
@@ -436,19 +493,23 @@ char *handler_smtp(user_context *user, char *message) {
         LOG_INFO("Send mail from [%s@%s] to: %s\n", mb->user_name, mb->user_name, VECTOR(&rcpt));
         VECTOR_FREE(&rcpt);
         if (send_mail(&user->smtp)) {
-            reply = smtp_make_response(&user->smtp, SMTP_CODE_OK, SMTP_CODE_OK_MSG);
+            ret.buffer = smtp_make_response(&user->smtp, SMTP_CODE_OK, SMTP_CODE_OK_MSG);
         } else {
-            reply = smtp_make_response(&user->smtp, SMTP_CODE_ERROR_IN_PROCESSING, SMTP_CODE_ERROR_IN_PROCESSING_MSG);
+            ret.buffer = smtp_make_response(&user->smtp, SMTP_CODE_ERROR_IN_PROCESSING, SMTP_CODE_ERROR_IN_PROCESSING_MSG);
         }
-        return reply;
+        return ret;
     }
 
-    if (status == SMTP_STATUS_EXIT) {
-        reply = smtp_make_response(&user->smtp, SMTP_CODE_ERROR_IN_PROCESSING, SMTP_CODE_ERROR_IN_PROCESSING_MSG);
-        return reply;
+    if (ret.status == SMTP_STATUS_EXIT) {
+        char *buff = NULL;
+        size_t buff_len = 0;
+        char_make_buf_concat(&buff, &buff_len, 3, server_config.self_server_name, " ", SMTP_CODE_CLOSE_CONNECTION_MSG);
+        ret.buffer = smtp_make_response(&user->smtp, SMTP_CODE_CLOSE_CONNECTION, buff);
+        free(buff);
+        return ret;
     }
     LOG_ERROR("%s", "undefined error");
-    reply = smtp_make_response(&user->smtp, SMTP_CODE_ERROR_IN_PROCESSING, SMTP_CODE_ERROR_IN_PROCESSING_MSG);
-    return reply;
+    ret.buffer = smtp_make_response(&user->smtp, SMTP_CODE_ERROR_IN_PROCESSING, SMTP_CODE_ERROR_IN_PROCESSING_MSG);
+    return ret;
 }
 

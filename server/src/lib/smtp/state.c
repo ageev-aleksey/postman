@@ -463,6 +463,7 @@ smtp_status smtp_parse(smtp_state *smtp, const char *message, char **buffer_repl
         }
     }
     *buffer_reply = smtp->pr_buffer;
+    smtp->pr_status = ret;
     return ret;
 }
 
@@ -483,4 +484,8 @@ vector_smtp_mailbox* smtp_get_rcpt(smtp_state *smtp) {
 
 smtp_mailbox* smtp_get_sender(smtp_state *smtp) {
     return smtp->pr_mail_from;
+}
+
+smtp_status smtp_get_status(smtp_state *smtp) {
+    return smtp->pr_status;
 }
