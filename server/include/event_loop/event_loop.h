@@ -29,9 +29,8 @@
 typedef void (*error_global_handler)(int socket, err_t error, int line_execute, const char* function_execute);
 
 typedef enum __work_mode {
-    ONE_THREAD, //< Менеджер очереди и обработка произошедших событий будет выполнятся в одном потоке
-    OWN_THREAD //< Менеджер очереди будет выполнятся в отдельном потоке, для обработки событий необходимо вызывать функцию el_run
-               //   в отдельном потоке
+    ONE_THREAD,      /// Менеджер очереди и обработка произошедших событий будет выполнятся в одном потоке
+    OWN_THREAD       /// Менеджер очереди будет выполнятся в отдельном потоке, для обработки событий необходимо вызывать функцию el_run в отдельном потоке
 } work_mode;
 
 typedef  enum _error_type  {
@@ -168,6 +167,8 @@ bool el_timer_free(event_loop* loop, timer_event_entry *descriptor);
  * @return true - операция заврешилась успешно; false -  операция завершилась с ошибкой.
  */
 bool el_stop(event_loop* loop, err_t *error);
+
+bool el_is_run(event_loop *loop);
 
 /**
  * Регистрация глобального обработчика ошибок. Имеются набор ошибок, которые необходимо обрабатывать

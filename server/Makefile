@@ -13,14 +13,15 @@ INCLUDES = -I$(ROOT)$(INCLUDE_DIR)
 CC = gcc
 CCFLAGS = -std=gnu99 -DDEBUG -D_GNU_SOURCE -g --coverage #-Wall -Werror
 
-mkdir:
-	mkdir -p $(BIN_DIR)
-	mkdir -p $(BUILD_DIR)
 
 include $(SRC_DIR)/Makefile
 include $(TEST_DIR)/Makefile
 include $(REPORT_DIR)/Makefile
 
+
+mkdir: src_mkdir mkdir_report test_mkdir st_mkdir
+	mkdir -p $(BIN_DIR)
+	mkdir -p $(BUILD_DIR)
 
 all: server unit_tests $(SYSTEM_TEST_TARGETS) report
 

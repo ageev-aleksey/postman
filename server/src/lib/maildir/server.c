@@ -133,6 +133,7 @@ bool maildir_server_create_user(maildir_server *server, maildir_user *user, cons
     CHECK_PTR(server, error, MAILDIR_SERVER_ERROR_SERVER_PTR_IS_NULL);
     CHECK_PTR(user, error, MAILDIR_SERVER_ERROR_ARGUMENT_PTR_IS_NULL);
     CHECK_PTR(username, error, MAILDIR_SERVER_ERROR_ARGUMENT_PTR_IS_NULL);
+    ERROR_SUCCESS(error);
 
     char *server_path = NULL;
     char *user_path = NULL;
@@ -174,16 +175,20 @@ bool maildir_server_create_user(maildir_server *server, maildir_user *user, cons
         }
         bool is_make_dir = pr_maildir_server_mkdir(path, error, MAILDIR_SERVER_ERROR_CREATE_USER_TMP_DIR);
         if (is_make_dir) {
-            if (!char_make_buf_concat(&path, &path_length, 3, user_path, "/", USER_PATH_CUR)) {
-                if (error != NULL) {
-                    error->error = FATAL;
-                    error->message = MAILDIR_ERROR_CONCATENATE_PATHS;
+            bool is = false;
+            maildir_server_is_self(server, &is, error);
+            if (is) {
+                if (!char_make_buf_concat(&path, &path_length, 3, user_path, "/", USER_PATH_CUR)) {
+                    if (error != NULL) {
+                        error->error = FATAL;
+                        error->message = MAILDIR_ERROR_CONCATENATE_PATHS;
+                    }
+                    status = false;
+                    goto exit;
                 }
-                status = false;
-                goto exit;
-            }
 
-            is_make_dir = pr_maildir_server_mkdir(path, error, MAILDIR_SERVER_ERROR_CREATE_USER_CUR_DIR);
+                is_make_dir = pr_maildir_server_mkdir(path, error, MAILDIR_SERVER_ERROR_CREATE_USER_CUR_DIR);
+            }
 
             if (is_make_dir) {
                 if (!char_make_buf_concat(&path, &path_length, 3, user_path, "/", USER_PATH_NEW)) {
@@ -211,6 +216,10 @@ exit:
     return status;
 }
 
+void maildir_server_default_init(maildir_server *server) {
+    server->pr_server_domain[0] = '\0';
+    server->pr_md = NULL;
+}
 
 void maildir_server_free(maildir_server *server) {
     if (server != NULL) {
@@ -222,6 +231,8 @@ bool maildir_server_user(maildir_server *server, maildir_user *user, const char 
     CHECK_PTR(server, error, MAILDIR_SERVER_ERROR_SERVER_PTR_IS_NULL);
     CHECK_PTR(user, error, MAILDIR_SERVER_ERROR_ARGUMENT_PTR_IS_NULL);
     CHECK_PTR(username, error, MAILDIR_SERVER_ERROR_ARGUMENT_PTR_IS_NULL);
+    ERROR_SUCCESS(error);
+
     char *path = NULL;
     if (!pr_maildir_server_path(server, &path)) {
         if (error != NULL) {
@@ -232,7 +243,7 @@ bool maildir_server_user(maildir_server *server, maildir_user *user, const char 
     }
     char *user_path = NULL;
     size_t up_length = 0;
-    if (!char_make_buf_concat(&user_path, &up_length, 3, path, "/", username)) {
+    if (!char_make_buf_concat(&user_path, &up_length, 3, path,"/", username)) {
         if (error != NULL) {
             error->error = FATAL;
             error->message = MAILDIR_ERROR_CONCATENATE_PATHS;
@@ -244,12 +255,8 @@ bool maildir_server_user(maildir_server *server, maildir_user *user, const char 
     free(path);
     free(user_path);
     if (dir == NULL) {
-        enum ErrorType type = ERRNO;
-        if (errno == ENOENT) {
-            type = NOT_FOUND;
-        }
         if (error != NULL) {
-            error->error = errno;
+            error->error = ERRNO;
             error->errno_value = errno;
             error->message = MAILDIR_SERVER_ERROR_USER_NOT_FOUND;
         }

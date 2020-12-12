@@ -35,6 +35,7 @@ typedef struct d_maildir_server maildir_server;
 
 // Инициализация структуры
 //bool pr_maildir_user_init(maildir_user *user, maildir_server *server, char *user_name,  err_t *error);
+void maildir_user_default_init(maildir_user *user);
 void maildir_user_free(maildir_user *user);
 //bool maildir_user_release(maildir_user *user);
 // Свойства пользователя

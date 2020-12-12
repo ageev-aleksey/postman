@@ -31,7 +31,7 @@ int make_server_socket(const char *ip, int port, err_t *error);
 
 typedef struct client_addr {
     char ip[IP_BUFFER_LEN];
-    int16_t  port;
+    uint16_t  port;
 } client_addr;
 /**
  *
@@ -94,5 +94,26 @@ bool split_str(const char *str, char *array_str[], int num_split, char sep);
  */
 bool split_sub_str(const char *str, int begin, int end, char *array_str[], int num_split, char sep);
 
+/**
+ * Поиск первого вохждения последовательности в строку
+ * @param str - строка, в которой ведется поиск
+ * @param sequence - последовательность, которая ищется
+ * @param str_len - длина строки
+ * @param seq_len - длина последовательности
+ * @return - индекс вхождения или -1 если вхождение не найдено
+ */
+int find_first_entry_str(const char *str, const char *sequence, int str_len, int seq_len);
+int find_revers_first_entry_str(const char *str, const char *sequence, int str_len, int seq_len);
+
+struct sub_str_iterator {
+    int begin;
+    int  end;
+    const char *str;
+    int str_len;
+    const char *sep;
+    int sep_len;
+};
+
+bool sub_str_iterate(struct sub_str_iterator *iterator);
 
 #endif //SERVER_UTIL_H

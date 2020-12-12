@@ -19,6 +19,7 @@
 #define TIMEOUT_ZERO 0
 #define POLL_TIMEOUT 0
 #define TIMEOUT_INF (-1)
+#define TIMEOUT_POLL 100
 #define NO_SOCKET (-1)
 
 static const char ERROR_MESSAGE_NO_ERROR[] = "Successful";
@@ -128,7 +129,7 @@ void *loop_thread(void *args) {
 //    int timeout = 500; // 0.5 sec
     loop->_is_run = true;
     while (loop_is_started(loop, &error)) {
-        pr_manager_step(loop, TIMEOUT_INF, &error);
+        pr_manager_step(loop, TIMEOUT_POLL, &error);
         if (error.error) {
             loop->_global_handler(NO_SOCKET, error, __LINE__, __FUNCTION__);
             break;
@@ -287,7 +288,7 @@ bool el_open(event_loop* loop, work_mode mode, err_t *error_) {
             }
         }
     } else if (mode == OWN_THREAD) {
-        return pthread_create(&loop->_thread, NULL, loop_thread, loop);
+        return pthread_create(&loop->_thread, NULL, loop_thread, loop) == 0;
     }
     return true;
 }
@@ -306,6 +307,7 @@ void pr_sock_write_execute(event_loop *loop, event_sock_write *event) {
 
 
 bool el_run(event_loop* loop, err_t *error) {
+    ERROR_SUCCESS(error);
     err_t err;
     ERROR_SUCCESS(&err);
     event_t *event = NULL;
@@ -373,6 +375,7 @@ bool el_run(event_loop* loop, err_t *error) {
 bool el_async_accept(event_loop* loop, int sock, sock_accept_handler handler, err_t *error) {
     err_t err;
     ERROR_SUCCESS(&err);
+    ERROR_SUCCESS(error);
     PTHREAD_CHECK(pthread_mutex_lock(&loop->_mutex_acceptors_queue), error);
     sq_add(loop->_acceptors_queue, sock, handler, &err);
     PTHREAD_CHECK(pthread_mutex_unlock(&loop->_mutex_acceptors_queue), error);
@@ -420,10 +423,11 @@ bool el_async_read(event_loop* loop, int sock, char *buffer, int size, sock_read
     PTHREAD_CHECK(pthread_mutex_lock(&loop->_mutex_registered_events), error);
     req_push_read(loop->_registered_events, sock, read, &err);
     PTHREAD_CHECK(pthread_mutex_unlock(&loop->_mutex_registered_events), error);
+
+    if (error != NULL) {
+        *error= err;
+    }
     if (err.error) {
-        if (error != NULL) {
-            *error= err;
-        }
         return false;
     }
     return true;
@@ -764,4 +768,9 @@ bool el_reg_global_error_handler(event_loop *loop, error_global_handler handler,
     ERROR_SUCCESS(error);
     loop->_global_handler = handler;
     return true;
+}
+
+bool el_is_run(event_loop *loop) {
+    err_t error;
+    return loop_is_started(loop, &error);
 }

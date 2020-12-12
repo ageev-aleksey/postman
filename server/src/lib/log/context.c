@@ -85,6 +85,7 @@ bool pr_log_wait_and_extract_messages(log_context *context, log_message_queue **
         pthread_cond_timedwait(&context->cv, &context->mutex_messages, &timeout);
         if (!pr_log_is_run(context)) {
             pthread_mutex_unlock(&context->mutex_messages);
+            free(new_queue);
             return false;
         }
     }
@@ -118,13 +119,15 @@ vector_messages* pr_log_convert_msgq_to_msgv(log_message_queue *queue, int size)
 }
 
 void pr_log_free_msgq(log_message_queue *messages) {
-    while (!TAILQ_EMPTY(messages)) {
-        log_message *entry = TAILQ_FIRST(messages);
-        TAILQ_REMOVE(messages, entry, entries);
-        free(entry->message);
-        free(entry);
+    if (messages != NULL) {
+        while (!TAILQ_EMPTY(messages)) {
+            log_message *entry = TAILQ_FIRST(messages);
+            TAILQ_REMOVE(messages, entry, entries);
+            free(entry->message);
+            free(entry);
+        }
+        free(messages);
     }
-    free(messages);
 }
 
 void pr_messages_print(log_context *context, log_message_queue *messages, size_t msg_size) {
@@ -160,6 +163,7 @@ void* pr_log_thread(void *ptr) {
         size_t msg_size = 0;
         if (!pr_log_wait_and_extract_messages(context, &messages, &msg_size)) {
             fprintf(stderr, "LOG EXIT OK\n");
+            pr_log_free_msgq(messages);
             return NULL;
         }
         if (messages == NULL) {
@@ -173,66 +177,63 @@ void* pr_log_thread(void *ptr) {
 }
 
 
-bool log_init(log_context **context) {
+bool log_init(log_context *context) {
     if (context == NULL) {
         return false;
     }
-    log_context *con = s_malloc(sizeof(log_context), NULL);
-    if (con == NULL) {
-        return false;
-    }
-    con->enabled_level = DEBUG_LEVEL;
-    if (pthread_mutex_init(&(con->mutex_messages), NULL)) {
+
+    context->enabled_level = DEBUG_LEVEL;
+    if (pthread_mutex_init(&(context->mutex_messages), NULL)) {
         goto error;
     }
-    if (pthread_cond_init(&(con->cv), NULL)) {
+    if (pthread_cond_init(&(context->cv), NULL)) {
         goto error;
     }
-    if (pthread_mutex_init(&con->mutex_property, NULL)) {
+    if (pthread_mutex_init(&context->mutex_property, NULL)) {
         goto error;
     }
-    con->messages = s_malloc(sizeof(log_message_queue), NULL);
-    if (con->messages == NULL) {
+    context->messages = s_malloc(sizeof(log_message_queue), NULL);
+    if (context->messages == NULL) {
         goto error;
     }
-    TAILQ_INIT(con->messages);
-    con->printers = s_malloc(sizeof(log_vector_printers), NULL);
-    if (con->printers == NULL) {
+    TAILQ_INIT(context->messages);
+    context->printers = s_malloc(sizeof(log_vector_printers), NULL);
+    if (context->printers == NULL) {
         goto error;
     }
     err_t  err;
-    VECTOR_INIT(printer_t, con->printers, err);
+    VECTOR_INIT(printer_t, context->printers, err);
     if (err.error) {
         goto error;
     }
-    con->timeout = 500;
+    context->timeout = 500;
     printer_t stderr_printer;
     stderr_printer.level = DEBUG_LEVEL;
     stderr_printer.handler = pr_printer_in_console;
-    VECTOR_PUSH_BACK(printer_t, con->printers, stderr_printer, err);
+    VECTOR_PUSH_BACK(printer_t, context->printers, stderr_printer, err);
     if (err.error) {
         goto error;
     }
-    *context = con;
-    con->is_run = true;
-    pthread_create(&con->thread, NULL, pr_log_thread, con);
+    context->is_run = true;
+    pthread_create(&context->thread, NULL, pr_log_thread, context);
     return true;
 
 error:
-    pthread_mutex_destroy(&((*context)->mutex_messages));
-    pthread_cond_destroy(&((*context)->cv));
-    pthread_mutex_destroy(&((*context)->mutex_property));
-    if (con != NULL) {
-        if (con->messages != NULL) {
-            free(con->messages);
-        }
-        if (con->printers != NULL) {
-            VECTOR_FREE(con->printers);
-            free(con->printers);
-        }
-        free(con);
-    }
-    *context = NULL;
+//    pthread_mutex_destroy(&((context)->mutex_messages));
+//    pthread_cond_destroy(&((context)->cv));
+//    pthread_mutex_destroy(&((context)->mutex_property));
+//    if (con != NULL) {
+//        if (con->messages != NULL) {
+//            free(con->messages);
+//        }
+//        if (con->printers != NULL) {
+//            VECTOR_FREE(con->printers);
+//            free(con->printers);
+//        }
+//        free(con);
+//    }
+//    *context = NULL;
+    log_free(context);
     return false;
 }
 

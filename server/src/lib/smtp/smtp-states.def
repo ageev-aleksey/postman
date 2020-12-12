@@ -26,7 +26,7 @@ transition = {tst = init; tev = RSET; next = init;},
 	{tst = transaction; tev = RCPT; next = transaction;},
 	{tst = transaction; tev = DATA; next = read_data;},
 	{tst = read_data; tev = READ; next = read_data;},
-	{tst = read_data; tev = END; next = init;},
+	{tst = read_data; tev = END; next = client_init;},
 
 	{tst = init; tev = QUIT; next = done;},
 	{tst = client_init; tev = QUIT; next = done;},

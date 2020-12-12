@@ -9,7 +9,7 @@
 #include <string.h>
 
 #define MD_PATH "md_path_test"
-#define OK 0
+#define OK_FLAG 0
 #define ERROR (-1)
 
 int main() {
@@ -63,5 +63,5 @@ int main() {
         }
     }
 
-    return OK;
+    return OK_FLAG;
 }
