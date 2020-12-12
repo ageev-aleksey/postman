@@ -28,6 +28,7 @@ struct {
     struct users_list users;
     char *hello_msg;
     size_t hello_msg_size;
+    event_loop *loop;
 } server_config;
 
 struct pair {

@@ -24,12 +24,12 @@ int main() {
     }
 
     err_t error;
-    event_loop *el = el_init(&error);
-    if (el == NULL) {
-        status = ERROR;
-        LOG_ERROR("event_loop init: %s", error.message);
-        goto exit;
-    }
+//    event_loop *el = el_init(&error);
+//    if (el == NULL) {
+//        status = ERROR;
+//        LOG_ERROR("event_loop init: %s", error.message);
+//        goto exit;
+//    }
     master_socket = make_server_socket(server_config.ip,
                                        server_config.port,
                                        &error);
@@ -38,23 +38,25 @@ int main() {
         LOG_ERROR("create server socket: %s", error.message);
         goto exit;
     }
-    el_async_accept(el, master_socket, handler_accept, &error);
+    el_async_accept(server_config.loop, master_socket, handler_accept, &error);
     if (error.error) {
         status = ERROR;
         LOG_ERROR("el_async_accept: %s", error.message);
         goto exit;
     }
     LOG_INFO("%s", "Server init");
-    el_open(el, ONE_THREAD, &error);
+    el_open(server_config.loop, ONE_THREAD, &error);
 
 
 exit:
     if (master_socket != ERROR) {
         close(master_socket);
     }
-    el_close(el);
+   // el_close(el);
     server_config_free();
     smtp_lib_free();
+
+    LOG_INFO("%s", "Server stop!");
     LOG_FREE();
     return status;
 }

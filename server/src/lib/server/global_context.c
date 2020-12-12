@@ -10,11 +10,30 @@
 #include <maildir/user.h>
 #include <maildir/message.h>
 #include <unistd.h>
+#include <signal.h>
 
 #define RE_CONFIG_DOMAIN "([[:alnum:]_-]+\.)*[[:alnum:]_-]+"
 
 
+void posix_signal_handler(int signal) {
+    LOG_INFO("Signal handler triggered [%d]", signal);
+    if (signal == SIGTERM || signal == SIGINT) {
+        LOG_INFO("%s", "Shutdown signal received");
+        err_t  error;
+        el_stop(server_config.loop, &error);
+        if (error.error) {
+            LOG_ERROR("el_stop: %s", error.message);
+        }
+    }
+}
+
 bool server_config_init(const char *path) {
+    err_t error;
+    server_config.loop = el_init(&error);
+    if (error.error) {
+        LOG_ERROR("el_init: %s", error.message);
+        return false;
+    }
     config_t cfg;
     config_init(&cfg);
 
@@ -62,7 +81,7 @@ bool server_config_init(const char *path) {
             asprintf(&server_config.hello_msg, "220 %s The Postman Server v%d.%d\r\n",
                      domain, POSTMAN_VERSION_MAJOR, POSTMAN_VERSION_MINOR);
     users_list__init(&server_config.users);
-    err_t  error;
+
     if (!maildir_init(&server_config.md, maildir_path, &error)) {
         LOG_ERROR("maildir: %s", error.message);
         return false;
@@ -74,6 +93,18 @@ bool server_config_init(const char *path) {
              server_config.self_server_name,
              maildir_path);
     config_destroy(&cfg);
+
+
+    struct sigaction sig_act;
+    memset(&sig_act, 0, sizeof(sig_act));
+    sig_act.sa_handler = posix_signal_handler;
+    sigset_t set;
+    sigemptyset(&set);
+    sigaddset(&set, SIGTERM);
+    sigaddset(&set, SIGINT);
+    sig_act.sa_mask = set;
+    sigaction(SIGTERM, &sig_act, NULL);
+    sigaction(SIGINT, &sig_act, NULL);
     return true;
 }
 
@@ -108,6 +139,7 @@ bool user_init(user_context *context, struct sockaddr_in *addr, int sock) {
 }
 
 void server_config_free() {
+    el_close(server_config.loop);
     free(server_config.self_server_name);
     free(server_config.ip);
     free(server_config.log_file_path);
