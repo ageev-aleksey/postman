@@ -366,6 +366,9 @@ smtp_status pr_smtp_command_hello(smtp_state *smtp, smtp_command *command) {
 
 smtp_status pr_smtp_command_mailfrom(smtp_state *smtp, smtp_command *command) {
     if (command->status == true) {
+        // выполняем сброс данных из предудущей транзакции
+        VECTOR_CLEAR(&smtp->pr_rcpt_list);
+        VECTOR_CLEAR(&smtp->pr_mail_data);
         smtp_make_response(smtp, SMTP_CODE_OK, SMTP_CODE_OK_MSG);
         smtp->pr_mail_from = (smtp_mailbox*) command->arg;
         command->arg = NULL;
@@ -398,6 +401,17 @@ smtp_status pr_smtp_command_rcpto(smtp_state *smtp, smtp_command *command) {
 
 smtp_status pr_smtp_command_data(smtp_state *smtp, smtp_command *command) {
     smtp_make_response(smtp, SMTP_CODE_MAIL_INPUT, SMTP_CODE_MAIL_INPUT_MSG);
+    return SMTP_STATUS_OK;
+}
+
+smtp_status pr_smtp_command_rset(smtp_state *smtp, smtp_command *command) {
+    VECTOR_CLEAR(&smtp->pr_mail_data);
+    VECTOR_CLEAR(&smtp->pr_rcpt_list);
+    free( smtp->pr_mail_from->user_name);
+    free(smtp->pr_mail_from->user_name);
+    free(smtp->pr_mail_from);
+    smtp->pr_mail_from = NULL;
+    smtp_make_response(smtp, SMTP_CODE_OK, SMTP_CODE_OK_MSG);
     return SMTP_STATUS_OK;
 }
 
@@ -435,6 +449,8 @@ smtp_status smtp_parse(smtp_state *smtp, const char *message, char **buffer_repl
                     ret = pr_smtp_command_rcpto(smtp, &command);
                 } else if (command.type == SMTP_DATA) {
                     ret = pr_smtp_command_data(smtp, &command);
+                } else if(command.type == SMTP_RSET) {
+                    ret = pr_smtp_command_rset(smtp, &command);
                 } else if(command.type == SMTP_QUIT) {
                     ret = SMTP_STATUS_EXIT;
                 } else if (command.event == AUTOFSM_EV_TEST) {
