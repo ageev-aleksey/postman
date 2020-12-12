@@ -11,4 +11,6 @@ server/test_report/
 *.aux
 *.log
 *.pdf
+CMakeLists.txt
+cmake-build-debug
 
