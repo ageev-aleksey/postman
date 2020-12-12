@@ -13,28 +13,31 @@ server_build:
     - apt-get install -y software-properties-common
     - add-apt-repository ppa:ubuntu-toolchain-r/test
     - apt-get update --yes
+    - apt-get install aptitude --yes
+    - aptitude install libconfig-dev -y
     - apt-get install libcunit1 libcunit1-dev --yes
     - apt-get install gcc-4.8  --yes
     - apt-get install lcov make --yes
     - apt-get install autogen --yes
   script:
     - cd server
-    - make test_mkdir
+    - make mkdir
     - make unit_tests
   artifacts:
     paths:
-      - server/bin/unit_tests.out
-      - /server/build
-      - /server/main.gcda
-      - /server/main.gcno
+      - server/bin/
+      - server/build
+      - server/main.gcda
+      - server/main.gcno
     expire_in: 1 hrs
 
 server_unit_testig:
   stage: unit_testing
   before_script:
-    - sudo su
     - apt-get update --yes
     - apt-get install valgrind --yes
+    - apt-get install aptitude --yes
+    - aptitude install libconfig-dev -y
     - apt-get install libcunit1 libcunit1-dev --yes
     - apt-get install lcov --yes
   script:
@@ -45,24 +48,33 @@ server_unit_testig:
    # - make start_system_test
   artifacts:
     paths:
-      - server/bin/unit_tests.out
-      - /server/build
-      - /server/main.gcda
-      - /server/main.gcno
+      - server/bin/
+      - server/build
+      - server/main.gcda
+      - server/main.gcno
     expire_in: 1 hrs 
 
 server_report:
   stage: report
   image: thomasweise/docker-texlive-full:latest
   before_script:
-    - sudo su
     - apt-get update --yes
     - apt-get install valgrind --yes
+    - apt-get install aptitude --yes
+    - aptitude install libconfig-dev -y
     - apt-get install libcunit1 libcunit1-dev --yes
     - apt-get install lcov --yes
+    - apt-get install autogen --yes
+    - apt-get install graphviz --yes
+    - apt-get install python --yes
+    - apt-get install perl --yes
+    - apt-get install cflow --yes
   script:
     - cd server
-    - lcov -t "server_coverage" -o coverage_report.info -c -d .
+    - make mkdir
+    - ls -al
+    - ls -al report
+    - ls -al report/utils
     - make report 
   artifacts:
     paths:

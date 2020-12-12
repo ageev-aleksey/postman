@@ -5,11 +5,17 @@
 #ifndef SERVER_RESPONSE_H
 #define SERVER_RESPONSE_H
 
+#define SMTP_CODE_CLOSE_CONNECTION 221
+#define SMTP_CODE_CLOSE_CONNECTION_MSG "Service closing transmission channel"
+
 #define SMTP_CODE_OK 250
 #define SMTP_CODE_OK_MSG "Requested mail action okay, completed"
 
 #define SMTP_CODE_MAIL_INPUT 354
 #define SMTP_CODE_MAIL_INPUT_MSG "Start mail input; end with <CRLF>.<CRLF>"
+
+#define SMTP_CODE_ERROR_IN_PROCESSING 451
+#define SMTP_CODE_ERROR_IN_PROCESSING_MSG "Requested action aborted: error in processing"
 
 #define SMTP_CODE_SYNTAX_ERROR 500
 #define SMTP_CODE_SYNTAX_ERROR_MSG "Syntax error, command unrecognized"

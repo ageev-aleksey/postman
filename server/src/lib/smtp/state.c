@@ -1,6 +1,7 @@
 #include "smtp/state.h"
 #include "smtp/regex.h"
 #include "smtp/response.h"
+#include "vector.h"
 #include <assert.h>
 #include <regex.h>
 #include <string.h>
@@ -346,15 +347,11 @@ smtp_command pr_smtp_command_parse(smtp_state *smtp, const char *message) {
     return command;
 }
 
-void pr_smtp_make_response(smtp_state *smtp, size_t code, const char* msg) {
-    char code_str[5];
-    sprintf(code_str, "%zu", code);
-    char_make_buf_concat(&smtp->pr_buffer, &smtp->pr_bsize, 3, code_str, " ", msg);
-}
+
 
 smtp_status pr_smtp_command_hello(smtp_state *smtp, smtp_command *command) {
     if (command->status == true) {
-        pr_smtp_make_response(smtp, SMTP_CODE_OK, SMTP_CODE_OK_MSG);
+        smtp_make_response(smtp, SMTP_CODE_OK, SMTP_CODE_OK_MSG);
         smtp->pr_hello_addr = (smtp_address*) command->arg;
         command->arg = NULL;
         return SMTP_STATUS_OK;
@@ -362,14 +359,17 @@ smtp_status pr_smtp_command_hello(smtp_state *smtp, smtp_command *command) {
 //        smtp_address *addr = (smtp_address*) command->arg;
 //        free(addr->address);
         char message[] = SMTP_CODE_INVALID_ARGUMENT_MSG " Expected format <domain> or '['<ip>']'";
-        pr_smtp_make_response(smtp, SMTP_CODE_INVALID_ARGUMENT, message);
+        smtp_make_response(smtp, SMTP_CODE_INVALID_ARGUMENT, message);
         return SMTP_STATUS_WARNING;
     }
 }
 
 smtp_status pr_smtp_command_mailfrom(smtp_state *smtp, smtp_command *command) {
     if (command->status == true) {
-        pr_smtp_make_response(smtp, SMTP_CODE_OK, SMTP_CODE_OK_MSG);
+        // выполняем сброс данных из предудущей транзакции
+        VECTOR_CLEAR(&smtp->pr_rcpt_list);
+        VECTOR_CLEAR(&smtp->pr_mail_data);
+        smtp_make_response(smtp, SMTP_CODE_OK, SMTP_CODE_OK_MSG);
         smtp->pr_mail_from = (smtp_mailbox*) command->arg;
         command->arg = NULL;
         return SMTP_STATUS_OK;
@@ -377,7 +377,7 @@ smtp_status pr_smtp_command_mailfrom(smtp_state *smtp, smtp_command *command) {
 //        smtp_mailbox *mailbox = (smtp_mailbox*) command->arg;
 //        free(mailbox->user_name);
 //        free(mailbox->server_name);
-        pr_smtp_make_response(smtp, SMTP_CODE_INVALID_ARGUMENT, SMTP_CODE_INVALID_ARGUMENT_MSG);
+        smtp_make_response(smtp, SMTP_CODE_INVALID_ARGUMENT, SMTP_CODE_INVALID_ARGUMENT_MSG);
         return SMTP_STATUS_WARNING;
     }
 }
@@ -385,7 +385,7 @@ smtp_status pr_smtp_command_mailfrom(smtp_state *smtp, smtp_command *command) {
 smtp_status pr_smtp_command_rcpto(smtp_state *smtp, smtp_command *command) {
     smtp_status ret;
     if (command->status == true) {
-        pr_smtp_make_response(smtp, SMTP_CODE_OK, SMTP_CODE_OK_MSG);
+        smtp_make_response(smtp, SMTP_CODE_OK, SMTP_CODE_OK_MSG);
         smtp_mailbox *rcpt = (smtp_mailbox*) command->arg;
         err_t err;
         VECTOR_PUSH_BACK(smtp_mailbox, &smtp->pr_rcpt_list, *rcpt, err); // rcpt копируется
@@ -393,16 +393,35 @@ smtp_status pr_smtp_command_rcpto(smtp_state *smtp, smtp_command *command) {
         command->arg = NULL;
         ret = SMTP_STATUS_OK;
     } else {
-        pr_smtp_make_response(smtp, SMTP_CODE_INVALID_ARGUMENT, SMTP_CODE_INVALID_ARGUMENT_MSG);
+        smtp_make_response(smtp, SMTP_CODE_INVALID_ARGUMENT, SMTP_CODE_INVALID_ARGUMENT_MSG);
         ret = SMTP_STATUS_WARNING;
     }
     return ret;
 }
 
 smtp_status pr_smtp_command_data(smtp_state *smtp, smtp_command *command) {
-    pr_smtp_make_response(smtp, SMTP_CODE_MAIL_INPUT, SMTP_CODE_MAIL_INPUT_MSG);
+    smtp_make_response(smtp, SMTP_CODE_MAIL_INPUT, SMTP_CODE_MAIL_INPUT_MSG);
     return SMTP_STATUS_OK;
 }
+
+smtp_status pr_smtp_command_rset(smtp_state *smtp, smtp_command *command) {
+    VECTOR_CLEAR(&smtp->pr_mail_data);
+    VECTOR_CLEAR(&smtp->pr_rcpt_list);
+    free( smtp->pr_mail_from->user_name);
+    free(smtp->pr_mail_from->user_name);
+    free(smtp->pr_mail_from);
+    smtp->pr_mail_from = NULL;
+    smtp_make_response(smtp, SMTP_CODE_OK, SMTP_CODE_OK_MSG);
+    return SMTP_STATUS_OK;
+}
+
+char *smtp_make_response(smtp_state *smtp, size_t code, const char* msg) {
+    char code_str[5];
+    sprintf(code_str, "%zu", code);
+    char_make_buf_concat(&smtp->pr_buffer, &smtp->pr_bsize, 4, code_str, " ", msg, SMTP_COMMAND_END);
+    return smtp->pr_buffer;
+}
+
 
 smtp_status smtp_parse(smtp_state *smtp, const char *message, char **buffer_reply, err_t *error) {
     CHECK_PTR(smtp, error, SMTP_DESCRIPTOR_IS_NULL);
@@ -413,13 +432,13 @@ smtp_status smtp_parse(smtp_state *smtp, const char *message, char **buffer_repl
         smtp_command command = pr_smtp_command_parse(smtp, message);
         if (command.type == SMTP_INVALID_COMMAND) {
             // Команда не распознона
-            pr_smtp_make_response(smtp, SMTP_CODE_SYNTAX_ERROR, SMTP_CODE_SYNTAX_ERROR_MSG);
+            smtp_make_response(smtp, SMTP_CODE_SYNTAX_ERROR, SMTP_CODE_SYNTAX_ERROR_MSG);
             ret = SMTP_STATUS_WARNING;
         } else {
             te_autofsm_state new_state = autofsm_step(smtp->pr_fsm_state, command.event, NULL);
             if (new_state == AUTOFSM_ST_INVALID) {
                 // Неверная последовательность команд
-                pr_smtp_make_response(smtp, SMTP_CODE_INVALID_SEQUENCE, SMTP_CODE_INVALID_SEQUENCE_MSG);
+                smtp_make_response(smtp, SMTP_CODE_INVALID_SEQUENCE, SMTP_CODE_INVALID_SEQUENCE_MSG);
                 ret = SMTP_STATUS_WARNING;
             } else {
                 if (command.type == SMTP_HELLO) {
@@ -430,19 +449,27 @@ smtp_status smtp_parse(smtp_state *smtp, const char *message, char **buffer_repl
                     ret = pr_smtp_command_rcpto(smtp, &command);
                 } else if (command.type == SMTP_DATA) {
                     ret = pr_smtp_command_data(smtp, &command);
+                } else if(command.type == SMTP_RSET) {
+                    ret = pr_smtp_command_rset(smtp, &command);
+                } else if(command.type == SMTP_QUIT) {
+                    ret = SMTP_STATUS_EXIT;
                 } else if (command.event == AUTOFSM_EV_TEST) {
-                    pr_smtp_make_response(smtp, SMTP_CODE_COMMAND_NOT_IMPLEMENTED,
-                                          SMTP_CODE_COMMAND_NOT_IMPLEMENTED_MSG);
+                    smtp_make_response(smtp, SMTP_CODE_COMMAND_NOT_IMPLEMENTED,
+                                       SMTP_CODE_COMMAND_NOT_IMPLEMENTED_MSG);
                     ret = SMTP_STATUS_WARNING;
                 }
             }
-            smtp->pr_fsm_state = new_state;
+            if (new_state != AUTOFSM_ST_INVALID) {
+                smtp->pr_fsm_state = new_state;
+            }
         }
       //  free(command.arg);
     } else {
         // записываем данные в буфер до тех пор пока не встретится ".\r\n" (строка содержащая только точку)
         if (strcmp(SMTP_DATA_END, message) == 0) {
             smtp->pr_fsm_state = autofsm_step(smtp->pr_fsm_state, AUTOFSM_EV_END, NULL);
+            smtp_make_response(smtp, SMTP_CODE_OK, SMTP_CODE_OK_MSG);
+            ret = SMTP_STATUS_DATA_END;
         } else {
             err_t  err;
             for (int j = 0; message[j] != '\0'; j++) {
@@ -452,5 +479,29 @@ smtp_status smtp_parse(smtp_state *smtp, const char *message, char **buffer_repl
         }
     }
     *buffer_reply = smtp->pr_buffer;
+    smtp->pr_status = ret;
     return ret;
+}
+
+
+bool smtp_move_buffer(smtp_state *smtp, char **buffer, size_t *blen, err_t *error) {
+    // TODO (ageev) Плохо лазить во внутренности другой структуры
+    ERROR_SUCCESS(error);
+    *buffer = smtp->pr_mail_data.array;
+    *blen = VECTOR_SIZE(&smtp->pr_mail_data);
+    err_t err;
+    VECTOR_INIT(char, &smtp->pr_mail_data, err);
+    return true;
+}
+
+vector_smtp_mailbox* smtp_get_rcpt(smtp_state *smtp) {
+    return &smtp->pr_rcpt_list;
+}
+
+smtp_mailbox* smtp_get_sender(smtp_state *smtp) {
+    return smtp->pr_mail_from;
+}
+
+smtp_status smtp_get_status(smtp_state *smtp) {
+    return smtp->pr_status;
 }

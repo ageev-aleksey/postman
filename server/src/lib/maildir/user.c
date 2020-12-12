@@ -195,6 +195,11 @@ exit:
 
 }
 
+void maildir_user_default_init(maildir_user *user) {
+    user->pr_login[0] = '\0';
+    user->pr_server = NULL;
+}
+
 void maildir_user_free(maildir_user *user) {
 
 }
