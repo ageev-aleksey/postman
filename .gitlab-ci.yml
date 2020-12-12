@@ -68,6 +68,7 @@ server_report:
     - apt-get install graphviz --yes
     - apt-get install python --yes
     - apt-get install perl --yes
+    - apt-get install cflow --yes
   script:
     - cd server
     - make mkdir
