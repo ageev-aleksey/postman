@@ -48,7 +48,8 @@ typedef enum smtp_status_code {
     SMTP_RECIPIENT_IS_NOT_LOCAL_TO_THE_SERVER = 551,
     SMTP_ACTION_WAS_ABORTED_DUE_TO_EXCEEDED_STORAGE_ALLOCATION = 552,
     SMTP_MAILBOX_NAME_IS_INVALID = 553,
-    SMTP_MAILBOX_DISABLED = 554
+    SMTP_MAILBOX_DISABLED = 554,
+    UNDEFINED_ERROR
 } status_code;
 
 typedef enum smtp_address_type {
@@ -80,7 +81,6 @@ typedef struct smtp_message {
     size_t num_address;
     smtp_attach *attachment_list;
     size_t num_attachment;
-    long timeout_sec;
     state_code state_code;
 } smtp_message;
 

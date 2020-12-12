@@ -43,7 +43,7 @@ state_code smtp_handshake(smtp_message *smtp_mes) {
 }
 
 state_code smtp_helo(smtp_message *smtp_mes) {
-    if (send_smtp_request(smtp_mes, "HELO smtp\r\n") == OK) {
+    if (send_smtp_request(smtp_mes, "HELO 192.168.1.1\r\n") == OK) {
         smtp_response response = get_smtp_response(smtp_mes);
 
         printf("smtp-code: %i, smtp-message: %s\n", response.status_code, response.message);
@@ -66,7 +66,11 @@ smtp_response get_smtp_response(smtp_message *smtp_mes) {
     smtp_response smtp_response;
     char *buffer = malloc(5);
 
-    receive_line(smtp_mes->socket_desc, buffer);
+    if (receive_line(smtp_mes->socket_desc, buffer) != -128128) {
+        smtp_response.message = "error";
+        smtp_response.status_code = UNDEFINED_ERROR;
+        return smtp_response;
+    }
 
     char code[3];
     size_t i = 0;
@@ -78,10 +82,12 @@ smtp_response get_smtp_response(smtp_message *smtp_mes) {
         }
         code[i] = buffer[i];
     }
-    char *message = malloc(strlen(buffer) - i);
-    for (int j = 0; i < size_str; j++, i++) {
+    char *message = malloc(strlen(buffer) - i + 1);
+    size_t j = 0;
+    for (; i < size_str; j++, i++) {
         message[j] = buffer[i];
     }
+    message[j] = '\0';
 
     smtp_response.status_code = convert_string_to_long_int(code);
     smtp_response.message = message;
@@ -96,7 +102,6 @@ int smtp_connect(char *server, char *port, smtp_message *smtp_mes) {
     char *serv_domain;
 
     int server_socket = socket(PF_INET, SOCK_STREAM, 0);
-    fcntl(server_socket, F_SETFL, O_NONBLOCK);
 
     set_smtp_state_code(smtp_mes, CONNECT);
     if (server_socket == -1) {
@@ -106,6 +111,15 @@ int smtp_connect(char *server, char *port, smtp_message *smtp_mes) {
 
     if ((serv_domain = malloc(sizeof(server))) == NULL) {
         return -1;
+    }
+
+    struct timeval timeout;
+    timeout.tv_sec = 60;
+    timeout.tv_usec = 0;
+
+    if (setsockopt(server_socket, SOL_SOCKET, SO_RCVTIMEO, (const char*) &timeout, sizeof(timeout)) == -1) {
+        perror("ERROR: timeout recv");
+        exit(-1);
     }
 
     strcpy(serv_domain, server);
@@ -286,20 +300,34 @@ bool is_smtp_success(status_code status_code) {
 //
 
 unsigned int receive_line(int socket_d, char *dist_buffer) {
+    int end_chars_count = 0;
     char *ptr = dist_buffer;
     unsigned int start_size = sizeof(dist_buffer);
-    memset(dist_buffer, 0, start_size);
-    unsigned int count_bytes = 0;
+    int count_size = 0;
+    int bytes;
+    while ((bytes = recv(socket_d, ptr, 1, 0)) > 0) {
+        count_size++;
 
-    while (recv(socket_d, ptr, 1, 0) != -1) {
-        count_bytes++;
+        if (*ptr == '\0') {
+            return bytes;
+        }
+
+        if (*ptr == '\n' || *ptr == '\r') {
+            end_chars_count++;
+        }
         ptr++;
-        if (count_bytes >= start_size) {
-            dist_buffer = realloc(dist_buffer, sizeof(dist_buffer) * (count_bytes * 2));
+
+        if (end_chars_count == 2) {
+            *(ptr - 2) = '\0';
+            return -128128;
+        }
+
+        if (count_size == start_size - 2) {
+            start_size += (start_size / 2);
+            dist_buffer = realloc(dist_buffer, start_size);
         }
     }
-
-    return strlen(dist_buffer);
+    return bytes;
 }
 
 unsigned int send_message(int socket_d, char *message) {

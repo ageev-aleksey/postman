@@ -9,7 +9,7 @@ int main(int argc, char **argv) {
 
     smtp_message **smtp_message = malloc(sizeof **smtp_message);
 
-    smtp_open("mx.yandex.ru", "25", smtp_message);
+    smtp_open("localhost", "8080", smtp_message);
 
     free(smtp_message);
 }
