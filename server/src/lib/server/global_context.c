@@ -57,6 +57,16 @@ bool server_config_init(const char *path) {
         LOG_ERROR("%s [%s]", "not found server.host field in file", path);
         return false;
     }
+    int num_threads= 0;
+    if (!config_lookup_int(&cfg, "server.worker_threads", &num_threads)) {
+        LOG_ERROR("%s [%s]", "not found server.worker_threads field in file", path);
+        return false;
+    }
+    if (num_threads <= 0) {
+        LOG_ERROR("invalid number threads value [%d]", num_threads);
+        return false;
+    }
+    server_config.num_worker_threads  = num_threads;
     // TODO (ageev) добавить проверку на корректный ip
 //    regex_t reg_domain;
 //    regcomp(&reg_domain, )

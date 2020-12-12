@@ -13,7 +13,7 @@
 #define MD_PATH "md_path_test"
 #define MD_SERVER_NAME "test_server.ru"
 #define MD_USER_NAME  "test_user"
-#define OK 0
+#define OK_FLAG 0
 #define ERROR (-1)
 
 int main() {
@@ -105,5 +105,5 @@ int main() {
     maildir_server_free(&server);
     maildir_free(md);
     free(md);
-    return OK;
+    return OK_FLAG;
 }

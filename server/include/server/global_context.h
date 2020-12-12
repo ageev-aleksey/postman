@@ -29,6 +29,7 @@ struct {
     char *hello_msg;
     size_t hello_msg_size;
     event_loop *loop;
+    size_t num_worker_threads;
 } server_config;
 
 struct pair {
