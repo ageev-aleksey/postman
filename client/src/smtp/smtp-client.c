@@ -2,6 +2,7 @@
 #include "util.h"
 
 unsigned int receive_line(int socket_d, char *dist_buffer);
+unsigned int send_message(int socket_d, char *message);
 
 state_code smtp_open(char *server, char *port, smtp_message **smtp_messages) {
     smtp_message *smtp_mes_new;
@@ -29,10 +30,33 @@ state_code smtp_handshake(smtp_message *smtp_mes) {
 
     smtp_response smtp_response = get_smtp_response(smtp_mes);
 
+    printf("smtp-code: %i, smtp-message: %s\n", smtp_response.status_code, smtp_response.message);
     if (!is_smtp_success(smtp_response.status_code)) {
         return smtp_mes->state_code;
-    } else {
-        printf("smtp-code: %i, smtp-message: %s\n", smtp_response.status_code, smtp_response.message);
+    }
+
+    if (smtp_helo(smtp_mes) != OK) {
+        return smtp_mes->state_code;
+    }
+
+    return smtp_mes->state_code;
+}
+
+state_code smtp_helo(smtp_message *smtp_mes) {
+    if (send_smtp_request(smtp_mes, "HELO smtp\r\n") == OK) {
+        smtp_response response = get_smtp_response(smtp_mes);
+
+        printf("smtp-code: %i, smtp-message: %s\n", response.status_code, response.message);
+        if (!is_smtp_success(response.status_code)) {
+            return smtp_mes->state_code;
+        }
+    }
+    return smtp_mes->state_code;
+}
+
+state_code send_smtp_request(smtp_message *smtp_mes, char *str) {
+    if (send_message(smtp_mes->socket_desc, str)) {
+        set_smtp_state_code(smtp_mes, OK);
     }
 
     return smtp_mes->state_code;
@@ -40,10 +64,11 @@ state_code smtp_handshake(smtp_message *smtp_mes) {
 
 smtp_response get_smtp_response(smtp_message *smtp_mes) {
     smtp_response smtp_response;
-    char *buffer = malloc(1000);
+    char *buffer = malloc(5);
+
     receive_line(smtp_mes->socket_desc, buffer);
 
-    char code[6];
+    char code[3];
     size_t i = 0;
     size_t size_str = strlen(buffer);
     for (; i < size_str; i++) {
@@ -105,6 +130,9 @@ int smtp_connect(char *server, char *port, smtp_message *smtp_mes) {
         }
     }
 
+    free(smtp_ip->ip);
+    free(smtp_ip);
+    free(serv_domain);
     return -1;
 }
 
@@ -266,23 +294,25 @@ unsigned int receive_line(int socket_d, char *dist_buffer) {
     while (recv(socket_d, ptr, 1, 0) != -1) {
         count_bytes++;
         ptr++;
+        if (count_bytes >= start_size) {
+            dist_buffer = realloc(dist_buffer, sizeof(dist_buffer) * (count_bytes * 2));
+        }
     }
 
     return strlen(dist_buffer);
 }
 
-//
-//unsigned int send_message(int socket_d, char *message) {
-//    char *ptr = message;
-//    size_t all_size = strlen(message);
-//    while (all_size > 0) {
-//        int send_size = send(socket_d, message, all_size, 0);
-//        if (send_size == -1) {
-//            return 0;
-//        }
-//        all_size -= send_size;
-//        ptr += send_size;
-//    }
-//    return 1;
-//}
+unsigned int send_message(int socket_d, char *message) {
+    char *ptr = message;
+    size_t all_size = strlen(message);
+    while (all_size > 0) {
+        int send_size = send(socket_d, message, all_size, 0);
+        if (send_size == -1) {
+            return 0;
+        }
+        all_size -= send_size;
+        ptr += send_size;
+    }
+    return 1;
+}
 

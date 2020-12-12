@@ -97,7 +97,9 @@ typedef struct smtp_ip {
 state_code smtp_open(char *server, char *port, smtp_message **smtp_mes);
 int smtp_connect(char *server, char *port, smtp_message *smtp_mes);
 state_code smtp_handshake(smtp_message *smtp_mes);
+state_code smtp_helo(smtp_message *smtp_mes);
 
+state_code send_smtp_request(smtp_message *smtp_mes, char *str);
 smtp_response get_smtp_response(smtp_message *smtp_mes);
 smtp_ip* get_ip_by_hostname(char *hostname);
 state_code get_smtp_state_code(smtp_message *smtp_mes);
