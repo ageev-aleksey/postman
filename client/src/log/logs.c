@@ -1,5 +1,29 @@
 #include "logs.h"
 
+TAILQ_HEAD(head_s, node) head;
+
+void init_logs() {
+    TAILQ_INIT(&head);
+}
+
+void push_log(log value) {
+    node *new = malloc(sizeof(node));
+    new->data = value;
+    TAILQ_INSERT_TAIL(&head, new, nodes);
+}
+
+log pop_log() {
+    node *old = TAILQ_FIRST(&head);
+    TAILQ_REMOVE(&head, old, nodes);
+    log data = old->data;
+    free(old);
+    return data;
+}
+
+bool is_logs_queue_empty() {
+    return TAILQ_EMPTY(&head);
+}
+
 struct tm* get_time() {
     time_t t;
     struct tm *tm;
@@ -10,7 +34,12 @@ struct tm* get_time() {
 }
 
 _Noreturn void *print_message() {
+    struct timespec ts;
+    ts.tv_sec = 0;
+    ts.tv_nsec = 500000;
+
     while (1) {
+        nanosleep(&ts, &ts);
         if (!is_logs_queue_empty()) {
             log l = pop_log();
 
@@ -40,29 +69,45 @@ _Noreturn void *print_message() {
 }
 
 void log_debug(char *message, char *filename, int line) {
-    log l = { message, filename, line, LOG_DEBUG };
+    log l = { NULL, NULL, line, LOG_DEBUG };
     struct tm *tm = get_time();
     l.time = *tm;
+    l.message = message;
+    l.filename = filename;
     push_log(l);
 }
 
 void log_info(char *message, char *filename, int line) {
-    log l = { message, filename, line, LOG_INFO };
+    log l = { NULL, NULL, line, LOG_INFO };
     struct tm *tm = get_time();
     l.time = *tm;
+    l.message = message;
+    l.filename = filename;
     push_log(l);
 }
 
 void log_error(char *message, char *filename, int line) {
-    log l = { message, filename, line, LOG_ERROR };
+    log l = { NULL, NULL, line, LOG_ERROR };
     struct tm *tm = get_time();
     l.time = *tm;
+    l.message = message;
+    l.filename = filename;
     push_log(l);
 }
 
 void log_warn(char *message, char *filename, int line) {
-    log l = { message, filename, line, LOG_WARN };
+    log l = { NULL, NULL, line, LOG_WARN };
     struct tm *tm = get_time();
     l.time = *tm;
+    l.message = message;
+    l.filename = filename;
     push_log(l);
 }
+
+void start_logger() {
+    pthread_t thread_logger;
+
+    init_logs();
+    pthread_create(&thread_logger, NULL, print_message, NULL);
+}
+

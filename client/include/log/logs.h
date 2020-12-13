@@ -1,6 +1,9 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
 #include <pthread.h>
-#include "queue_log.h"
+#include <queue.h>
+#include <time.h>
 
 #define COLOR_RESET "\x1b[0m"
 #define COLOR_BRIGHT "\x1b[1m"
@@ -33,7 +36,27 @@
 #define LOG_ERROR(message) log_error(message, __FILE__, __LINE__)
 #define LOG_WARN(message) log_warn(message, __FILE__, __LINE__)
 
-_Noreturn void *print_message();
+typedef enum log_type {
+    LOG_ERROR,
+    LOG_INFO,
+    LOG_DEBUG,
+    LOG_WARN
+} log_type;
+
+typedef struct log {
+    char *message;
+    char *filename;
+    int line;
+    log_type type;
+    struct tm time;
+} log;
+
+typedef struct node {
+    log data;
+    TAILQ_ENTRY(node) nodes;
+} node;
+
+void start_logger();
 void log_debug(char *message, char *filename, int line);
 void log_info(char *message, char *filename, int line);
 void log_error(char *message, char *filename, int line);
