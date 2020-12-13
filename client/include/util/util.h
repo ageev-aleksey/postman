@@ -15,5 +15,6 @@ long int convert_string_to_long_int(const char *str);
 string_tokens split(const char *const str, const char *const delim);
 void free_string_tokens(string_tokens *tokens);
 
-string* get_string(string *str, char character);
+string* get_string_from_characters(string *str, char *characters);
+string* add_character(string *str, char character);
 void free_string(string *str);

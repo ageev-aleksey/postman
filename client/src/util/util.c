@@ -45,7 +45,7 @@ string_tokens split(const char *const str, const char *const delim) {
                 continue;
             }
         }
-        get_string(token, str[i]);
+        add_character(token, str[i]);
     }
 
     string_tokens string_tokens;
@@ -59,7 +59,31 @@ void free_string_tokens(string_tokens *tokens) {
     free_string(tokens->tokens);
 }
 
-string* get_string(string *str, char character) {
+string *get_string_from_characters(string *str, char *characters) {
+    size_t capacity = str->length + 1;
+    char *s;
+    if (str->chars == NULL) {
+        str->length = 0;
+        s = (char *) malloc(sizeof(char));
+    }
+
+    for (int i = 0; i < strlen(characters); i++) {
+        s[(str->length)++] = characters[i];
+
+        if (str->length >= capacity) {
+            capacity *= 2; // увеличиваем ёмкость строки в два раза
+            s = (char *) realloc(s, capacity); // создаём новую строку с увеличенной ёмкостью
+        }
+    }
+
+    s[str->length] = '\0';
+
+    str->chars = s;
+
+    return str;
+}
+
+string *add_character(string *str, char character) {
     size_t capacity = str->length + 1;
     char *s;
     if (str->chars == NULL) {
