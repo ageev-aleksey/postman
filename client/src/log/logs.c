@@ -1,6 +1,6 @@
 #include "logs.h"
 
-TAILQ_HEAD(head_s, node) head;
+TAILQ_HEAD(logs_queue, node) head;
 
 void init_logs() {
     TAILQ_INIT(&head);
@@ -48,28 +48,29 @@ _Noreturn void *print_message() {
 
             switch (l.type) {
                 case LOG_INFO:
-                    fprintf(stdout, COLOR_MAGENTA "[%s] " COLOR_BLUE "%s    " COLOR_CYAN " [%s:%d]: " COLOR_BLINK " %s\n",
-                            buffer, "INFO", l.filename, l.line, l.message);
+                    fprintf(stdout, COLOR_MAGENTA "[%s] " COLOR_BLUE "%s    " COLOR_CYAN " [%s] [%s:%d]: " COLOR_BLINK " %s\n",
+                            buffer, "INFO", l.thread, l.filename, l.line, l.message);
                     break;
                 case LOG_ERROR:
-                    fprintf(stdout, COLOR_MAGENTA "[%s] " COLOR_RED "%s   " COLOR_CYAN " [%s:%d]: " COLOR_BLINK " %s\n",
-                            buffer, "ERROR", l.filename, l.line, l.message);
+                    fprintf(stdout, COLOR_MAGENTA "[%s] " COLOR_RED "%s   " COLOR_CYAN " [%s] [%s:%d]: " COLOR_BLINK " %s\n",
+                            buffer, "ERROR", l.thread, l.filename, l.line, l.message);
                     break;
                 case LOG_DEBUG:
-                    fprintf(stdout, COLOR_MAGENTA "[%s] " COLOR_GREEN "%s   " COLOR_CYAN " [%s:%d]: " COLOR_BLINK " %s\n",
-                            buffer, "DEBUG", l.filename, l.line, l.message);
+                    fprintf(stdout, COLOR_MAGENTA "[%s] " COLOR_GREEN "%s   " COLOR_CYAN " [%s] [%s:%d]: " COLOR_BLINK " %s\n",
+                            buffer, "DEBUG", l.thread, l.filename, l.line, l.message);
                     break;
                 case LOG_WARN:
-                    fprintf(stdout, COLOR_MAGENTA "[%s] " COLOR_YELLOW "%s " COLOR_CYAN " [%s:%d]: " COLOR_BLINK " %s\n",
-                            buffer, "WARNING", l.filename, l.line, l.message);
+                    fprintf(stdout, COLOR_MAGENTA "[%s] " COLOR_YELLOW "%s " COLOR_CYAN " [%s] [%s:%d]: " COLOR_BLINK " %s\n",
+                            buffer, "WARNING", l.thread, l.filename, l.line, l.message);
                     break;
             }
+            //free(l.thread);
         }
     }
 }
 
 void log_debug(char *message, char *filename, int line) {
-    log l = { NULL, NULL, line, LOG_DEBUG };
+    log l = { NULL, NULL, NULL, line, LOG_DEBUG };
     struct tm *tm = get_time();
     l.time = *tm;
     l.message = message;
@@ -78,16 +79,22 @@ void log_debug(char *message, char *filename, int line) {
 }
 
 void log_info(char *message, char *filename, int line) {
-    log l = { NULL, NULL, line, LOG_INFO };
+    log l = { NULL, NULL, NULL, line, LOG_INFO };
     struct tm *tm = get_time();
     l.time = *tm;
     l.message = message;
     l.filename = filename;
+
+    pthread_t self = pthread_self();
+
+    l.thread = malloc(50);
+    sprintf(l.thread, "Thread %lu", (unsigned long int) (self));
+
     push_log(l);
 }
 
 void log_error(char *message, char *filename, int line) {
-    log l = { NULL, NULL, line, LOG_ERROR };
+    log l = { NULL, NULL, NULL, line, LOG_ERROR };
     struct tm *tm = get_time();
     l.time = *tm;
     l.message = message;
@@ -96,7 +103,7 @@ void log_error(char *message, char *filename, int line) {
 }
 
 void log_warn(char *message, char *filename, int line) {
-    log l = { NULL, NULL, line, LOG_WARN };
+    log l = { NULL, NULL, NULL, line, LOG_WARN };
     struct tm *tm = get_time();
     l.time = *tm;
     l.message = message;

@@ -1,10 +1,13 @@
 #include "smtp-client.h"
 #include "util.h"
+#include "logs.h"
 
 unsigned int receive_line(int socket_d, char *dist_buffer);
 unsigned int send_message(int socket_d, char *message);
 
 state_code smtp_open(char *server, char *port, smtp_message **smtp_messages) {
+    LOG_INFO("Попытка соединения с сервером");
+
     smtp_message *smtp_mes_new;
 
     if ((smtp_mes_new = calloc(1, sizeof(**smtp_messages))) == NULL) {

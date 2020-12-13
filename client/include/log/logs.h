@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <pthread.h>
-#include <queue.h>
+#include <sys/queue.h>
 #include <time.h>
 
 #define COLOR_RESET "\x1b[0m"
@@ -46,6 +46,7 @@ typedef enum log_type {
 typedef struct log {
     char *message;
     char *filename;
+    char *thread;
     int line;
     log_type type;
     struct tm time;

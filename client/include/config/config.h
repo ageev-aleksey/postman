@@ -1,5 +1,6 @@
-#include <stdio.h>
-#include <stdbool.h>
+#include <libconfig.h>
+#include <string.h>
+#include "logs.h"
 
 #define APPLICATION_CONFIG "resources/application.cfg"
 
@@ -8,6 +9,7 @@ typedef struct s_maildir_config {
 } maildir_config;
 
 typedef struct s_config {
+    int threads;
     maildir_config maildir;
 } config;
 
