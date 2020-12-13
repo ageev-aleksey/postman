@@ -1,5 +1,7 @@
-#include "config.h"
 #include "smtp-client.h"
+#include "util.h"
+#include "logs.h"
+#include "config.h"
 
 int main(int argc, char **argv) {
     start_logger();
@@ -8,11 +10,17 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-//    smtp_message **smtp_message = malloc(sizeof **smtp_message);
-//
-//    smtp_open("localhost", "8080", smtp_message);
-//
-//    free(smtp_message);
+    smtp_context **contexts = malloc(sizeof **contexts);
+    smtp_context *context = smtp_open("mx.yandex.ru", "25", contexts);
+
+    if (context->state_code == OK) {
+        smtp_mail(context, "vladovchinnikov950@gmail.com", "Vladislav Ovchinnikov");
+        smtp_addr to_addrs[1];
+        to_addrs[0].email = "wedf97@yandex.ru";
+        to_addrs[0].name = "Vladislav Ovchinnikov";
+        smtp_rcpt(context, to_addrs, 1);
+        smtp_data(context, "Hello, Vladislav.\r\n.\r\n");
+    }
 
     while (1) {
 

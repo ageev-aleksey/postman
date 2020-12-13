@@ -1,22 +1,29 @@
+#include "util.h"
 #include "logs.h"
 
 TAILQ_HEAD(logs_queue, node) head;
+
+pthread_mutex_t mutex_queue;
 
 void init_logs() {
     TAILQ_INIT(&head);
 }
 
-void push_log(log value) {
-    node *new = malloc(sizeof(node));
+void push_log(log *value) {
+    pthread_mutex_lock(&mutex_queue);
+    node *new = allocate_memory(sizeof(node));
     new->data = value;
     TAILQ_INSERT_TAIL(&head, new, nodes);
+    pthread_mutex_unlock(&mutex_queue);
 }
 
-log pop_log() {
+log* pop_log() {
+    pthread_mutex_lock(&mutex_queue);
     node *old = TAILQ_FIRST(&head);
     TAILQ_REMOVE(&head, old, nodes);
-    log data = old->data;
+    log* data = old->data;
     free(old);
+    pthread_mutex_unlock(&mutex_queue);
     return data;
 }
 
@@ -41,73 +48,100 @@ _Noreturn void *print_message() {
     while (1) {
         nanosleep(&ts, &ts);
         if (!is_logs_queue_empty()) {
-            log l = pop_log();
+            log *l = pop_log();
 
             char buffer[26];
-            strftime(buffer, 26, "%Y-%m-%d %H:%M:%S", &l.time);
+            strftime(buffer, 26, "%Y-%m-%d %H:%M:%S", &l->time);
 
-            switch (l.type) {
+            switch (l->type) {
                 case LOG_INFO:
                     fprintf(stdout, COLOR_MAGENTA "[%s] " COLOR_BLUE "%s    " COLOR_CYAN " [%s] [%s:%d]: " COLOR_BLINK " %s\n",
-                            buffer, "INFO", l.thread, l.filename, l.line, l.message);
+                            buffer, "INFO", l->thread, l->filename, l->line, l->message);
                     break;
                 case LOG_ERROR:
                     fprintf(stdout, COLOR_MAGENTA "[%s] " COLOR_RED "%s   " COLOR_CYAN " [%s] [%s:%d]: " COLOR_BLINK " %s\n",
-                            buffer, "ERROR", l.thread, l.filename, l.line, l.message);
+                            buffer, "ERROR", l->thread, l->filename, l->line, l->message);
                     break;
                 case LOG_DEBUG:
                     fprintf(stdout, COLOR_MAGENTA "[%s] " COLOR_GREEN "%s   " COLOR_CYAN " [%s] [%s:%d]: " COLOR_BLINK " %s\n",
-                            buffer, "DEBUG", l.thread, l.filename, l.line, l.message);
+                            buffer, "DEBUG", l->thread, l->filename, l->line, l->message);
                     break;
                 case LOG_WARN:
                     fprintf(stdout, COLOR_MAGENTA "[%s] " COLOR_YELLOW "%s " COLOR_CYAN " [%s] [%s:%d]: " COLOR_BLINK " %s\n",
-                            buffer, "WARNING", l.thread, l.filename, l.line, l.message);
+                            buffer, "WARNING", l->thread, l->filename, l->line, l->message);
                     break;
             }
-            //free(l.thread);
+            free(l->thread);
+            free(l);
         }
     }
 }
 
 void log_debug(char *message, char *filename, int line) {
-    log l = { NULL, NULL, NULL, line, LOG_DEBUG };
+    log *l = malloc(sizeof(log));
     struct tm *tm = get_time();
-    l.time = *tm;
-    l.message = message;
-    l.filename = filename;
+    l->time = *tm;
+    l->message = message;
+    l->filename = filename;
+    l->type = LOG_DEBUG;
+    l->line = line;
+
+    pthread_t self = pthread_self();
+
+    l->thread = allocate_memory(100);
+    sprintf(l->thread, "Thread %lu", (unsigned long int) (self));
+
     push_log(l);
 }
 
 void log_info(char *message, char *filename, int line) {
-    log l = { NULL, NULL, NULL, line, LOG_INFO };
+    log *l = malloc(sizeof(log));
     struct tm *tm = get_time();
-    l.time = *tm;
-    l.message = message;
-    l.filename = filename;
+    l->time = *tm;
+    l->message = message;
+    l->filename = filename;
+    l->type = LOG_INFO;
+    l->line = line;
 
     pthread_t self = pthread_self();
 
-    l.thread = malloc(50);
-    sprintf(l.thread, "Thread %lu", (unsigned long int) (self));
+    l->thread = allocate_memory(100);
+    sprintf(l->thread, "Thread %lu", (unsigned long int) (self));
 
     push_log(l);
 }
 
 void log_error(char *message, char *filename, int line) {
-    log l = { NULL, NULL, NULL, line, LOG_ERROR };
+    log *l = malloc(sizeof(log));
     struct tm *tm = get_time();
-    l.time = *tm;
-    l.message = message;
-    l.filename = filename;
+    l->time = *tm;
+    l->message = message;
+    l->filename = filename;
+    l->type = LOG_ERROR;
+    l->line = line;
+
+    pthread_t self = pthread_self();
+
+    l->thread = allocate_memory(100);
+    sprintf(l->thread, "Thread %lu", (unsigned long int) (self));
+
     push_log(l);
 }
 
 void log_warn(char *message, char *filename, int line) {
-    log l = { NULL, NULL, NULL, line, LOG_WARN };
+    log *l = malloc(sizeof(log));
     struct tm *tm = get_time();
-    l.time = *tm;
-    l.message = message;
-    l.filename = filename;
+    l->time = *tm;
+    l->message = message;
+    l->filename = filename;
+    l->type = LOG_WARN;
+    l->line = line;
+
+    pthread_t self = pthread_self();
+
+    l->thread = allocate_memory(100);
+    sprintf(l->thread, "Thread %lu", (unsigned long int) (self));
+
     push_log(l);
 }
 

@@ -1,4 +1,5 @@
-#include <stdlib.h>
+#include <sys/queue.h>
+#include <stddef.h>
 
 typedef struct string {
     char *chars;
@@ -18,3 +19,6 @@ void free_string_tokens(string_tokens *tokens);
 string* get_string_from_characters(string *str, char *characters);
 string* add_character(string *str, char character);
 void free_string(string *str);
+
+void* allocate_memory(size_t bytes);
+void* reallocate_memory(void* buffer, size_t bytes);

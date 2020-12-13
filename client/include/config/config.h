@@ -1,6 +1,6 @@
 #include <libconfig.h>
 #include <string.h>
-#include "logs.h"
+#include <stdbool.h>
 
 #define APPLICATION_CONFIG "resources/application.cfg"
 

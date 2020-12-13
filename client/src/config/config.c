@@ -1,4 +1,6 @@
+#include "util.h"
 #include "config.h"
+#include "logs.h"
 
 bool loading_config() {
     config_t cfg;
@@ -27,15 +29,15 @@ bool loading_config() {
         return false;
     }
 
-    config_context.maildir.path = malloc(sizeof(maildir_path));
+    config_context.maildir.path = allocate_memory(strlen(maildir_path) + 1);
     strcpy(config_context.maildir.path, maildir_path);
     config_context.threads = threads;
 
-    char *message_application_maildir_path = malloc(100);
+    char *message_application_maildir_path = allocate_memory(strlen(maildir_path) + 150);
     sprintf(message_application_maildir_path, "Конфигурация - application.maildir.path = '%s'", maildir_path);
     LOG_INFO(message_application_maildir_path);
 
-    char *message_application_threads = malloc(100);
+    char *message_application_threads = allocate_memory(60);
     sprintf(message_application_threads, "Конфигурация - application.threads = %d", threads);
     LOG_INFO(message_application_threads);
 

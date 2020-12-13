@@ -53,7 +53,7 @@ typedef struct log {
 } log;
 
 typedef struct node {
-    log data;
+    log *data;
     TAILQ_ENTRY(node) nodes;
 } node;
 
