@@ -11,7 +11,7 @@ int main(int argc, char **argv) {
     }
 
     smtp_context **contexts = malloc(sizeof **contexts);
-    smtp_context *context = smtp_open("mx.yandex.ru", "25", contexts);
+    smtp_context *context = smtp_open("mail.success.xyz", "25", contexts);
 
     if (context->state_code == OK) {
         smtp_mail(context, "vladovchinnikov950@gmail.com", "Vladislav Ovchinnikov");
