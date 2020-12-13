@@ -185,7 +185,7 @@ void handler_write(event_loop *el, int client_socket, char* buffer, int size, in
         user_disconnected(client_socket);
         return;
     }
-    
+
     user_accessor acc;
     if(users_list__user_find_by_sock(&server_config.users, &acc, client_socket)) {
 
@@ -292,8 +292,8 @@ void handler_read(event_loop *loop, int client_socket, char *buffer, int size, c
             sub_str_iterate(&itr);
             err_t e;
             //char tmp =  VECTOR(&acc.user->buffer)[itr.end];
-     //       VECTOR(&acc.user->buffer)[itr.end] = '\0';
-           // if (strcmp(&VECTOR(&acc.user->buffer)[itr.end - SMTP_COMMAND_END_LEN], SMTP_COMMAND_END) == 0) {
+            //       VECTOR(&acc.user->buffer)[itr.end] = '\0';
+            // if (strcmp(&VECTOR(&acc.user->buffer)[itr.end - SMTP_COMMAND_END_LEN], SMTP_COMMAND_END) == 0) {
             if (is_line_and(&VECTOR(&acc.user->buffer)[itr.end - SMTP_COMMAND_END_LEN])) {
                 // Обрабатываем команду
                 char tmp =  VECTOR(&acc.user->buffer)[itr.end];
@@ -396,7 +396,7 @@ vector_char recipients_to_string(vector_smtp_mailbox *recipients){
     return msg;
 }
 
-#define ERROR_LOG_AND_CLEANUP(error_)                                                       \
+#define ERROR_LOG_AND_CLEANUP(error_, _mark_)                                                       \
 do {                                                                                    \
     if ((error_).error) {                                                               \
         if ((error_).error == ERRNO) {                                                  \
@@ -405,9 +405,54 @@ do {                                                                            
             LOG_ERROR("%s", (error_).message);                                          \
         }                                                                               \
         status = false;                                                                 \
-        goto loop_cleanup;                                                              \
+        goto _mark_;                                                              \
     }                                                                                   \
 } while(0)
+
+char* make_x_headers(vector_smtp_mailbox *rcpts, smtp_mailbox *from) {
+    // Создание дополнительных заголовков
+    char *x_headers = NULL;
+    size_t x_headers_len = 0;
+    char *header = NULL;
+    size_t header_len = 0;
+    // Записываем отрпавителя
+    char_make_buf_concat(&x_headers, &x_headers_len, 5, "X-Postman-From: ", from->user_name, "@", from->server_name, "\r\n");
+    // Записываем текущее время
+    char *timestamp = NULL;
+    asprintf(&timestamp, "%ld", time(NULL));
+    char_make_buf_concat(&header, &header_len, 4, x_headers, "X-Postman-Date: ", timestamp, "\r\n");
+    free(x_headers);
+    x_headers = header;
+    header = NULL;
+    x_headers_len = header_len;
+    header_len = 0;
+    free(timestamp);
+    // Записываем получателей
+
+    char_make_buf_concat(&header, &header_len, 2, x_headers, "X-Postman-To: ");
+    free(x_headers);
+    x_headers = header;
+    header = NULL;
+    x_headers_len = header_len;
+    header_len = 0;
+
+    int j = 0;
+    for (; j < VECTOR_SIZE(rcpts)-1; j++) {
+        char_make_buf_concat(&header, &header_len, 5, x_headers, VECTOR(rcpts)[j].user_name, "@", VECTOR(rcpts)[j].server_name, ",");
+        free(x_headers);
+        x_headers = header;
+        x_headers_len = header_len;
+        header = NULL;
+        header_len = 0;
+    }
+    char_make_buf_concat(&header, &header_len, 5, x_headers, VECTOR(rcpts)[j].user_name, "@", VECTOR(rcpts)[j].server_name, "\r\n\r\n");
+    free(x_headers);
+    x_headers = header;
+    x_headers_len = header_len;
+    header = NULL;
+    header_len = 0;
+    return x_headers;
+}
 
 bool send_mail(smtp_state *smtp) {
     // 1. ПРоходимся по всем получателям
@@ -422,6 +467,16 @@ bool send_mail(smtp_state *smtp) {
     smtp_mailbox *sender = smtp_get_sender(smtp);
     char *sender_mailbox_str = NULL;
     asprintf(&sender_mailbox_str, "%s@%s", sender->user_name, sender->server_name);
+    char *message = NULL;
+    size_t message_len = 0;
+    err_t e;
+    smtp_move_buffer(smtp, &message, &message_len, &e);
+
+    if (e.error) {
+        LOG_ERROR("smtp_move_buffer: %s", e.message);
+        status = false;
+        goto exit;
+    };
 
     vector_smtp_mailbox *mailboxes = smtp_get_rcpt(smtp);
     if (VECTOR_SIZE(mailboxes) == 0) {
@@ -429,18 +484,24 @@ bool send_mail(smtp_state *smtp) {
         free(sender_mailbox_str);
         return false;
     }
+    // Запоминаем список получателей чужого и своего сервера
+    err_t verr;
+    vector_smtp_mailbox self_recipients;
+    vector_smtp_mailbox foreign_recipients;
+    VECTOR_INIT(struct smtp_mailbox, &self_recipients, verr);
+    VECTOR_INIT(struct smtp_mailbox, &foreign_recipients, verr);
 
-    char *message = NULL;
-    size_t message_len = 0;
-    err_t e;
-    smtp_move_buffer(smtp, &message, &message_len, &e);
-    if (e.error) {
-        LOG_ERROR("smtp_move_buffer: %s", e.message);
-        status = false;
-        goto exit;
+    for (int j = 0; j < VECTOR_SIZE(mailboxes); j++) {
+        if (strcmp(VECTOR(mailboxes)[j].server_name, server_config.self_server_name) == 0) {
+            VECTOR_PUSH_BACK(smtp_mailbox, &self_recipients, VECTOR(mailboxes)[j], verr);
+        } else {
+            VECTOR_PUSH_BACK(smtp_mailbox, &foreign_recipients, VECTOR(mailboxes)[j], verr);
+        }
     }
-    for (int i = 0; i < VECTOR_SIZE(mailboxes); i++) {
-        smtp_mailbox *mb = &VECTOR(mailboxes)[i];
+
+    for (int j = 0; j < VECTOR_SIZE(&self_recipients); j++) {
+        smtp_mailbox *mb = &VECTOR(&self_recipients)[j];
+
         maildir_server server;
         maildir_user user;
         maildir_message mail;
@@ -452,61 +513,79 @@ bool send_mail(smtp_state *smtp) {
         LOG_INFO("Start sending mail to [%s@%s]", mb->user_name, mb->server_name);
 
         err_t md_error;
-        if ( strcmp(mb->server_name, server_config.self_server_name) == 0) {
-            // Письмо адресовано пользователю нашего сервера
-            maildir_get_self_server(&server_config.md, &server, &md_error);
-            ERROR_LOG_AND_CLEANUP(md_error);
-        } else {
-            // Письмо адресовано внешнему серверу
-            maildir_create_server(&server_config.md, &server, mb->server_name, &md_error);
-            if (md_error.error == ERRNO && md_error.errno_value == EEXIST) {
-                maildir_get_server_by_name(&server_config.md, &server, mb->server_name, &md_error);
-                ERROR_LOG_AND_CLEANUP(md_error);
-            } else {
-                ERROR_LOG_AND_CLEANUP(md_error);
-            }
-        }
-
+        maildir_get_self_server(&server_config.md, &server, &md_error);
+        ERROR_LOG_AND_CLEANUP(md_error, loop_cleanup);
 
         maildir_server_user(&server, &user, mb->user_name, &md_error);
         if (md_error.error == ERRNO && md_error.errno_value == ENOENT) {
             maildir_server_create_user(&server, &user, mb->user_name, &md_error);
-            ERROR_LOG_AND_CLEANUP(md_error);
+            ERROR_LOG_AND_CLEANUP(md_error, loop_cleanup);
         } else {
-            ERROR_LOG_AND_CLEANUP(md_error);
+            ERROR_LOG_AND_CLEANUP(md_error, loop_cleanup);
         }
 
-
         maildir_user_create_message(&user, &mail, sender_mailbox_str, &md_error);
-        ERROR_LOG_AND_CLEANUP(md_error);
-
+        ERROR_LOG_AND_CLEANUP(md_error, loop_cleanup);
 
         maildir_message_write(&mail, message, message_len, &md_error);
-        ERROR_LOG_AND_CLEANUP(md_error);
+        ERROR_LOG_AND_CLEANUP(md_error, loop_cleanup);
         maildir_message_finalize(&mail, &md_error);
-
 
         LOG_INFO("Mail send from [%s@%s] to [%s@%s]", sender->user_name, sender->server_name,
                  mb->user_name, mb->user_name);
-
 
     loop_cleanup:
         maildir_message_free(&mail);
         maildir_user_free(&user);
         maildir_server_free(&server);
-        if (!status) {
+        if(status == false) {
             goto exit;
         }
     }
 
-exit:
+    if (VECTOR_SIZE(&foreign_recipients) != 0) {
+        // Отправка пиьсма внешним сревреам
+        maildir_server server;
+        maildir_user user;
+        maildir_message mail;
+        maildir_server_default_init(&server);
+        maildir_user_default_init(&user);
+        maildir_message_default_init(&mail);
+        char *x_headers = NULL;
+        err_t md_error;
+        maildir_get_server(&server_config.md, &server, &md_error);
+        ERROR_LOG_AND_CLEANUP(md_error, cleanup2);
+        maildir_server_user(&server, &user, "", &md_error);
+        ERROR_LOG_AND_CLEANUP(md_error, cleanup2);
+        maildir_user_create_message(&user, &mail, sender_mailbox_str, &md_error);
+        ERROR_LOG_AND_CLEANUP(md_error, cleanup2);
+
+        x_headers = make_x_headers(&foreign_recipients, sender);
+        maildir_message_write(&mail, x_headers, strlen(x_headers), &md_error);
+        ERROR_LOG_AND_CLEANUP(md_error, cleanup2);
+        maildir_message_write(&mail, message, message_len, &md_error);
+        ERROR_LOG_AND_CLEANUP(md_error, cleanup2);
+        maildir_message_finalize(&mail, &md_error);
+        ERROR_LOG_AND_CLEANUP(md_error, cleanup2);
+
+    cleanup2:
+        maildir_message_free(&mail);
+        maildir_user_free(&user);
+        maildir_server_free(&server);
+        free(x_headers);
+    }
+
+
+
+
+ exit:
     free(sender_mailbox_str);
     free(message);
     return status;
 }
 
 struct pair handler_smtp(user_context *user, char *message) {
-   LOG_INFO("\n======\n%s\n======", message);
+    LOG_INFO("\n======\n%s\n======", message);
     struct pair ret;
     ret.buffer = NULL;
     err_t  error;

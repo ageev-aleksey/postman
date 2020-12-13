@@ -458,66 +458,65 @@ bool maildir_release(maildir *md, err_t *error) {
 
 
 bool maildir_server_list(maildir *md, maildir_servers_list *servers_list, err_t *error) {
-    CHECK_PTR(md, error, MAILDIR_MD_PTR_NULL);
-    CHECK_PTR(servers_list, error, MAILDIR_ERROR_PTR_OF_SERVER_LIST_IS_NULL);
-    char *path = pr_maildir_char_concatenate(2 , md->pr_path, SERVERS_ROOT_NAME_PART);
-    if (path == NULL) {
-        if (error != NULL) {
-            error->error = FATAL;
-            error->message = MAILDIR_ERROR_CONCATENATE_PATHS;
-        }
-        return false;
-    }
-
-    DIR *dir = opendir(path);
-    if (dir == NULL) {
-        if (error != NULL) {
-            error->error = ERRNO;
-            error->errno_value = errno;
-            error->message = MAILDIR_ERROR_OPENING_SERVERS_PATH;
-        }
-        free(path);
-        return false;
-    }
-    for(struct dirent *entry = readdir(dir); entry != NULL; entry = readdir(dir)) {
-        if ((strcmp(entry->d_name, ".") != 0) && (strcmp(entry->d_name, "..") != 0)) {
-            char *server_path = pr_maildir_char_concatenate(3, path, "/", entry->d_name);
-            struct stat entry_info;
-            stat(server_path, &entry_info);
-            if (S_ISDIR(entry_info.st_mode)) {
-                maildir_server_entry *server_entry = s_malloc(sizeof(maildir_server_entry), error);
-                if (server_entry == NULL) {
-                    free(path);
-                    free(server_path);
-                    closedir(dir);
-                    return false;
-                }
-                strcpy(server_entry->server.pr_server_domain, entry->d_name);
-                server_entry->server.pr_md = md;
-                LIST_INSERT_HEAD(servers_list, server_entry, entries);
-                free(server_path);
-            }
-        }
-    }
-    free(path);
-    closedir(dir);
-    return true;
+//    CHECK_PTR(md, error, MAILDIR_MD_PTR_NULL);
+//    CHECK_PTR(servers_list, error, MAILDIR_ERROR_PTR_OF_SERVER_LIST_IS_NULL);
+//    char *path = pr_maildir_char_concatenate(2 , md->pr_path, SERVERS_ROOT_NAME_PART);
+//    if (path == NULL) {
+//        if (error != NULL) {
+//            error->error = FATAL;
+//            error->message = MAILDIR_ERROR_CONCATENATE_PATHS;
+//        }
+//        return false;
+//    }
+//
+//    DIR *dir = opendir(path);
+//    if (dir == NULL) {
+//        if (error != NULL) {
+//            error->error = ERRNO;
+//            error->errno_value = errno;
+//            error->message = MAILDIR_ERROR_OPENING_SERVERS_PATH;
+//        }
+//        free(path);
+//        return false;
+//    }
+//    for(struct dirent *entry = readdir(dir); entry != NULL; entry = readdir(dir)) {
+//        if ((strcmp(entry->d_name, ".") != 0) && (strcmp(entry->d_name, "..") != 0)) {
+//            char *server_path = pr_maildir_char_concatenate(3, path, "/", entry->d_name);
+//            struct stat entry_info;
+//            stat(server_path, &entry_info);
+//            if (S_ISDIR(entry_info.st_mode)) {
+//                maildir_server_entry *server_entry = s_malloc(sizeof(maildir_server_entry), error);
+//                if (server_entry == NULL) {
+//                    free(path);
+//                    free(server_path);
+//                    closedir(dir);
+//                    return false;
+//                }
+////                strcpy(server_entry->server.pr_server_domain, entry->d_name);
+//                server_entry->server.pr_md = md;
+//                LIST_INSERT_HEAD(servers_list, server_entry, entries);
+//                free(server_path);
+//            }
+//        }
+//    }
+//    free(path);
+//    closedir(dir);
+//    return true;
 }
 
 bool maildir_get_self_server(maildir *md, maildir_server *server, err_t *error) {
     CHECK_PTR(md, error, MAILDIR_MD_PTR_NULL);
     CHECK_PTR(server, error, MAILDIR_ERROR_PTR_OF_SERVER_IS_NULL);
     ERROR_SUCCESS(error);
-    server->pr_server_domain[0] = '\0';
+    server->is_self = true;
     server->pr_md = md;
     return true;
 }
 
 
-bool maildir_get_server(maildir *md, maildir_server *server, const char *name, err_t *error) {
+bool maildir_get_server(maildir *md, maildir_server *server, err_t *error) {
     CHECK_PTR(md, error, MAILDIR_MD_PTR_NULL);
     CHECK_PTR(server, error, MAILDIR_ERROR_PTR_OF_SERVER_IS_NULL);
-    CHECK_PTR(name, error, MAILDIR_ERROR_PTR_OF_SERVER_NAME_IS_NULL);
     ERROR_SUCCESS(error);
 
 //    char *server_full_path = pr_maildir_char_concatenate(3, md->pr_path, SERVERS_ROOT_NAME_PART, name);
@@ -547,40 +546,39 @@ bool maildir_get_server(maildir *md, maildir_server *server, const char *name, e
 //    }
 //    closedir(dir);
 
-    strcpy(server->pr_server_domain, name);
+    //strcpy(server->pr_server_domain, name);
     server->pr_md = md;
+    server->is_self = false;
    // free(server_full_path);
     return true;
 }
 
 
 
-bool maildir_create_server(maildir *md, maildir_server *server, char *server_domain, err_t *error) {
-    CHECK_PTR(md, error, MAILDIR_MD_PTR_NULL);
-    CHECK_PTR(server, error, MAILDIR_ERROR_PTR_OF_SERVER_IS_NULL);
-    CHECK_PTR(server_domain, error, MAILDIR_ERROR_PTR_OF_SERVER_NAME_IS_NULL);
-    ERROR_SUCCESS(error);
-    char *path = pr_maildir_char_concatenate(3, md->pr_path, SERVERS_ROOT_NAME_PART, server_domain);
-    if (path == NULL) {
-        if (error != NULL) {
-            error->error = FATAL;
-            error->message = MAILDIR_ERROR_CONCATENATE_PATHS;
-        }
-        return false;
-    }
-    if (mkdir(path, RWX_MODE) == -1) {
-        if (error != NULL) {
-            error->error = ERRNO;
-            error->errno_value = errno;
-            error->message = MAILDIR_ERROR_CREATE_DIRECTORY;
-        }
-        free(path);
-        return false;
-    }
-    strcpy(server->pr_server_domain, server_domain);
-    server->pr_md = md;
-    free(path);
-    return  true;
+bool maildir_create_server(maildir *md, maildir_server *server, err_t *error) {
+//    CHECK_PTR(md, error, MAILDIR_MD_PTR_NULL);
+//    CHECK_PTR(server, error, MAILDIR_ERROR_PTR_OF_SERVER_IS_NULL);
+//    ERROR_SUCCESS(error);
+//    char *path = pr_maildir_char_concatenate(3, md->pr_path, SERVERS_ROOT_NAME_PART, server_domain);
+//    if (path == NULL) {
+//        if (error != NULL) {
+//            error->error = FATAL;
+//            error->message = MAILDIR_ERROR_CONCATENATE_PATHS;
+//        }
+//        return false;
+//    }
+//    if (mkdir(path, RWX_MODE) == -1) {
+//        if (error != NULL) {
+//            error->error = ERRNO;
+//            error->errno_value = errno;
+//            error->message = MAILDIR_ERROR_CREATE_DIRECTORY;
+//        }
+//        free(path);
+//        return false;
+//    }
+//    server->pr_md = md;
+//    free(path);
+//    return  true;
 }
 
 bool maildir_delete_server(maildir *md, maildir_server *server, err_t *error) {

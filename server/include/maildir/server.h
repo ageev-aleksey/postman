@@ -18,7 +18,8 @@ typedef struct d_maildir maildir;
 typedef struct d_maildir_users_list maildir_users_list;
 
 typedef struct d_maildir_server {
-    char pr_server_domain[NAME_MAX];
+    //char pr_server_domain[NAME_MAX];
+    bool is_self;
     maildir *pr_md;
 } maildir_server;
 

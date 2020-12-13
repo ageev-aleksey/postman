@@ -44,7 +44,7 @@ bool maildir_server_is_self(maildir_server *server, bool *res, err_t *error) {
     CHECK_PTR(res, error, MAILDIR_SERVER_ERROR_ARGUMENT_PTR_IS_NULL);
     ERROR_SUCCESS(error);
 
-    *res = server->pr_server_domain[0] == '\0';
+    *res = server->is_self;
     return true;
 }
 
@@ -110,13 +110,13 @@ bool pr_maildir_server_path(maildir_server *server, char **path) {
 //    return true;
 //}
 
-bool maildir_server_domain(maildir_server *server, char **domain, err_t *error) {
-    CHECK_PTR(server, error, MAILDIR_SERVER_ERROR_SERVER_PTR_IS_NULL);
-    CHECK_PTR(domain, error, MAILDIR_SERVER_ERROR_ARGUMENT_PTR_IS_NULL);
-    ERROR_SUCCESS(error);
-    *domain = server->pr_server_domain;
-    return true;
-}
+//bool maildir_server_domain(maildir_server *server, char **domain, err_t *error) {
+//    CHECK_PTR(server, error, MAILDIR_SERVER_ERROR_SERVER_PTR_IS_NULL);
+//    CHECK_PTR(domain, error, MAILDIR_SERVER_ERROR_ARGUMENT_PTR_IS_NULL);
+//    ERROR_SUCCESS(error);
+//    *domain = server->pr_server_domain;
+//    return true;
+//}
 
 bool pr_maildir_server_mkdir(char *path, err_t *error, const char *error_message) {
     if (mkdir(path, S_IRWXU) != 0) {
@@ -227,7 +227,7 @@ bool maildir_server_create_user(maildir_server *server, maildir_user *user, cons
 }
 
 void maildir_server_default_init(maildir_server *server) {
-    server->pr_server_domain[0] = '\0';
+    server->is_self = false;
     server->pr_md = NULL;
 }
 
