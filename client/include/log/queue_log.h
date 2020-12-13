@@ -2,8 +2,7 @@
 #include <time.h>
 #include <stdbool.h>
 #include "util.h"
-
-#define QMAX_LOGS 1000
+#include "queue.h"
 
 typedef enum log_type {
     LOG_ERROR,
@@ -20,14 +19,12 @@ typedef struct log {
     struct tm time;
 } log;
 
-typedef struct queue {
-    log elements[QMAX_LOGS];
-    int head;
-    int tail;
-    int size;
-} queue;
+typedef struct node {
+    log data;
+    TAILQ_ENTRY(node) nodes;
+} node;
 
 void init_logs();
-void push_log(log *value);
-log* pop_log();
+void push_log(log value);
+log pop_log();
 bool is_logs_queue_empty();

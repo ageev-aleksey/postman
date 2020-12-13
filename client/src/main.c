@@ -1,4 +1,3 @@
-#include <pthread.h>
 #include "logs.h"
 #include "config/config.h"
 #include "smtp-client.h"
@@ -13,11 +12,12 @@ int main(int argc, char **argv) {
 //
 //    free(smtp_message);
 
+    init_logs();
+
     pthread_t thread;
 
     pthread_create(&thread, NULL, print_message, NULL);
 
-   init_logs();
 
     for (int i = 0; i < 1000; i++) {
         LOG_DEBUG("This is debug");
@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
         LOG_WARN("This is warning");
     }
 
-    print_message();
+    pthread_join(thread, NULL);
 }
 
 

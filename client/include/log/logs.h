@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <pthread.h>
 #include "queue_log.h"
 
 #define COLOR_RESET "\x1b[0m"
