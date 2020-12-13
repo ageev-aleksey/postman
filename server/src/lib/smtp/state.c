@@ -407,7 +407,7 @@ smtp_status pr_smtp_command_data(smtp_state *smtp, smtp_command *command) {
 smtp_status pr_smtp_command_rset(smtp_state *smtp, smtp_command *command) {
     VECTOR_CLEAR(&smtp->pr_mail_data);
     VECTOR_CLEAR(&smtp->pr_rcpt_list);
-    free( smtp->pr_mail_from->user_name);
+    free(smtp->pr_mail_from->user_name);
     free(smtp->pr_mail_from->user_name);
     free(smtp->pr_mail_from);
     smtp->pr_mail_from = NULL;

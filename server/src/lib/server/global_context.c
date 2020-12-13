@@ -506,6 +506,7 @@ exit:
 }
 
 struct pair handler_smtp(user_context *user, char *message) {
+   LOG_INFO("\n======\n%s\n======", message);
     struct pair ret;
     ret.buffer = NULL;
     err_t  error;

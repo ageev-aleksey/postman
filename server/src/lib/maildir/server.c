@@ -42,6 +42,7 @@ extern bool pr_maildir_next_dirent_entry(DIR *dir, struct dirent *entry, struct 
 bool maildir_server_is_self(maildir_server *server, bool *res, err_t *error) {
     CHECK_PTR(server, error, MAILDIR_SERVER_ERROR_SERVER_PTR_IS_NULL);
     CHECK_PTR(res, error, MAILDIR_SERVER_ERROR_ARGUMENT_PTR_IS_NULL);
+    ERROR_SUCCESS(error);
 
     *res = server->pr_server_domain[0] == '\0';
     return true;
@@ -54,60 +55,60 @@ bool pr_maildir_server_path(maildir_server *server, char **path) {
         return false;
     }
     if (is_self) {
-        return char_make_buf_concat(path, &length, 3, server->pr_md->pr_path, "/", server);
+        return char_make_buf_concat(path, &length, 1, server->pr_md->pr_path);
     } else {
-        return char_make_buf_concat(path, &length, 3, server->pr_md->pr_path, SERVERS_ROOT_NAME_PART, server);
+        return char_make_buf_concat(path, &length, 2, server->pr_md->pr_path, SERVERS_ROOT_NAME_PART);
     }
 
 }
 
 
-bool maildir_server_users(maildir_server *server, maildir_users_list *users, err_t *error) {
-    CHECK_PTR(server, error, MAILDIR_SERVER_ERROR_SERVER_PTR_IS_NULL);
-    CHECK_PTR(users, error, MAILDIR_SERVER_ERROR_ARGUMENT_PTR_IS_NULL);
-
-    char *full_path = NULL;
-    if (!pr_maildir_server_path(server, &full_path)) {
-        if (error != NULL) {
-            error->error = FATAL;
-            error->message = MAILDIR_ERROR_CONCATENATE_PATHS;
-        }
-    }
-    DIR *dir = opendir(full_path);
-    free(full_path);
-    if (dir == NULL) {
-        if (error != NULL) {
-            error->error = ERRNO;
-            error->errno_value = errno;
-            error->message = MAILDIR_ERROR_OPENING_SERVERS_PATH;
-        }
-        return false;
-    }
-    struct dirent entry;
-    struct dirent *result;
-    if (!pr_maildir_next_dirent_entry(dir,&entry, &result, error)) {
-        return false;
-    }
-    while (result != NULL) {
-        if (!((strcmp(entry.d_name, ".") == 0)||(strcmp(entry.d_name, "..") == 0))) {
-            maildir_users_entry *list_entry = s_malloc(sizeof(maildir_users_entry), error);
-            if (list_entry == NULL) {
-                closedir(dir);
-                return false;
-            }
-            strcpy(list_entry->user.pr_login, entry.d_name);
-            list_entry->user.pr_server = server;
-            LIST_INSERT_HEAD(users, list_entry, entries);
-        }
-
-        if (!pr_maildir_next_dirent_entry(dir,&entry, &result, error)) {
-            return false;
-        }
-    }
-
-    closedir(dir);
-    return true;
-}
+//bool maildir_server_users(maildir_server *server, maildir_users_list *users, err_t *error) {
+//    CHECK_PTR(server, error, MAILDIR_SERVER_ERROR_SERVER_PTR_IS_NULL);
+//    CHECK_PTR(users, error, MAILDIR_SERVER_ERROR_ARGUMENT_PTR_IS_NULL);
+//
+//    char *full_path = NULL;
+//    if (!pr_maildir_server_path(server, &full_path)) {
+//        if (error != NULL) {
+//            error->error = FATAL;
+//            error->message = MAILDIR_ERROR_CONCATENATE_PATHS;
+//        }
+//    }
+//    DIR *dir = opendir(full_path);
+//    free(full_path);
+//    if (dir == NULL) {
+//        if (error != NULL) {
+//            error->error = ERRNO;
+//            error->errno_value = errno;
+//            error->message = MAILDIR_ERROR_OPENING_SERVERS_PATH;
+//        }
+//        return false;
+//    }
+//    struct dirent entry;
+//    struct dirent *result;
+//    if (!pr_maildir_next_dirent_entry(dir,&entry, &result, error)) {
+//        return false;
+//    }
+//    while (result != NULL) {
+//        if (!((strcmp(entry.d_name, ".") == 0)||(strcmp(entry.d_name, "..") == 0))) {
+//            maildir_users_entry *list_entry = s_malloc(sizeof(maildir_users_entry), error);
+//            if (list_entry == NULL) {
+//                closedir(dir);
+//                return false;
+//            }
+//            strcpy(list_entry->user.pr_login, entry.d_name);
+//            list_entry->user.pr_server = server;
+//            LIST_INSERT_HEAD(users, list_entry, entries);
+//        }
+//
+//        if (!pr_maildir_next_dirent_entry(dir,&entry, &result, error)) {
+//            return false;
+//        }
+//    }
+//
+//    closedir(dir);
+//    return true;
+//}
 
 bool maildir_server_domain(maildir_server *server, char **domain, err_t *error) {
     CHECK_PTR(server, error, MAILDIR_SERVER_ERROR_SERVER_PTR_IS_NULL);
@@ -151,21 +152,18 @@ bool maildir_server_create_user(maildir_server *server, maildir_user *user, cons
     bool status = false;
 
     size_t length = 0;
-
-    if (!char_make_buf_concat(&user_path, &length, 3, server_path, "/", username)) {
+    bool is_self = false;
+    err_t err;
+    maildir_server_is_self(server, &is_self, &err);
+    if (err.error) {
         if (error != NULL) {
-                error->error = FATAL;
-                error->message = MAILDIR_ERROR_CONCATENATE_PATHS;
+            *error = err;
         }
-        status = false;
-        goto exit;
+        return false;
     }
 
-
-
-
-    if (pr_maildir_server_mkdir(user_path, error, MAILDIR_SERVER_ERROR_CREATE_USER_ROOT_DIR)) {
-        if (!char_make_buf_concat(&path, &path_length, 3, user_path, "/", USER_PATH_TMP)) {
+    if (is_self) {
+        if (!char_make_buf_concat(&user_path, &length, 3, server_path, "/", username)) {
             if (error != NULL) {
                 error->error = FATAL;
                 error->message = MAILDIR_ERROR_CONCATENATE_PATHS;
@@ -173,41 +171,53 @@ bool maildir_server_create_user(maildir_server *server, maildir_user *user, cons
             status = false;
             goto exit;
         }
-        bool is_make_dir = pr_maildir_server_mkdir(path, error, MAILDIR_SERVER_ERROR_CREATE_USER_TMP_DIR);
-        if (is_make_dir) {
-            bool is = false;
-            maildir_server_is_self(server, &is, error);
-            if (is) {
-                if (!char_make_buf_concat(&path, &path_length, 3, user_path, "/", USER_PATH_CUR)) {
-                    if (error != NULL) {
-                        error->error = FATAL;
-                        error->message = MAILDIR_ERROR_CONCATENATE_PATHS;
-                    }
-                    status = false;
-                    goto exit;
+        if (pr_maildir_server_mkdir(user_path, error, MAILDIR_SERVER_ERROR_CREATE_USER_ROOT_DIR)) {
+            if (!char_make_buf_concat(&path, &path_length, 3, user_path, "/", USER_PATH_TMP)) {
+                if (error != NULL) {
+                    error->error = FATAL;
+                    error->message = MAILDIR_ERROR_CONCATENATE_PATHS;
                 }
-
-                is_make_dir = pr_maildir_server_mkdir(path, error, MAILDIR_SERVER_ERROR_CREATE_USER_CUR_DIR);
+                status = false;
+                goto exit;
             }
-
+            bool is_make_dir = pr_maildir_server_mkdir(path, error, MAILDIR_SERVER_ERROR_CREATE_USER_TMP_DIR);
             if (is_make_dir) {
-                if (!char_make_buf_concat(&path, &path_length, 3, user_path, "/", USER_PATH_NEW)) {
-                    if (error != NULL) {
-                        error->error = FATAL;
-                        error->message = MAILDIR_ERROR_CONCATENATE_PATHS;
+                bool is = false;
+                maildir_server_is_self(server, &is, error);
+                if (is) {
+                    if (!char_make_buf_concat(&path, &path_length, 3, user_path, "/", USER_PATH_CUR)) {
+                        if (error != NULL) {
+                            error->error = FATAL;
+                            error->message = MAILDIR_ERROR_CONCATENATE_PATHS;
+                        }
+                        status = false;
+                        goto exit;
                     }
-                    status = false;
-                    goto exit;
+
+                    is_make_dir = pr_maildir_server_mkdir(path, error, MAILDIR_SERVER_ERROR_CREATE_USER_CUR_DIR);
                 }
 
-                is_make_dir = pr_maildir_server_mkdir(path, error, MAILDIR_SERVER_ERROR_CREATE_USER_NEW_DIR);
-                status = is_make_dir;
-            }
+                if (is_make_dir) {
+                    if (!char_make_buf_concat(&path, &path_length, 3, user_path, "/", USER_PATH_NEW)) {
+                        if (error != NULL) {
+                            error->error = FATAL;
+                            error->message = MAILDIR_ERROR_CONCATENATE_PATHS;
+                        }
+                        status = false;
+                        goto exit;
+                    }
 
+                    is_make_dir = pr_maildir_server_mkdir(path, error, MAILDIR_SERVER_ERROR_CREATE_USER_NEW_DIR);
+                    status = is_make_dir;
+                }
+
+            }
         }
+    } else {
+        status = true;
     }
 
-exit:
+    exit:
     free(server_path);
     free(user_path);
     free(path);
@@ -233,26 +243,49 @@ bool maildir_server_user(maildir_server *server, maildir_user *user, const char 
     CHECK_PTR(username, error, MAILDIR_SERVER_ERROR_ARGUMENT_PTR_IS_NULL);
     ERROR_SUCCESS(error);
 
-    char *path = NULL;
-    if (!pr_maildir_server_path(server, &path)) {
-        if (error != NULL) {
-            error->error = FATAL;
-            error->message = MAILDIR_ERROR_CONCATENATE_PATHS;
-        }
-        return false;
-    }
+//    char *path = NULL;
+//    if (!pr_maildir_server_path(server, &path)) {
+//        if (error != NULL) {
+//            error->error = FATAL;
+//            error->message = MAILDIR_ERROR_CONCATENATE_PATHS;
+//        }
+//        return false;
+//    }
     char *user_path = NULL;
     size_t up_length = 0;
-    if (!char_make_buf_concat(&user_path, &up_length, 3, path,"/", username)) {
+    bool is_self = false;
+    err_t err;
+
+    maildir_server_is_self(server, &is_self, &err);
+    if (err.error) {
         if (error != NULL) {
-            error->error = FATAL;
-            error->message = MAILDIR_ERROR_CONCATENATE_PATHS;
+            *error = err;
         }
         return false;
     }
 
+    if (is_self) {
+        if (!char_make_buf_concat(&user_path, &up_length, 3, server->pr_md->pr_path, "/", username)) {
+            if (error != NULL) {
+                error->error = FATAL;
+                error->message = MAILDIR_ERROR_CONCATENATE_PATHS;
+            }
+            return false;
+        }
+
+    } else {
+        if (!char_make_buf_concat(&user_path, &up_length, 2, server->pr_md->pr_path, SERVERS_ROOT_NAME_PART)) {
+            if (error != NULL) {
+                error->error = FATAL;
+                error->message = MAILDIR_ERROR_CONCATENATE_PATHS;
+            }
+            return false;
+        }
+
+
+    }
+
     DIR *dir = opendir(user_path);
-    free(path);
     free(user_path);
     if (dir == NULL) {
         if (error != NULL) {
@@ -263,9 +296,8 @@ bool maildir_server_user(maildir_server *server, maildir_user *user, const char 
 
         return false;
     }
-
+    closedir(dir);
     strcpy(user->pr_login, username);
     user->pr_server = server;
-
     return true;
 }

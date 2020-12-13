@@ -18,7 +18,7 @@
 #include <string.h>
 
 
-#define MAILDIR_MAX_RANDOM_VALUE 99999
+//#define MAILDIR_MAX_RANDOM_VALUE 9999999999
 #define MAX_NUM_ATTEMPTS_TO_CREATE_FILENAME 10
 #define FILE_READ "r"
 #define FILE_WRITE "w"
@@ -49,22 +49,17 @@ bool pr_maildir_make_full_path(maildir_user *user, char **result_path, err_t *er
     size_t size = 0;
     maildir_server_is_self(user->pr_server, &is_self, error);
     if (is_self) {
-        char_make_buf_concat(result_path, &size, 5,
+        char_make_buf_concat(result_path, &size, 3,
                              user->pr_server->pr_md->pr_path,
-                             "/",
-                             user->pr_server->pr_server_domain,
                              "/",
                              user->pr_login);
         if (*result_path == NULL) {
             return false;
         }
     } else {
-        char_make_buf_concat(result_path, &size, 5,
+        char_make_buf_concat(result_path, &size, 2,
                              user->pr_server->pr_md->pr_path,
-                             SERVERS_ROOT_NAME_PART,
-                             user->pr_server->pr_server_domain,
-                             "/",
-                             user->pr_login);
+                             SERVERS_ROOT_NAME_PART);
         if (*result_path == NULL) {
             return false;
         }
@@ -86,11 +81,10 @@ bool pr_maildir_user_opendir(char *path, DIR **dir, err_t *error) {
     return true;
 }
 
-void pr_maildir_message_filename_generate(char *file_name, char* sender_name) {
+void pr_maildir_message_filename_generate(char *file_name) {
     time_t timestamp = time(NULL);
-    pid_t pid = getpid();
-    int random_value = rand() / MAILDIR_MAX_RANDOM_VALUE;
-    sprintf(file_name, "%ld%s%d%d", timestamp, sender_name, pid, random_value);
+    int random_value = rand();
+    sprintf(file_name, "%ld_%d", timestamp, random_value);
 }
 
 
@@ -126,13 +120,13 @@ bool maildir_user_create_message(maildir_user *user, maildir_message *message, c
     char *new_path = NULL;
     size_t new_path_size = 0;
     // Создание уникального имени для файла
-    // Внутри цикла проверяется, что созданное имя не зането в папках пользователя сервера
+    // Внутри цикла проверяется, что созданное имя не занято в папках пользователя сервера
     //   - tmp
     //   - new
-    // Если имя зането, то выполняется новая попытка создать уникальное имя файла.
+    // Если имя занято, то выполняется новая попытка создать уникальное имя файла.
     // Если бло принято MAX_NUM_ATTEMPTS_TO_CREATE_FILENAME попыток, то выход из функции с ошибкой
     while (is_continue) {
-        pr_maildir_message_filename_generate(message->pr_filename, sender_name);
+        pr_maildir_message_filename_generate(message->pr_filename);
         char_make_buf_concat(&tmp_path, &tmp_path_size, 5, user_full_path, "/",
                              USER_PATH_TMP, "/", message->pr_filename);
         char_make_buf_concat(&new_path, &new_path_size, 5, user_full_path, "/",
@@ -180,6 +174,7 @@ bool maildir_user_create_message(maildir_user *user, maildir_message *message, c
         status = false;
         goto exit;
     }
+
 
     message->pr_user = user;
     message->pr_type = TMP;

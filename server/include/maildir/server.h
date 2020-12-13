@@ -28,7 +28,7 @@ void maildir_server_default_init(maildir_server *server);
 void maildir_server_free(maildir_server *server);
 bool maildir_server_is_self(maildir_server *server, bool *res, err_t *error);
 bool maildir_server_domain(maildir_server *server, char **domain, err_t *error);
-bool maildir_server_users(maildir_server *server, maildir_users_list *users, err_t *error);
+// bool maildir_server_users(maildir_server *server, maildir_users_list *users, err_t *error);
 bool maildir_server_create_user(maildir_server *server, maildir_user *user, const char *username, err_t *error);
 bool maildir_server_user(maildir_server *server, maildir_user *user, const char *username, err_t *error);
 

@@ -33,10 +33,8 @@ int main() {
         return ERROR;
     }
     maildir_server server;
-    bool status = maildir_create_server(md, &server, MD_SERVER_NAME, &error);
-    if (error.error == ERRNO && error.errno_value == EEXIST) {
-        status = maildir_get_server_by_name(md, &server, MD_SERVER_NAME, &error);
-    }
+   // bool status = maildir_get_server(md, &server, MD_SERVER_NAME, &error);
+    bool status = maildir_get_self_server(md, &server, &error);
 
     if (!status) {
         if (error.error == ERRNO) {
