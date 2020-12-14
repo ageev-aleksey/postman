@@ -31,10 +31,10 @@
 #define BACKGROUND_CYAN "\x1b[46m"
 #define BACKGROUND_WHITE "\x1b[47m"
 
-#define LOG_DEBUG(message) log_debug(message, __FILE__, __LINE__)
-#define LOG_INFO(message) log_info(message, __FILE__, __LINE__)
-#define LOG_ERROR(message) log_error(message, __FILE__, __LINE__)
-#define LOG_WARN(message) log_warn(message, __FILE__, __LINE__)
+#define LOG_DEBUG(message, args...) log_debug(message, __FILE__, __LINE__, args)
+#define LOG_INFO(message, args...) log_info(message, __FILE__, __LINE__, args)
+#define LOG_ERROR(message, args...) log_error(message, __FILE__, __LINE__, args)
+#define LOG_WARN(message, args...) log_warn(message, __FILE__, __LINE__, args)
 
 typedef enum log_type {
     LOG_ERROR,
@@ -58,8 +58,8 @@ typedef struct node {
 } node;
 
 void start_logger();
-void log_debug(char *message, char *filename, int line);
-void log_info(char *message, char *filename, int line);
-void log_error(char *message, char *filename, int line);
-void log_warn(char *message, char *filename, int line);
+void log_debug(char *message, char *filename, int line, ...);
+void log_info(char *message, char *filename, int line, ...);
+void log_error(char *message, char *filename, int line, ...);
+void log_warn(char *message, char *filename, int line, ...);
 

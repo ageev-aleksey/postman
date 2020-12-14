@@ -11,6 +11,7 @@ typedef struct s_maildir_config {
 typedef struct s_config {
     int threads;
     maildir_config maildir;
+    int debug;
 } config;
 
 config config_context;

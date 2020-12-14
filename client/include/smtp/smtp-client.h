@@ -50,9 +50,9 @@ typedef enum type_header {
     SMTP_RESENT_MESSAGE_ID,
     SMTP_RETURN_PATH,
     SMTP_RECEIVED,
-    SMTP_ENCRYPTED,
-    SMTP_CONTENT_TYPE,
-    SMTP_CONTENT_TRANSFER_ENCODING
+    //SMTP_ENCRYPTED,
+    SMTP_CONTENT_TYPE
+    //SMTP_CONTENT_TRANSFER_ENCODING
 } type_header;
 
 typedef enum smtp_status_code {
@@ -93,15 +93,14 @@ typedef struct smtp_header {
 
 typedef struct smtp_context {
     int socket_desc;
-    char *address;
+    char *ip_or_domain;
     char *port;
     smtp_header *header_list;
     size_t num_headers;
     smtp_addr from;
     smtp_addr *to;
-    size_t num_to;
-    char *message;
-    char *from_domain;
+    size_t to_size;
+    char *hostname;
     state_code state_code;
 } smtp_context;
 
@@ -121,9 +120,10 @@ state_code smtp_handshake(smtp_context *smtp_cont);
 state_code smtp_helo(smtp_context *smtp_cont);
 state_code smtp_ehlo(smtp_context *smtp_cont);
 state_code smtp_mail(smtp_context *smtp_cont, char *from_email, char *from_name);
-state_code smtp_rcpt(smtp_context *smtp_cont, smtp_addr *to, size_t size_to);
+state_code smtp_rcpt(smtp_context *smtp_cont, char *to_email, char *from_name);
 state_code smtp_data(smtp_context *smtp_cont, char *message);
 state_code smtp_rset(smtp_context *smtp_cont);
+state_code smtp_quit(smtp_context *smtp_cont);
 
 state_code send_smtp_request(smtp_context *smtp_cont, char *str);
 smtp_response get_smtp_response(smtp_context *smtp_cont);

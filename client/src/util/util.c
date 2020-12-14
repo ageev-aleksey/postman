@@ -118,7 +118,7 @@ void* allocate_memory(size_t bytes) {
         return buffer;
     }
 
-    LOG_ERROR("Ошибка выделения памяти");
+    LOG_ERROR("Ошибка выделения памяти", NULL);
     return NULL;
 }
 
@@ -129,6 +129,6 @@ void* reallocate_memory(void *buffer, size_t bytes) {
         return buffer;
     }
 
-    LOG_ERROR("Ошибка перераспределения памяти");
+    LOG_ERROR("Ошибка перераспределения памяти", NULL);
     return NULL;
 }

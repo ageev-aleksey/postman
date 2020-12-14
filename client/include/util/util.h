@@ -1,5 +1,9 @@
 #include <sys/queue.h>
 #include <stddef.h>
+#include <stdarg.h>
+
+#define strsize(args...) snprintf(NULL, 0, args) + sizeof('\0')
+#define vstrsize(args...) snprintf(NULL, 0, args) + sizeof('\0')
 
 typedef struct string {
     char *chars;
