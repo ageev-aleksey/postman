@@ -10,5 +10,5 @@ server/test_report/
 *.info
 *.aux
 *.log
-*.pdf
+test_report/
 
