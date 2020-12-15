@@ -1,5 +1,5 @@
-#include "context.h"
 #include <pthread.h>
+#include "context.h"
 
 int init_context() {
     FD_ZERO(&app_context.master);
@@ -10,6 +10,10 @@ int init_context() {
 }
 
 int add_socket(int socket) {
+    struct timeval tv;
+    tv.tv_sec = 2;
+    tv.tv_usec = 50000;
+
     FD_SET(socket, &app_context.master);
 
     if (socket > 0) {

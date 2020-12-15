@@ -26,7 +26,14 @@ UTIL_OBJ = $(patsubst $(UTIL_SRC_PATH)/%.c, $(UTIL_BUILD_DIR)/%.o, $(wildcard $(
 $(UTIL_BUILD_DIR)/%.o: $(UTIL_SRC_PATH)/%.c
 	$(CC) $(CCFLAGS) $< $(INCLUDES) -o $@ -c
 
-$(BIN_DIR)/client.out: $(CONFIG_OBJ) $(LOG_OBJ) $(SMTP_OBJ) $(UTIL_OBJ)
+CONTEXT_SRC_PATH = $(SRC_DIR)/context
+CONTEXT_BUILD_DIR = $(BUILD_DIR)/context
+CONTEXT_OBJ = $(patsubst $(CONTEXT_SRC_PATH)/%.c, $(CONTEXT_BUILD_DIR)/%.o, $(wildcard $(CONTEXT_SRC_PATH)/*.c))
+
+$(CONTEXT_BUILD_DIR)/%.o: $(CONTEXT_SRC_PATH)/%.c
+	$(CC) $(CCFLAGS) $< $(INCLUDES) -o $@ -c
+
+$(BIN_DIR)/client.out: $(CONFIG_OBJ) $(LOG_OBJ) $(SMTP_OBJ) $(UTIL_OBJ) $(CONTEXT_OBJ)
 	$(CC) $(CCFLAGS) $(INCLUDES) $^ $(SRC_DIR)/main.c $(LIBS) -o $@
 
 build_mkdir:
@@ -34,5 +41,6 @@ build_mkdir:
 	mkdir -p $(LOG_BUILD_DIR)
 	mkdir -p $(SMTP_BUILD_DIR)
 	mkdir -p $(UTIL_BUILD_DIR)
+	mkdir -p $(CONTEXT_BUILD_DIR)
 
 build: $(BIN_DIR)/client.out

@@ -12,7 +12,7 @@ smtp_context* smtp_open(char *server, char *port, smtp_context **smtp_contexts) 
 
     smtp_context *smtp_cont_new;
 
-    if ((smtp_cont_new = calloc(1, sizeof(**smtp_contexts) + 100)) == NULL) {
+    if ((smtp_cont_new = calloc(1, sizeof(**smtp_contexts))) == NULL) {
         LOG_ERROR("Ошибка выделения памяти для контекста SMTP", NULL);
         return NULL;
     }
@@ -48,13 +48,16 @@ state_code smtp_handshake(smtp_context *smtp_cont) {
 
     LOG_INFO("Response <CONNECT>: %d, %s", smtp_response.status_code, smtp_response.message);
     if (!is_smtp_success(smtp_response.status_code)) {
+        free(smtp_response.message);
         return smtp_cont->state_code;
     }
 
     if (smtp_helo(smtp_cont) != OK) {
+        free(smtp_response.message);
         return smtp_cont->state_code;
     }
 
+    free(smtp_response.message);
     return smtp_cont->state_code;
 }
 
@@ -70,8 +73,10 @@ state_code smtp_helo(smtp_context *smtp_cont) {
         LOG_INFO("Response <%s>: %d, %s", buffer_send, response.status_code, response.message);
         if (!is_smtp_success(response.status_code)) {
             free(buffer_send);
+            free(response.message);
             return smtp_cont->state_code;
         }
+        free(response.message);
     }
     free(buffer_send);
     return smtp_cont->state_code;
@@ -89,8 +94,10 @@ state_code smtp_ehlo(smtp_context *smtp_cont) {
         LOG_INFO("Response <%s>: %d, %s", buffer_send, response.status_code, response.message);
         if (!is_smtp_success(response.status_code)) {
             free(buffer_send);
+            free(response.message);
             return smtp_cont->state_code;
         }
+        free(response.message);
     }
     free(buffer_send);
     return smtp_cont->state_code;
@@ -111,8 +118,10 @@ state_code smtp_mail(smtp_context *smtp_cont, char *from_email, char *from_name)
         LOG_INFO("Response <%s>: %d, %s", buffer_send, response.status_code, response.message);
         if (!is_smtp_success(response.status_code)) {
             free(buffer_send);
+            free(response.message);
             return smtp_cont->state_code;
         }
+        free(response.message);
     }
 
     free(buffer_send);
@@ -120,12 +129,13 @@ state_code smtp_mail(smtp_context *smtp_cont, char *from_email, char *from_name)
 }
 
 state_code smtp_rcpt(smtp_context *smtp_cont, char *to_email, char *name) {
-    smtp_addr to_addr;
-    asprintf(&to_addr.email, "%s", to_email);
-    asprintf(&to_addr.name, "%s", name);
+    smtp_addr *to_addr = allocate_memory(sizeof(*to_addr));
+    asprintf(&to_addr->email, "%s", to_email);
+    asprintf(&to_addr->name, "%s", name);
     smtp_cont->to_size++;
-    smtp_cont->to = reallocate_memory(smtp_cont->to, smtp_cont->to_size);
-    smtp_cont->to[smtp_cont->to_size - 1] = to_addr;
+    smtp_cont->to = reallocate_memory(smtp_cont->to, sizeof(smtp_addr) * smtp_cont->to_size);
+    *(smtp_cont->to + (smtp_cont->to_size - 1)) = *to_addr;
+    free(to_addr);
 
     char *buffer_send;
     asprintf(&buffer_send, "RCPT to:<%s>\r\n", smtp_cont->to->email);
@@ -137,9 +147,13 @@ state_code smtp_rcpt(smtp_context *smtp_cont, char *to_email, char *name) {
         LOG_INFO("Response <%s>: %d, %s", buffer_send, response.status_code, response.message);
         if (!is_smtp_success(response.status_code)) {
             free(buffer_send);
+            free(response.message);
             return smtp_cont->state_code;
         }
+        free(response.message);
     }
+
+    free(buffer_send);
     return smtp_cont->state_code;
 }
 
@@ -169,8 +183,10 @@ state_code smtp_data(smtp_context *smtp_cont, char *message) {
 
         LOG_INFO("Response <%s>: %d, %s", "DATA", response.status_code, response.message);
         if (!is_smtp_success(response.status_code)) {
+            free(response.message);
             return smtp_cont->state_code;
         }
+        free(response.message);
     }
 
     char *result_message = NULL;
@@ -211,8 +227,10 @@ state_code smtp_data(smtp_context *smtp_cont, char *message) {
                  response.status_code, response.message);
         if (!is_smtp_success(response.status_code)) {
             free(result_message);
+            free(response.message);
             return smtp_cont->state_code;
         }
+        free(response.message);
     }
 
     free(result_message);
@@ -226,8 +244,10 @@ state_code smtp_rset(smtp_context *smtp_cont) {
 
         LOG_INFO("Response <RSET>: %d, %s", response.status_code, response.message);
         if (!is_smtp_success(response.status_code)) {
+            free(response.message);
             return smtp_cont->state_code;
         }
+        free(response.message);
     }
 
     return smtp_cont->state_code;
@@ -240,9 +260,11 @@ state_code smtp_quit(smtp_context *smtp_cont) {
 
         LOG_INFO("Response <QUIT>: %d, %s", response.status_code, response.message);
         if (!is_smtp_success(response.status_code)) {
+            free(response.message);
             free_resource_smtp(smtp_cont);
             return smtp_cont->state_code;
         }
+        free(response.message);
     }
 
     free_resource_smtp(smtp_cont);
@@ -271,19 +293,25 @@ smtp_response get_smtp_response(smtp_context *smtp_cont) {
     char code[3];
     size_t i = 0;
     size_t size_str = strlen(buffer);
-    char *message = buffer;
     for (; i < size_str; i++) {
         if (buffer[i] == ' ') {
-            message++;
             break;
         }
         code[i] = buffer[i];
-        message++;
+    }
+
+    char *message = allocate_memory(strlen(buffer) - i + 1);
+    if (i < size_str - 1) {
+        strncpy(message, buffer + i + 1, strlen(buffer) - i);
+        message[strlen(buffer) - i] = 0;
+        smtp_response.message = message;
+    } else {
+        free(message);
     }
 
     smtp_response.status_code = convert_string_to_long_int(code);
-    smtp_response.message = message;
 
+    free(buffer);
     return smtp_response;
 }
 
@@ -334,10 +362,6 @@ int smtp_connect(char *server, char *port, smtp_context *smtp_cont) {
         return -1;
     }
 
-    if ((serv_domain = allocate_memory(strlen(server) + 1)) == NULL) {
-        return -1;
-    }
-
     struct timeval timeout;
     timeout.tv_sec = 30;
     timeout.tv_usec = 0;
@@ -347,7 +371,7 @@ int smtp_connect(char *server, char *port, smtp_context *smtp_cont) {
         exit(-1);
     }
 
-    strcpy(serv_domain, server);
+    asprintf(&serv_domain, "%s", server);
     smtp_ip = get_ip_by_hostname(serv_domain);
 
     server_addr.sin_family = PF_INET;
@@ -365,11 +389,13 @@ int smtp_connect(char *server, char *port, smtp_context *smtp_cont) {
             continue;
         } else {
             smtp_cont->socket_desc = server_socket;
+
+            free(smtp_ip);
+            free(serv_domain);
             return 0;
         }
     }
 
-    free(smtp_ip->ip);
     free(smtp_ip);
     free(serv_domain);
     return -1;
@@ -586,5 +612,4 @@ void free_resource_smtp(smtp_context *smtp_context) {
         free(smtp_context->header_list[i].value);
     }
     free(smtp_context->header_list);
-    free(smtp_context);
 }

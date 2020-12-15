@@ -1,9 +1,12 @@
+#include <signal.h>
 #include "util.h"
 #include "logs.h"
 #include "config.h"
 
 TAILQ_HEAD(logs_queue, node) head;
 
+int interrupt_thread_local = 0;
+pthread_t *thread_logger = NULL;
 pthread_mutex_t mutex_queue;
 
 void init_logs() {
@@ -63,11 +66,28 @@ void print_message(log *l) {
 }
 
 _Noreturn void *logs_queue_func() {
+    if (interrupt_thread_local) {
+        pthread_exit((void *) 0);
+    }
+
+    sigset_t set, orig;
+    sigemptyset(&set);
+    sigaddset(&set, SIGINT);
+    sigaddset(&set, SIGKILL);
+    sigaddset(&set, SIGTERM);
+    sigemptyset(&orig);
+    pthread_sigmask(SIG_BLOCK, &set, &orig);
+
+    if (interrupt_thread_local) {
+        pthread_sigmask(SIG_SETMASK, &orig, 0);
+        pthread_exit((void *) 0);
+    }
+
     struct timespec ts;
     ts.tv_sec = 0;
     ts.tv_nsec = 500000;
 
-    while (1) {
+    while (true) {
         nanosleep(&ts, &ts);
         if (!is_logs_queue_empty()) {
             log *l = pop_log();
@@ -76,7 +96,16 @@ _Noreturn void *logs_queue_func() {
             free(l->thread);
             free(l);
         }
+
+        if (interrupt_thread_local) {
+            printf("Попытка приостановить поток");
+            pthread_sigmask(SIG_SETMASK, &orig, 0);
+            break;
+        }
     }
+
+    printf("Поток остановлен");
+    pthread_exit((void *) 0);
 }
 
 void log_debug(char *message, char *filename, int line, ...) {
@@ -156,9 +185,17 @@ void log_warn(char *message, char *filename, int line, ...) {
 }
 
 void start_logger() {
-    pthread_t thread_logger;
+    if (thread_logger == NULL) {
+        thread_logger = allocate_memory(sizeof(*thread_logger));
+        init_logs();
+        pthread_create(thread_logger, NULL, logs_queue_func, NULL);
+    } else {
+        perror("Логгер уже инициализирован");
+    }
+}
 
-    init_logs();
-    pthread_create(&thread_logger, NULL, logs_queue_func, NULL);
+void logger_finalize() {
+    pthread_kill(*thread_logger, SIGINT);
+    free(thread_logger);
 }
 
