@@ -22,6 +22,7 @@ include $(REPORT_DIR)/Makefile
 mkdir: src_mkdir mkdir_report test_mkdir st_mkdir
 	mkdir -p $(BIN_DIR)
 	mkdir -p $(BUILD_DIR)
+	mkdir -p doxygen
 
 all: server unit_tests $(SYSTEM_TEST_TARGETS) report
 
