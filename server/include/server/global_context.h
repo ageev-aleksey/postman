@@ -10,6 +10,7 @@
 #include "maildir/maildir.h"
 #include "event_loop/event_loop.h"
 #include "server/users_list.h"
+#include "server/timers.h"
 #include "util.h"
 #include <pthread.h>
 #include <libconfig.h>
@@ -30,6 +31,7 @@ struct {
     size_t hello_msg_size;
     event_loop *loop;
     size_t num_worker_threads;
+    timers_t timers;
 } server_config;
 
 struct pair {
@@ -46,5 +48,6 @@ void handler_accept(event_loop *el, int acceptor, int client_socket, struct sock
 void handler_write(event_loop *el, int socket, char* buffer, int size, int writing, client_status status, err_t error);
 void handler_read(event_loop *el, int socket, char *buffer, int size, client_status status, err_t error);
 void handler_timer(event_loop*, int socket, struct timer_event_entry *descriptor);
+void handler_close_socket(event_loop*, int sock, err_t *err);
 struct pair handler_smtp(user_context *user, char *message);
 #endif //SERVER_USER_CONTEXT_H

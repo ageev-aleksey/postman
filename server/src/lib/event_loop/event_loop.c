@@ -13,6 +13,7 @@
 #include <errno.h>
 #include <netinet/in.h>
 #include<fcntl.h>
+#include <unistd.h>
 
 #include <assert.h>
 
@@ -112,10 +113,16 @@ void pr_manager_step(event_loop *loop, int fd_timeout, err_t *error) {
         goto exit;
     }
     for(int index = 0; index < size; index++) {
-        if (fd_array[index].revents == POLLIN) {
+        if (fd_array[index].revents & POLLIN) {
             pr_create_pollin_event(loop, &fd_array[index], index, error);
-        } else if (fd_array[index].revents == POLLOUT) {
+        } else if (fd_array[index].revents & POLLOUT) {
             pr_create_pollout_event(loop, &fd_array[index], index, error);
+        } else if (fd_array[index].revents & POLLERR) {
+            printf("%s", "POLLERR");
+        } else if (fd_array[index].revents & POLLNVAL) {
+            printf("%s", "POLLNVAL");
+        } else if (fd_array[index].revents & POLLHUP) {
+            printf("%s", "POLLHUP");
         }
     }
     exit:
@@ -225,7 +232,9 @@ void pr_el_close(event_loop *loop) {
 
     sq_free(loop->_acceptors_queue);
     oeq_free(loop->_occurred_events);
+    pthread_join(loop->_thread, NULL);
     free(loop);
+
 }
 
 void el_close(event_loop *loop) {
@@ -305,6 +314,10 @@ void pr_sock_write_execute(event_loop *loop, event_sock_write *event) {
     event->handler(loop, event->event.socket, event->buffer, event->size, event->offset, event->status, event->event.error);
 }
 
+void pr_sock_close_execute(event_loop *loop, event_sock_close *event) {
+    event->handler(loop, event->event.socket, &event->event.error);
+}
+
 
 bool el_run(event_loop* loop, err_t *error) {
     ERROR_SUCCESS(error);
@@ -365,6 +378,9 @@ bool el_run(event_loop* loop, err_t *error) {
             break;
         case SOCK_WRITE:
             pr_sock_write_execute(loop, (event_sock_write*) event);
+            break;
+        case SOCK_CLOSE:
+            pr_sock_close_execute(loop, (event_sock_close*) event);
             break;
     }
     free(event);
@@ -474,6 +490,53 @@ bool el_async_write(event_loop* loop, int sock, void *output_buffer, int bsize,
         return false;
     }
     return is_res;
+}
+
+bool el_socket_close(event_loop* loop, int sock, sock_close_handler handler, err_t *error) {
+    if (loop == NULL) {
+        if (error != NULL) {
+            error->error = FATAL;
+            error->message = EL_EVENT_LOOP_PTR_IS_NULL;
+        }
+        return false;
+    }
+    ERROR_SUCCESS(error);
+    err_t err;
+    ERROR_SUCCESS(&err);
+
+    PTHREAD_CHECK(pthread_mutex_lock(&loop->_mutex_registered_events), &err);
+    event_sock_write *write = req_pop_write(loop->_registered_events, sock, &err);
+    event_sock_read *read = req_pop_read(loop->_registered_events, sock, &err);
+    PTHREAD_CHECK(pthread_mutex_unlock(&loop->_mutex_registered_events), &err);
+//    if(write != NULL) {
+//        free(write->buffer);
+//        free(write);
+//    }
+//
+//    if (read != NULL) {
+//        free(read->buffer);
+//        free(read);
+//
+//    }
+    free(read);
+    free(write);
+
+    close(sock);
+    event_sock_close *event = s_malloc(sizeof(event_sock_close), &err);
+    event->event.socket = sock;
+    event->event.type = SOCK_CLOSE;
+    event->handler = handler;
+
+    PTHREAD_CHECK(pthread_mutex_lock(&loop->_mutex_occurred_events), &err);
+    oeq_push_back(loop->_occurred_events, (event_t*)event, error);
+    PTHREAD_CHECK(pthread_mutex_unlock(&loop->_mutex_occurred_events), &err);
+    if (err.error) {
+        if (error != NULL) {
+            *error = err;
+        }
+        return false;
+    }
+    return true;
 }
 
 bool el_timer(event_loop* loop, int sock, unsigned int seconds, sock_timer_handler handler, timer_event_entry **descriptor, err_t *error) {

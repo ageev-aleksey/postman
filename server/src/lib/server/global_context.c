@@ -1,6 +1,7 @@
 #include "server/global_context.h"
-#include "log/context.h"
 #include "server/users_list.h"
+#include "server/timers.h"
+#include "log/context.h"
 #include "event_loop/event_loop.h"
 #include "smtp/state.h"
 #include "smtp/response.h"
@@ -81,8 +82,8 @@ bool server_config_init(const char *path) {
         return false;
     }
 
-    server_config.ip = malloc(sizeof(char) * strlen(host));
-    server_config.self_server_name = malloc(sizeof(char) * strlen(domain));
+    server_config.ip = malloc(sizeof(char) * strlen(host)+1);
+    server_config.self_server_name = malloc(sizeof(char) * strlen(domain)+1);
     strcpy(server_config.ip, host);
     strcpy(server_config.self_server_name, domain);
     server_config.log_file_path = NULL;
@@ -104,6 +105,7 @@ bool server_config_init(const char *path) {
              maildir_path);
     config_destroy(&cfg);
 
+    timers_init(&server_config.timers);
 
     struct sigaction sig_act;
     memset(&sig_act, 0, sizeof(sig_act));
@@ -154,13 +156,19 @@ void server_config_free() {
     free(server_config.ip);
     free(server_config.log_file_path);
     free(server_config.hello_msg);
+    maildir_free(&server_config.md);
     users_list__free(&server_config.users);
+    timers_free(&server_config.timers);
 }
 
 
 void handler_hello_write(event_loop *el, int client_socket, char* buffer, int size, int writing, client_status status, err_t error);
 
 void handler_accept(event_loop *el, int acceptor, int client_socket, struct sockaddr_in client_addr, err_t error) {
+    if (error.error) {
+        LOG_WARNING("handler_accept start: [errno -> %d] %s", error.errno_value, error.message);
+    }
+
     user_context *context = malloc(sizeof(user_context));
     if (context == NULL) {
         LOG_ERROR("%s", "Error alloc memory");
@@ -179,8 +187,18 @@ void handler_accept(event_loop *el, int acceptor, int client_socket, struct sock
     if (err.error) {
         LOG_ERROR("el_async_write: %s", err.message);
     }
+    timers_make_for_socket(&server_config.timers, client_socket);
+    struct timer_event_entry *td;
+    el_timer(el, client_socket, 15, handler_timer, &td, &err);
+    if (err.error) {
+        LOG_ERROR("el_timer: %s", err.message);
+    }
 }
 void handler_write(event_loop *el, int client_socket, char* buffer, int size, int writing, client_status status, err_t error) {
+    if (error.error) {
+        LOG_WARNING("handler_write start: [errno -> %d] %s", error.errno_value, error.message);
+    }
+
     if (status == DISCONNECTED) {
         user_disconnected(client_socket);
         return;
@@ -232,12 +250,17 @@ void user_disconnected(int sock) {
         LOG_INFO("user close connection [%s:%d]", acc.user->addr.ip, acc.user->addr.port);
         users_list__delete_user(&acc);
         user_free(acc.user);
+        free(acc.user);
     } else {
         LOG_ERROR("user bys socket [%d] not found", sock);
     }
 }
 
 void handler_hello_write(event_loop *el, int client_socket, char* buffer, int size, int writing, client_status status, err_t error) {
+    if (error.error) {
+        LOG_WARNING("handler_hello_write start: [errno -> %d] %s", error.errno_value, error.message);
+    }
+
     if (status == DISCONNECTED) {
         user_disconnected(client_socket);
         return;
@@ -263,6 +286,10 @@ bool is_line_and(const char *str) {
 }
 
 void handler_read(event_loop *loop, int client_socket, char *buffer, int size, client_status status, err_t error) {
+    if (error.error) {
+        LOG_WARNING("handler_read start: [errno -> %d] %s", error.errno_value, error.message);
+    }
+
     if (status == DISCONNECTED) {
         user_disconnected(client_socket);
         return;
@@ -359,9 +386,22 @@ void handler_read(event_loop *loop, int client_socket, char *buffer, int size, c
     }
 }
 
-void handler_timer(event_loop* el, int socket, struct timer_event_entry *descriptor) {
-    client_addr client = {0};
-    LOG_INFO("timer for client: %s:%d", client.ip, client.port);
+void handler_timer(event_loop* el, int sock, struct timer_event_entry *descriptor) {
+    LOG_INFO("timer [%d]", sock);
+    int t = 200;
+    if (timers_is_elapsed_for_socket(&server_config.timers, sock, t)) {
+        LOG_INFO("%s", "таймер истек, закрываем сокет");
+        el_timer_free(el, descriptor);
+        err_t err;
+        el_socket_close(el, sock, handler_close_socket, &err);
+        if (err.error) {
+            LOG_ERROR("el_socket_close: %s", err.message);
+        }
+    }
+}
+
+void handler_close_socket(event_loop* el, int sock, err_t *err) {
+    user_disconnected(sock);
 }
 
 

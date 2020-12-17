@@ -58,6 +58,7 @@ int main() {
         LOG_ERROR("el_async_accept: %s", error.message);
         goto exit;
     }
+
     LOG_INFO("%s", "Server init");
 
     /////////////////////////
@@ -80,7 +81,6 @@ exit:
     if (master_socket != ERROR) {
         close(master_socket);
     }
-   // el_close(el);
     server_config_free();
     smtp_lib_free();
 
