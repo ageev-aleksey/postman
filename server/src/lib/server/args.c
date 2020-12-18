@@ -21,7 +21,7 @@ bool args_parse(int argc, char **argv, struct server_configuration* config) {
     while ((parameter = getopt_long(argc, argv, "c:", opts, &optindex)) != -1) {
         switch (parameter) {
             case ('c'): {
-                num_processed++;
+                num_processed += 2;
                 strcpy(config->conf_path, optarg);
                 break;
             }

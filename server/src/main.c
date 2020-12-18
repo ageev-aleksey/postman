@@ -33,6 +33,7 @@ void *worker_thread (void *args) {
 
 int main(int argc, char **argv) {
     if (!args_parse(argc, argv, &server_config)) {
+        printf("%s", "exit\n");
         return OK_FLAG;
     }
 

@@ -11,4 +11,5 @@ server/test_report/
 *.aux
 *.log
 test_report/
+__pycache__/
 
