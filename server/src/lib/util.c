@@ -86,8 +86,8 @@ int make_server_socket(const char *ip, int port, err_t *error) {
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(struct sockaddr_in));
     addr.sin_family = AF_INET;
-    addr.sin_port = htons(8080);
-    int res = inet_aton("127.0.0.1", &addr.sin_addr);
+    addr.sin_port = htons(port);
+    int res = inet_aton(ip, &addr.sin_addr);
     if (res == -1) {
         message = UTIL_ERROR_CONVERT_IP;
         goto exit_error;

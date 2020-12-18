@@ -111,7 +111,7 @@ $(BIN_DIR)/server.out: $(BIN_DIR)/libeventloop.a $(BIN_DIR)/liblog.a \
                        $(BIN_DIR)/libadditional.a $(BIN_DIR)/libsmtpprotocol.a \
                        $(BIN_DIR)/libmaildir.a $(BIN_DIR)/libserver.a \
                        $(BIN_DIR)/config.cfg  $(CWD)/main.c
-	$(CC) $(CCFLAGS) $(INCLUDES) $(SMTP_ADDITIONAL_INCLUDE) $(CWD)/main.c -L$(BIN_DIR) $(LINKING_SERVER_LIBS) -lpthread  -o $@
+	$(CC) $(CCFLAGS) $(INCLUDES) $(SMTP_ADDITIONAL_INCLUDE) -I$(CWD) $(CWD)/main.c -L$(BIN_DIR) $(LINKING_SERVER_LIBS) -lpthread  -o $@
 
 $(BIN_DIR)/config.cfg: $(RESOURCE_PATH)/config2.cfg
 	cp $(RESOURCE_PATH)/config2.cfg $(BIN_DIR)/config.cfg

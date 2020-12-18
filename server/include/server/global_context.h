@@ -20,7 +20,7 @@
 
 
 
-struct {
+struct server_configuration {
     maildir md;
     char *ip;
     int16_t  port;
@@ -32,6 +32,7 @@ struct {
     event_loop *loop;
     size_t num_worker_threads;
     timers_t timers;
+    char conf_path[NAME_MAX];
 } server_config;
 
 struct pair {

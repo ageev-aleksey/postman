@@ -4,6 +4,7 @@
 
 #include <stdlib.h>
 #include "server/timers.h"
+#include "log/context.h"
 
 
 void timers_make_for_socket(timers_t *timers, int socket) {
@@ -34,6 +35,8 @@ void timers_remove_for_socket(timers_t *timers, int sock) {
     if (ptr) {
         TAILQ_REMOVE(&timers->list, ptr, entries);
         free(ptr);
+    } else {
+        LOG_WARNING("%s", "Not found timer by sock");
     }
 
     pthread_mutex_unlock(&timers->pr_mutex);

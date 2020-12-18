@@ -319,6 +319,13 @@ void pr_sock_close_execute(event_loop *loop, event_sock_close *event) {
 }
 
 
+
+struct pr_el_timer_ptr_entry {
+    timer_event_entry *ptr;
+    TAILQ_ENTRY(pr_el_timer_ptr_entry) entries;
+};
+TAILQ_HEAD(pr_el_list_timer_ptr, pr_el_timer_ptr_entry);
+
 bool el_run(event_loop* loop, err_t *error) {
     ERROR_SUCCESS(error);
     err_t err;
@@ -327,6 +334,8 @@ bool el_run(event_loop* loop, err_t *error) {
     err_t err_queue;
     ERROR_SUCCESS(&err_queue);
 
+    struct pr_el_list_timer_ptr removed_timers_list;
+    TAILQ_INIT(&removed_timers_list);
 
     PTHREAD_CHECK(pthread_mutex_lock(&loop->_mutex_registered_events), error);
     timer_event_entry *ptr = NULL;
@@ -337,18 +346,38 @@ bool el_run(event_loop* loop, err_t *error) {
         {
             ptr->event.is_processed = true;
             PTHREAD_CHECK(pthread_mutex_unlock(&loop->_mutex_registered_events), error);
+
             ptr->event.handler(loop, ptr->event.socket, ptr);
+
             PTHREAD_CHECK(pthread_mutex_lock(&loop->_mutex_registered_events), error);
+
             ptr->event.is_processed = false;
             ptr->event.time_start = time(NULL);
         }
 
-        if (ptr->event.has_delete) {
-            TAILQ_REMOVE(loop->_timer_events, ptr, entries);
-            free(ptr);
+        if (ptr->event.has_delete &&  !ptr->event.is_processed) {
+                ptr->event.is_processed = true;
+                struct pr_el_timer_ptr_entry *dp = s_malloc(sizeof(struct pr_el_timer_ptr_entry), NULL);
+                dp->ptr = ptr;
+                TAILQ_INSERT_TAIL(&removed_timers_list, dp, entries);
         }
     }
+
+    // Физическое удаление, логичеси уделанных таймеров
+    struct pr_el_timer_ptr_entry *dptr = NULL;
+    while(!TAILQ_EMPTY(&removed_timers_list)) {
+            dptr = TAILQ_FIRST(&removed_timers_list);
+            TAILQ_REMOVE(loop->_timer_events, dptr->ptr, entries);
+            free(dptr->ptr);
+            TAILQ_REMOVE(&removed_timers_list, dptr, entries);
+            free(dptr);
+    }
+
     PTHREAD_CHECK(pthread_mutex_unlock(&loop->_mutex_registered_events), error);
+
+
+
+
 
     PTHREAD_CHECK(pthread_mutex_lock(&loop->_mutex_occurred_events), error);
     if (TAILQ_EMPTY(loop->_occurred_events)) {
@@ -577,13 +606,15 @@ bool el_timer(event_loop* loop, int sock, unsigned int seconds, sock_timer_handl
 
 bool el_timer_free(event_loop* loop, timer_event_entry *descriptor) {
     pthread_mutex_lock(&loop->_mutex_registered_events);
-    timer_event_entry *ptr = NULL;
-    TAILQ_FOREACH(ptr, loop->_timer_events, entries) {
-        if (ptr == descriptor) {
-            ptr->event.has_delete = true;
-            break;
-        }
-    }
+    //timer_event_entry *ptr = NULL;
+//    TAILQ_FOREACH(ptr, loop->_timer_events, entries) {
+//        if (ptr == descriptor) {
+//            ptr->event.has_delete = true;
+//            break;
+//        }
+//    }
+    // TAILQ_REMOVE(loop->_timer_events, descriptor, entries);
+    descriptor->event.has_delete = true;
     pthread_mutex_unlock(&loop->_mutex_registered_events);
     return true;
 }

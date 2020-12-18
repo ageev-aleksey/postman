@@ -1,0 +1,25 @@
+	AutoGen Definitions options;
+prog-name     = check;
+prog-title    = "Checkout Automated Options";
+long-opts;
+gnu-usage;    /* GNU style preferred to default */
+
+main = { main-type = include; };
+
+flag = {
+    name      = check-dirs;
+    value     = L;        /* flag style option character */
+    arg-type  = string;   /* option argument indication  */
+    max       = NOLIMIT;  /* occurrence limit (none)     */
+    stack-arg;            /* save opt args in a stack    */
+    descrip   = "Checkout directory list";
+    doc       = 'name of each directory that is to be "checked out".';
+};
+
+flag = {
+    name      = show_defs;
+    descrip   = "Show the definition tree";
+    disable   = dont;     /* mark as enable/disable type */
+                          /* option.  Disable as `dont-' */
+    doc       = 'disable, if you do not want to see the tree.';
+};

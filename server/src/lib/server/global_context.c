@@ -98,11 +98,13 @@ bool server_config_init(const char *path) {
         return false;
     }
 
-    LOG_INFO("\nConfig loaded: \n -- host: %s\n -- port: %d\n -- domain: %s\n -- maildir: %s",
+    LOG_INFO("\nConfig loaded: \n -- host: %s\n -- port: %d\n -- domain: %s\n -- maildir: %s"
+             "\n -- num_workers: %zu",
              server_config.ip,
              server_config.port,
              server_config.self_server_name,
-             maildir_path);
+             maildir_path,
+             server_config.num_worker_threads);
     config_destroy(&cfg);
 
     timers_init(&server_config.timers);
@@ -252,6 +254,7 @@ void user_disconnected(int sock) {
         users_list__delete_user(&acc);
         user_free(acc.user);
         free(acc.user);
+        timers_remove_for_socket(&server_config.timers, sock);
     } else {
         LOG_ERROR("user bys socket [%d] not found", sock);
     }
@@ -388,7 +391,7 @@ void handler_read(event_loop *loop, int client_socket, char *buffer, int size, c
 
 void handler_timer(event_loop* el, int sock, struct timer_event_entry *descriptor) {
     LOG_INFO("timer [%d]", sock);
-    int t = 200;
+    int t = 30;
     if (timers_is_elapsed_for_socket(&server_config.timers, sock, t)) {
         LOG_INFO("%s", "таймер истек, закрываем сокет");
         el_timer_free(el, descriptor);
