@@ -49,9 +49,9 @@ void smtp_regex_hello_test() {
     regmatch_t matcher_hello[1];
     regmatch_t matcher_addr[1];
     regmatch_t matcher_domain[1];
-    int re = regcomp(&reg_hello, RE_HELLO, REG_EXTENDED | REG_ICASE );
-    re = regcomp(&reg_addr, RE_ADDRESS_LITERAL, REG_EXTENDED | REG_ICASE );
-    re = regcomp(&reg_domain, RE_DOMAIN_LITERAL, REG_EXTENDED | REG_ICASE);
+    regcomp(&reg_hello, RE_HELLO, REG_EXTENDED | REG_ICASE );
+    regcomp(&reg_addr, RE_ADDRESS_LITERAL, REG_EXTENDED | REG_ICASE );
+    regcomp(&reg_domain, RE_DOMAIN_LITERAL, REG_EXTENDED | REG_ICASE);
     if (regexec(&reg_hello, line, 1, matcher_hello, 0) == 0) {
         CU_ASSERT_EQUAL(matcher_hello[0].rm_so, 0);
         CU_ASSERT_EQUAL(matcher_hello[0].rm_eo, 4);

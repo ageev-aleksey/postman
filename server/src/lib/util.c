@@ -114,7 +114,7 @@ int make_server_socket(const char *ip, int port, err_t *error) {
 }
 
 client_addr get_addr(struct sockaddr_in* addr, err_t *error) {
-    client_addr ret = {0};
+    client_addr ret = {{0}};
     if (addr == NULL) {
         if (error != NULL) {
             error->error = FATAL;
@@ -172,7 +172,6 @@ bool sub_str(const char* const src, char * const dst, size_t begin, size_t end) 
 bool char_make_buf_concat(char **buffer, size_t *bsize, size_t nargs, const char *str, ...) {
     size_t result_size = 0;
     size_t size_array[UTIL_MAX_NUMBER_OF_VARIANT_PARAMETERS];
-    size_t length_size_array = nargs;
 
     va_list va;
     va_start(va, str);

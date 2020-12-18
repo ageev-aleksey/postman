@@ -242,7 +242,7 @@ bool log_make_message(log_message *message, log_level level, const char *pattern
     va_list vl;
 
     va_start(vl, ptr);
-    int buffer_size = sprintf(message->message, pattern, vl);
+    sprintf(message->message, pattern, vl);
     return true;
 }
 

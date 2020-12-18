@@ -8,7 +8,6 @@
 #include <stdio.h>
 
 #define SMTP_START_BUFFER_SIZE 1024
-#define SMTP_COMMAND1_LEN 5
 #define SMTP_DATA_END ".\r\n"
 #define SMTP_MAILBOX_SEP '@'
 
@@ -21,12 +20,6 @@ if ((second_error_) != NULL) { \
 return false;\
 }               \
 } while(0);
-
-#define PTR_SWAP(dst_, src_) \
-do {                         \
-    (dst_) = (src_);         \
-    (src_) = NULL;           \
-} while(0)
 
 const char SMTP_DESCRIPTOR_IS_NULL[] = "pointer of smtp_state is null";
 const char SMTP_MESSAGE_IS_NULL[] = "pointer of smtp message is null";
@@ -129,6 +122,7 @@ void smtp_free(smtp_state *smtp) {
 /// ehlo = "EHLO" SP Domain CRLF
 /// helo = "HELO" SP Domain CRLF
 struct smtp_command pr_smtp_hello_proc(smtp_state *smtp, char *buff) {
+    (void) smtp;
     struct smtp_command command;
     command.type = SMTP_HELLO;
     command.event = AUTOFSM_EV_HELO;
@@ -160,6 +154,7 @@ struct smtp_command pr_smtp_hello_proc(smtp_state *smtp, char *buff) {
 
 /// "MAIL FROM:" ("<>" / Reverse-Path) [SP Mail-parameters] CRLF
 struct smtp_command pr_smtp_mailfrom_proc(smtp_state *smtp, char *buff) {
+    (void)smtp;
     struct smtp_command command;
     command.type = SMTP_MAILFROM;
     command.event = AUTOFSM_EV_MAIL;
@@ -170,7 +165,6 @@ struct smtp_command pr_smtp_mailfrom_proc(smtp_state *smtp, char *buff) {
     if (regexec(&pr_smtp_reg_path,  buff, 1, matcher, 0) == 0) {
         // Проверяем наличие потового ящика
         if (regexec(&pr_smtp_reg_mailbox, buff, 1, matcher, 0) == 0) {
-            size_t len = matcher->rm_eo - matcher->rm_so;
             char *split[2];
             split_sub_str(buff, matcher->rm_so, matcher->rm_eo, split, 2, SMTP_MAILBOX_SEP);
             smtp_mailbox *mailbox = malloc(sizeof(smtp_mailbox));
@@ -180,8 +174,6 @@ struct smtp_command pr_smtp_mailfrom_proc(smtp_state *smtp, char *buff) {
         } else {
             // Ошибка, которая не должна происходить
             assert(false);
-            command.status = false;
-            command.arg = NULL;
         }
     } else {
         if (regexec(&pr_smtp_reg_empty_path, buff, 1, matcher, 0) == 0) {
@@ -197,6 +189,7 @@ struct smtp_command pr_smtp_mailfrom_proc(smtp_state *smtp, char *buff) {
 
 /// "RCPT TO:" ("<Postmaster@" domain ">" / "<Postmaster>" / Forward-Path)
 struct smtp_command pr_smtp_rcptto_proc(smtp_state *smtp, char *buff) {
+    (void) smtp;
     struct smtp_command command;
     command.type = SMTP_RCPTTO;
     command.event = AUTOFSM_EV_RCPT;
@@ -207,7 +200,6 @@ struct smtp_command pr_smtp_rcptto_proc(smtp_state *smtp, char *buff) {
     if (regexec(&pr_smtp_reg_path,  buff, 1, matcher, 0) == 0) {
         // проверяем наличие почтового ящика
         if (regexec(&pr_smtp_reg_mailbox, buff, 1, matcher, 0) == 0) {
-            size_t len = matcher->rm_eo - matcher->rm_so;
             char *split[2];
             split_sub_str(buff, matcher->rm_so, matcher->rm_eo, split, 2, SMTP_MAILBOX_SEP);
             smtp_mailbox *mailbox = malloc(sizeof(smtp_mailbox));
@@ -233,6 +225,8 @@ struct smtp_command pr_smtp_rcptto_proc(smtp_state *smtp, char *buff) {
 }
 
 struct smtp_command pr_smtp_data_proc(smtp_state *smtp, char *buff) {
+    (void) smtp;
+    (void) buff;
     struct smtp_command command;
     command.type = SMTP_DATA;
     command.event = AUTOFSM_EV_DATA;
@@ -242,6 +236,8 @@ struct smtp_command pr_smtp_data_proc(smtp_state *smtp, char *buff) {
 }
 /// "RSET"
 struct smtp_command pr_smtp_rset_proc(smtp_state *smtp, char *buff) {
+    (void) smtp;
+    (void) buff;
     struct smtp_command command;
     command.type = SMTP_RSET;
     command.event = AUTOFSM_EV_RSET;
@@ -252,6 +248,8 @@ struct smtp_command pr_smtp_rset_proc(smtp_state *smtp, char *buff) {
 
 /// "VRFY"
 struct smtp_command pr_smtp_vrfy_proc(smtp_state *smtp, char *buff) {
+    (void) smtp;
+    (void) buff;
     struct smtp_command command;
     command.type = SMTP_VRFY;
     command.event = AUTOFSM_EV_TEST;
@@ -262,6 +260,8 @@ struct smtp_command pr_smtp_vrfy_proc(smtp_state *smtp, char *buff) {
 
 /// "EXPN"
 struct smtp_command pr_smtp_expn_proc(smtp_state *smtp, char *buff) {
+    (void) smtp;
+    (void) buff;
     struct smtp_command command;
     command.type = SMTP_EXPN;
     command.event = AUTOFSM_EV_TEST;
@@ -272,6 +272,8 @@ struct smtp_command pr_smtp_expn_proc(smtp_state *smtp, char *buff) {
 
 /// "HELP"
 struct smtp_command pr_smtp_help_proc(smtp_state *smtp, char *buff) {
+    (void) smtp;
+    (void) buff;
     struct smtp_command command;
     command.type = SMTP_HELP;
     command.event = AUTOFSM_EV_TEST;
@@ -282,6 +284,8 @@ struct smtp_command pr_smtp_help_proc(smtp_state *smtp, char *buff) {
 
 /// "NOOP"
 struct smtp_command pr_smtp_noop_proc(smtp_state *smtp, char *buff) {
+    (void) smtp;
+    (void) buff;
     struct smtp_command command;
     command.type = SMTP_NOOP;
     command.event = AUTOFSM_EV_TEST;
@@ -292,6 +296,8 @@ struct smtp_command pr_smtp_noop_proc(smtp_state *smtp, char *buff) {
 
 /// "QUIT"
 struct smtp_command pr_smtp_quit_proc(smtp_state *smtp, char *buff) {
+    (void) smtp;
+    (void) buff;
     struct smtp_command command;
     command.type = SMTP_QUIT;
     command.event = AUTOFSM_EV_QUIT;

@@ -7,17 +7,11 @@
 #include "maildir/server.h"
 #include "maildir/message.h"
 
-#include <sys/types.h>
-#include <regex.h>
-
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>
-#include <unistd.h>
 #include <string.h>
 #include <errno.h>
 #include <linux/limits.h>
-#include <limits.h>
 #include <stdlib.h>
 #include <stdarg.h>
 
@@ -33,21 +27,21 @@
 const char MAILDIR_MD_PTR_NULL[] = "pointer of maildir object is null";
 const char MAILDIR_ROOT_PATH_ERROR[] = "error opening maildir root";
 const char MAILDIR_ERROR_OPENING_SERVERS_PATH[] = "error opening maildir servers path";
-const char MAILDIR_PATH_DONT_CONTAINING_MAILDIR_STRUCTURE[] = "Directory of path already exists and "
-                                                              "path don't containing maildir directory structure. "
-                                                              "Not found " SERVERS_ROOT_NAME " directory";
+//const char MAILDIR_PATH_DONT_CONTAINING_MAILDIR_STRUCTURE[] = "Directory of path already exists and "
+//                                                              "path don't containing maildir directory structure. "
+//                                                              "Not found " SERVERS_ROOT_NAME " directory";
 const char MAILDIR_ERROR_CONVERT_RELATIVE_TO_ABSOLUTE[] = "error converting path from relative to absolute form";
 const char MAILDIR_ERROR_PTR_OF_SERVER_IS_NULL[] = "pointer of server object is null";
-const char MAILDIR_ERROR_PTR_OF_SERVER_NAME_IS_NULL[] = "pointer of server name is null";
-const char MAILDIR_ERROR_CREATE_DIRECTORY[] = "error create directory";
+//const char MAILDIR_ERROR_PTR_OF_SERVER_NAME_IS_NULL[] = "pointer of server name is null";
+//const char MAILDIR_ERROR_CREATE_DIRECTORY[] = "error create directory";
 const char MAILDIR_ERROR_CONCATENATE_PATHS[] = "error concatenate string for get path";
-const char MAILDIR_ERROR_PTR_OF_SERVER_LIST_IS_NULL[] = "double pointer of servers list is null";
+//const char MAILDIR_ERROR_PTR_OF_SERVER_LIST_IS_NULL[] = "double pointer of servers list is null";
 const char MAILDIR_ERROR_MAKE_DIR[] = "error make dir for maildir struct";
 const char MAILDIR_ERROR_STAT_FILE_READ[] = "error get statInfo for file";
 const char MAILDIR_ERROR_GET_NEXT_DIRENT[] = "error read directory for extract file names";
 const char MAILDIR_ERROR_CONTAINING_FOREIGN_OBJECT[] = "user directory containing foreign object";
-const char MAILDIR_SERVER_NOT_FOUND[] = "not found server with name";
-const char MAILDIR_ERROR_FIND_SERVER[] = "error when performed find dir by path of the server by name";
+//const char MAILDIR_SERVER_NOT_FOUND[] = "not found server with name";
+//const char MAILDIR_ERROR_FIND_SERVER[] = "error when performed find dir by path of the server by name";
 const char MAILDIR_ERROR_STRUCTURE_OF_USER_PATH_OF_THE_SERVER[] =
         "invalid inner structure user directory of the external server";
 
@@ -340,11 +334,10 @@ bool pr_maildir_check_server_structure(char *server_full_path, err_t *error) {
 bool pr_maildir_check_root_structure(maildir *md, DIR *dir, err_t *error) {
     struct dirent entry;
     struct dirent *result;
-    bool servers_dir_is_founded = false;
     if (!pr_maildir_next_dirent_entry(dir, &entry, &result, error)) {
         return false;
     }
-    struct stat entryInfo;
+
     while (result != NULL) {
         char *path_name = entry.d_name;
         if (!((strcmp(path_name, ".") == 0)||(strcmp(path_name, "..") == 0))) {
@@ -364,7 +357,6 @@ bool pr_maildir_check_root_structure(maildir *md, DIR *dir, err_t *error) {
                     return false;
                 }
                 if (is_dir) {
-                    servers_dir_is_founded =  true;
                     if (!pr_maildir_check_user_structure(full_path, WITHOUT_CUR_FOLDER, error)) {
                         free(full_path);
                         return false;
@@ -394,7 +386,7 @@ bool pr_maildir_check_root_structure(maildir *md, DIR *dir, err_t *error) {
     return true;
 }
 
-bool pr_maildir_relative_to_absolute_path(maildir *md, char *path, err_t *error) {
+bool pr_maildir_relative_to_absolute_path(maildir *md, const char *path, err_t *error) {
     char *buffer = s_malloc(PATH_MAX+1, error);
     if (buffer == NULL) {
         return false;
@@ -502,6 +494,7 @@ bool maildir_server_list(maildir *md, maildir_servers_list *servers_list, err_t 
 //    free(path);
 //    closedir(dir);
 //    return true;
+return false;
 }
 
 bool maildir_get_self_server(maildir *md, maildir_server *server, err_t *error) {
@@ -579,6 +572,7 @@ bool maildir_create_server(maildir *md, maildir_server *server, err_t *error) {
 //    server->pr_md = md;
 //    free(path);
 //    return  true;
+    return false;
 }
 
 bool maildir_delete_server(maildir *md, maildir_server *server, err_t *error) {

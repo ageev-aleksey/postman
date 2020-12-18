@@ -11,11 +11,8 @@
 #include "util.h"
 
 #include <time.h>
-#include <sys/types.h>
-#include <unistd.h>
 #include <stdio.h>
-#include <stdarg.h>
-#include <string.h>
+
 
 
 //#define MAILDIR_MAX_RANDOM_VALUE 9999999999
@@ -110,7 +107,6 @@ bool maildir_user_create_message(maildir_user *user, maildir_message *message, c
 
 
     // Генерация имени файла до тех пор, пока в обоих папках такого файлна не будет
-    char *tmp_file_path = NULL;
     FILE *in_tmp = NULL;
     FILE *in_new = NULL;
     bool is_continue = true;
@@ -196,7 +192,7 @@ void maildir_user_default_init(maildir_user *user) {
 }
 
 void maildir_user_free(maildir_user *user) {
-
+    (void) user;
 }
 
 bool maildir_user_login(maildir_user *user, char **login) {
@@ -224,4 +220,6 @@ bool maildir_user_message_list(maildir_user *user, maildir_messages_list *msg_li
 //        free(path);
 //        return false;
 //    }
+    (void) user; (void) msg_list; (void) error;
+    return false;
 }

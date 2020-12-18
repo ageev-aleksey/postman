@@ -207,7 +207,7 @@ void handler_write(event_loop *el, int client_socket, char* buffer, int size, in
     user_accessor acc;
     if(users_list__user_find_by_sock(&server_config.users, &acc, client_socket)) {
 
-        err_t verr;
+     //   err_t verr;
 //        if(size >= VECTOR_SIZE(&acc.user->buffer)) {
 //            VECTOR_CLEAR(&acc.user->buffer);
 //        } else {
@@ -228,6 +228,7 @@ void handler_write(event_loop *el, int client_socket, char* buffer, int size, in
             LOG_INFO("server close connection with user [smtp command QUIT] [%s:%d]", acc.user->addr.ip, acc.user->addr.port);
             user_free(acc.user);
             users_list__delete_user(&acc);
+            free(acc.user);
         } else {
             err_t err;
             char *buffer_ptr = acc.user->read_buffer;
@@ -317,7 +318,6 @@ void handler_read(event_loop *loop, int client_socket, char *buffer, int size, c
         itr.end = 0;
         while(true) {
             sub_str_iterate(&itr);
-            err_t e;
             //char tmp =  VECTOR(&acc.user->buffer)[itr.end];
             //       VECTOR(&acc.user->buffer)[itr.end] = '\0';
             // if (strcmp(&VECTOR(&acc.user->buffer)[itr.end - SMTP_COMMAND_END_LEN], SMTP_COMMAND_END) == 0) {
@@ -325,7 +325,7 @@ void handler_read(event_loop *loop, int client_socket, char *buffer, int size, c
                 // Обрабатываем команду
                 char tmp =  VECTOR(&acc.user->buffer)[itr.end];
                 VECTOR(&acc.user->buffer)[itr.end] = '\0';
-                err_t smtp_err;
+
                 struct pair reply = handler_smtp(acc.user, VECTOR(&acc.user->buffer) + itr.begin);
                 VECTOR(&acc.user->buffer)[itr.end] = tmp;
                 if (reply.status == SMTP_STATUS_CONTINUE && itr.end != itr.str_len) {
@@ -417,6 +417,9 @@ char* smtp_status_to_str(smtp_status status) {
             return "SMTP_STATUS_CONTINUE";
         case SMTP_STATUS_DATA_END:
             return "SMTP_STATUS_DATA_END";
+        case SMTP_STATUS_EXIT:
+            return "SMTP_STATUS_EXIT";
+            break;
     }
     return "NONE";
 }
@@ -619,6 +622,8 @@ bool send_mail(smtp_state *smtp) {
 
 
  exit:
+    VECTOR_FREE(&self_recipients);
+    VECTOR_FREE(&foreign_recipients);
     free(sender_mailbox_str);
     free(message);
     return status;

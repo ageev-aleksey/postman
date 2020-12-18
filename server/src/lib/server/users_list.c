@@ -35,6 +35,7 @@ bool users_list__add(users_list *users, user_context **user) {
     TAILQ_INSERT_TAIL(&users->pr_list, entry, pr_entries);
     pthread_mutex_unlock(&users->pr_mutex);
     *user = NULL;
+    return true;
 }
 
 bool users_list__user_find_by_sock(users_list *users, user_accessor *accessor, int sock) {
