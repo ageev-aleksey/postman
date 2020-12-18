@@ -76,6 +76,7 @@ server_report:
     - ls -al
     - ls -al report
     - ls -al report/utils
+    - doxygen Doxyfile
     - make report 
   artifacts:
     paths:
