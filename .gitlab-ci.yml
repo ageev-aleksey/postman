@@ -22,6 +22,7 @@ server_build:
   script:
     - cd server
     - make mkdir
+    - make server
     - make unit_tests
   artifacts:
     paths:
