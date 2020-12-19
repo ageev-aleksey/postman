@@ -244,6 +244,7 @@ void handler_write(event_loop *el, int client_socket, char* buffer, int size, in
             user_free(acc.user);
             users_list__delete_user(&acc);
             free(acc.user);
+            timers_remove_for_socket(&server_config.timers, client_socket);
         } else {
             err_t err;
             char *buffer_ptr = acc.user->read_buffer;
@@ -602,12 +603,14 @@ bool send_mail(smtp_state *smtp) {
         maildir_user_create_message(&user, &mail, sender_mailbox_str, &md_error);
         ERROR_LOG_AND_CLEANUP(md_error, loop_cleanup);
 
-        maildir_message_write(&mail, message, message_len, &md_error);
-        ERROR_LOG_AND_CLEANUP(md_error, loop_cleanup);
+        if (message_len != 0) {
+            maildir_message_write(&mail, message, message_len, &md_error);
+            ERROR_LOG_AND_CLEANUP(md_error, loop_cleanup);
+        }
         maildir_message_finalize(&mail, &md_error);
 
         LOG_INFO("Mail send from [%s@%s] to [%s@%s]", sender->user_name, sender->server_name,
-                 mb->user_name, mb->user_name);
+                 mb->user_name, mb->server_name);
 
     loop_cleanup:
         maildir_message_free(&mail);
@@ -638,8 +641,11 @@ bool send_mail(smtp_state *smtp) {
         x_headers = make_x_headers(&foreign_recipients, sender);
         maildir_message_write(&mail, x_headers, strlen(x_headers), &md_error);
         ERROR_LOG_AND_CLEANUP(md_error, cleanup2);
-        maildir_message_write(&mail, message, message_len, &md_error);
-        ERROR_LOG_AND_CLEANUP(md_error, cleanup2);
+        if (message_len != 0) {
+            maildir_message_write(&mail, message, message_len, &md_error);
+            ERROR_LOG_AND_CLEANUP(md_error, cleanup2);
+        }
+
         maildir_message_finalize(&mail, &md_error);
         ERROR_LOG_AND_CLEANUP(md_error, cleanup2);
 
