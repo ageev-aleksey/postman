@@ -76,6 +76,17 @@ bool server_config_init(const char *path) {
         LOG_ERROR("%s [%s]", "not found server.domain field in file", path);
         return false;
     }
+
+    if(!config_lookup_int(&cfg, "server.timer", &server_config.timer_period)) {
+        LOG_ERROR("%s [%s]", "not found server.timer field in file", path);
+        return false;
+    }
+    if (server_config.timer_period <= 0) {
+        LOG_ERROR("value of server.timer [%d] in config file [%s] must be greater than zero",
+                  server_config.timer_period, path);
+        return false;
+    }
+
     const char *maildir_path = NULL;
     if (!config_lookup_string(&cfg, "server.maildir_path", &maildir_path)) {
         LOG_ERROR("%s [%s]", "not found server.maildir_path field in file", path);
@@ -191,7 +202,7 @@ void handler_accept(event_loop *el, int acceptor, int client_socket, struct sock
     }
     timers_make_for_socket(&server_config.timers, client_socket);
     struct timer_event_entry *td;
-    el_timer(el, client_socket, 15, handler_timer, &td, &err);
+    el_timer(el, client_socket, POSTMAN_TIMEOUT_OF_TIMER, handler_timer, &td, &err);
     if (err.error) {
         LOG_ERROR("el_timer: %s", err.message);
     }
@@ -205,6 +216,8 @@ void handler_write(event_loop *el, int client_socket, char* buffer, int size, in
         user_disconnected(client_socket);
         return;
     }
+
+    timers_update_by_socket(&server_config.timers, client_socket);
 
     user_accessor acc;
     if(users_list__user_find_by_sock(&server_config.users, &acc, client_socket)) {
@@ -245,6 +258,8 @@ void handler_write(event_loop *el, int client_socket, char* buffer, int size, in
     } else {
         LOG_ERROR("Not found user by socket [%d]", client_socket);
     }
+
+    timers_update_by_socket(&server_config.timers, client_socket);
 }
 
 void user_disconnected(int sock) {
@@ -269,6 +284,9 @@ void handler_hello_write(event_loop *el, int client_socket, char* buffer, int si
         user_disconnected(client_socket);
         return;
     }
+
+    timers_update_by_socket(&server_config.timers, client_socket);
+
     user_accessor acc;
     if (users_list__user_find_by_sock(&server_config.users, &acc, client_socket)) {
         err_t err;
@@ -283,6 +301,7 @@ void handler_hello_write(event_loop *el, int client_socket, char* buffer, int si
         LOG_ERROR("User not found by socket [%d]", client_socket);
     }
 
+    timers_update_by_socket(&server_config.timers, client_socket);
 }
 
 bool is_line_and(const char *str) {
@@ -298,6 +317,9 @@ void handler_read(event_loop *loop, int client_socket, char *buffer, int size, c
         user_disconnected(client_socket);
         return;
     }
+
+    timers_update_by_socket(&server_config.timers, client_socket);
+
     user_accessor acc;
     if (users_list__user_find_by_sock(&server_config.users, &acc, client_socket)) {
 
@@ -348,6 +370,8 @@ void handler_read(event_loop *loop, int client_socket, char *buffer, int size, c
                     if (err.error) {
                         LOG_ERROR("el_async_write: %s", err.message);
                     }
+
+                    timers_update_by_socket(&server_config.timers, client_socket);
                     return;
                 } else {
                     // нечего отвечать, продолжаем вычитывать остальные команды
@@ -357,6 +381,8 @@ void handler_read(event_loop *loop, int client_socket, char *buffer, int size, c
                     el_async_read(loop, client_socket,
                                   ptr, TEMPORARY_BUFFER_SIZE,
                                   handler_read, &err);
+
+                    timers_update_by_socket(&server_config.timers, client_socket);
                     return;
                 }
 
@@ -379,6 +405,8 @@ void handler_read(event_loop *loop, int client_socket, char *buffer, int size, c
                 if (err.error) {
                     LOG_ERROR("el_async_read: %s", err.message);
                 }
+
+                timers_update_by_socket(&server_config.timers, client_socket);
                 return;
             }
 
@@ -391,8 +419,7 @@ void handler_read(event_loop *loop, int client_socket, char *buffer, int size, c
 
 void handler_timer(event_loop* el, int sock, struct timer_event_entry *descriptor) {
     LOG_INFO("timer [%d]", sock);
-    int t = 30;
-    if (timers_is_elapsed_for_socket(&server_config.timers, sock, t)) {
+    if (timers_is_elapsed_for_socket(&server_config.timers, sock, server_config.timer_period)) {
         LOG_INFO("%s", "таймер истек, закрываем сокет");
         el_timer_free(el, descriptor);
         err_t err;
