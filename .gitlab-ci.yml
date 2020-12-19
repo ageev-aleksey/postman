@@ -79,6 +79,7 @@ server_report:
     - doxygen Doxyfile
     - make report 
   artifacts:
+    when: always
     paths:
       - server/report
 
