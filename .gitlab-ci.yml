@@ -65,7 +65,8 @@ server_system_testing:
     - aptitude install libconfig-dev -y
     - apt-get install libcunit1 libcunit1-dev --yes
   script:
-    - python3 ./server/test/server_auto_test/main.py
+    - cd ./server/test/server_auto_test/
+    - python3 ./main.py
 
 
 server_report:
