@@ -2,7 +2,7 @@ image: ubuntu:16.04
 stages:
   - build
   - unit_testing
-  - functional_testing
+  - system_testing
   - report
 
 
@@ -53,6 +53,18 @@ server_unit_testig:
       - server/main.gcda
       - server/main.gcno
     expire_in: 1 hrs 
+
+
+server_system_testing:
+  stage: system_testing
+  before_script:
+    - apt-get install python3 --yes
+    - apt-get install aptitude --yes
+    - aptitude install libconfig-dev -y
+    - apt-get install libcunit1 libcunit1-dev --yes
+  script:
+    - python3 ./server/test/server_auto_test/main.py
+
 
 server_report:
   stage: report

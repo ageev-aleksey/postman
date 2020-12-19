@@ -39,6 +39,7 @@ void timers_make_for_socket(timers_t *timers, int socket);
 void timers_remove_for_socket(timers_t *timers, int socket);
 void timers_update_by_socket(timers_t * timers, int socket);
 bool timers_is_elapsed_for_socket(timers_t * timers, int socket, int t);
+bool timers_is_exist_for_socket(timers_t * timers, int socket);
 
 
 bool timers_init(timers_t *timers);

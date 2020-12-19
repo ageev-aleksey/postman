@@ -5,7 +5,8 @@ server_config = {
 	"host": "127.0.0.1",
 	"domain": "postman.local",
 	"maildir_path": "./maildir",
-	"worker_threads": 4
+	"worker_threads": 4,
+	"timer": 100
 }
 
 def convert(el):

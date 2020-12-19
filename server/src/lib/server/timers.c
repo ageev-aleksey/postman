@@ -61,6 +61,10 @@ bool timers_is_elapsed_for_socket(timers_t * timers, int sock, int t) {
     return is;
 }
 
+bool timers_is_exist_for_socket(timers_t * timers, int sock) {
+    return (pr_timers_get_by_sock(timers, sock) != NULL);
+}
+
 bool timers_init(timers_t *timers) {
     if (timers != NULL) {
         pthread_mutex_init(&timers->pr_mutex, NULL);

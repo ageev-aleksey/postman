@@ -419,7 +419,9 @@ void handler_read(event_loop *loop, int client_socket, char *buffer, int size, c
 
 void handler_timer(event_loop* el, int sock, struct timer_event_entry *descriptor) {
     LOG_INFO("timer [%d]", sock);
-    if (timers_is_elapsed_for_socket(&server_config.timers, sock, server_config.timer_period)) {
+    if (!timers_is_exist_for_socket(&server_config.timers, sock)) {
+        el_timer_free(el, descriptor);
+    } else if (timers_is_elapsed_for_socket(&server_config.timers, sock, server_config.timer_period)) {
         LOG_INFO("%s", "таймер истек, закрываем сокет");
         el_timer_free(el, descriptor);
         err_t err;

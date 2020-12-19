@@ -12,6 +12,11 @@ class TestSuite:
 		self.application.append("--config")
 		self.application.append(self.cfg_name)
 		self.timeout = timeout
+
+	@property
+	def config(self):
+		return self.cfg
+
 	def before(self):
 		print("before")
 		config.to_file(self.cfg, self.cfg_name)

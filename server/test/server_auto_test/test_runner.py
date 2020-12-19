@@ -1,4 +1,5 @@
 import test_suite
+import time
 import re
 
 class TestRunner:
@@ -14,6 +15,7 @@ class TestRunner:
 	def run(self):
 		for test in self.tests:
 			test.before()
+			time.sleep(2)
 			for att in dir(test):
 				if re.fullmatch("test_.*", att):
 					f = getattr(test, att);

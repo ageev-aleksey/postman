@@ -3,6 +3,7 @@ import subprocess as sub
 import signal
 import sys
 import time
+import socket
 
 import test_suite
 import test_runner
@@ -16,9 +17,51 @@ class Test (test_suite.TestSuite):
 	def __init__(self):
 		test_suite.TestSuite.__init__(self, "test", config.server_config, ["../../bin/server.out"], 5)
 	def test_hello(self):
-		print("<")
-		time.sleep(10)
-		print(">")
+		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM);
+		s.connect((self.config["host"], self.config["port"]));
+		buf = s.recv(100)
+		print("recv:", buf)
+
+		s.send(b"ehlo: [127.0.0.1]\r\n")
+		buf = s.recv(100)
+		print("recv:", buf)
+
+		s.send(b"mail from: <test@test.server.ru>\r\n")
+		buf = s.recv(100)
+		print("recv:", buf)
+
+		s.send("rcpt to: <client@{}>\r\n".format(self.config["domain"]).encode("utf-8"))
+		buf = s.recv(100)
+		print("recv:", buf)
+
+		s.send("rcpt to: <client2@{}>\r\n".format(self.config["domain"]).encode("utf-8"))
+		buf = s.recv(100)
+		print("recv:", buf)
+
+		s.send("rcpt to: <client3@{}>\r\n".format(self.config["domain"]).encode("utf-8"))
+		buf = s.recv(100)
+		print("recv:", buf)
+
+		s.send("rcpt to: <client4@{}>\r\n".format(self.config["domain"]).encode("utf-8"))
+		buf = s.recv(100)
+		print("recv:", buf)
+
+		s.send("rcpt to: <client5@{}>\r\n".format(self.config["domain"]).encode("utf-8"))
+		buf = s.recv(100)
+		print("recv:", buf)
+
+		s.send(b"data\r\n")
+		buf = s.recv(100)
+		print("recv:", buf)
+
+		s.send(("test message\r\n melcome to the server \r\n"*100).encode("utf-8"))
+		s.send(b".\r\n")
+		buf = s.recv(100)
+		print("recv:", buf)
+
+		s.send(b"quit\r\n")
+		buf = s.recv(100)
+		print("recv:", buf)
 
 if __name__ == "__main__":
 	# if len(sys.argv) == 1:
