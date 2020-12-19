@@ -9,10 +9,12 @@ import re
 import test_suite
 import test_runner
 import config
+import maildir
 
 IS_MANUAL = False
 SERVER_PATH = "../../bin/server.out"
 SERVER_RESPONSE_PATTERN = "([0-9]{3}) (.*)\r\n$"
+RUN_APP = ["valgrind", "--leak-check=full", "--show-leak-kinds=all" , SERVER_PATH]
 
 SMTP_CODE_START_SMTP_SERVICE      = 220
 SMTP_CODE_CLOSE_CONNECTION        = 221
@@ -63,10 +65,16 @@ def smtp_transaction(s, sender, recipients):
     test_runner.assert_equal(response[0], SMTP_CODE_MAIL_INPUT)
 
 
+def check_x_headers(actual, expected):
+    for key in expected:
+        if actual[key] != expected[key]:
+            return False
+    return True
+
 
 class Test(test_suite.ServerTestSuite):
     def __init__(self):
-        test_suite.ServerTestSuite.__init__(self, "test", config.server_config, [SERVER_PATH], 5, IS_MANUAL)
+        test_suite.ServerTestSuite.__init__(self, "test", config.server_config, RUN_APP, 5, IS_MANUAL)
 
     def test_empty_mail(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -87,7 +95,18 @@ class Test(test_suite.ServerTestSuite):
         response = server_response_parse(buf)
         test_runner.assert_equal(response[0], SMTP_CODE_CLOSE_CONNECTION)
 
-    def test_big_line(self):
+        md = maildir.Maildir(self.config["maildir_path"])
+        user = md.getUser("user")
+        mails = user.mails
+        if len(mails) == 1:
+            check_x_headers(mails[0].x_headers, {"X-Postman-From": "test@test.server.ru",
+                                                 "X-Postman-To": [f"user@{self.config['domain']}"]})
+            mails[0].body == ""
+        else:
+            raise test_runner.AssertException("invalid mail file in user maildir")
+        md.clear()
+
+    def test1_big_line(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((self.config["host"], self.config["port"]))
         buf = s.recv(100)
@@ -125,3 +144,15 @@ if __name__ == "__main__":
     r = test_runner.TestRunner()
     r.add(Test())
     r.run()
+    print(f"Passed Tests [{len(r.passed_tests)}]:")
+    for t in r.passed_tests:
+        print("    - " + t)
+
+    print(f"Failed Tests [{len(r.failed_tests)}]:")
+    for t in r.failed_tests:
+        print("    - " + t)
+
+    if r.have_failed:
+        sys.exit(1)
+    else:
+        sys.exit(0)

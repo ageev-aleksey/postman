@@ -24,12 +24,26 @@ def assert_equal(actual: object, expected: object) -> object:
 class TestRunner:
     def __init__(self):
         self.tests = []
+        self.passed = []
+        self.failed = []
 
     def add(self, ts):
         if isinstance(ts, test_suite.ServerTestSuite):
             self.tests.append(ts)
         else:
             raise TypeError("error type test_suite.TestSuite")
+
+    @property
+    def passed_tests(self):
+        return self.passed
+
+    @property
+    def failed_tests(self):
+        return self.failed
+
+    @property
+    def have_failed(self):
+        return (len(self.failed) != 0)
 
     def run(self):
         for test in self.tests:
@@ -48,9 +62,11 @@ class TestRunner:
                     print("       Fail: " + str(exp))
                     sys.stdout.flush()
                     traceback.print_exc()
+                    self.failed.append(name)
                 if is_passed:
                     print("       Passed")
                     sys.stdout.flush()
+                    self.passed.append(name)
             test.after()
 
 
