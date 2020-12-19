@@ -57,6 +57,7 @@ server_unit_testig:
 
 server_system_testing:
   stage: system_testing
+  image: ubuntu:18.04
   before_script:
     - apt-get install python3 --yes
     - apt-get install aptitude --yes
