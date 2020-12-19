@@ -59,7 +59,8 @@ server_system_testing:
   stage: system_testing
   image: ubuntu:18.04
   before_script:
-    - apt-get install python3 --yes
+    - apt-get update
+    - apt-get install python3-pip --yes
     - apt-get install aptitude --yes
     - aptitude install libconfig-dev -y
     - apt-get install libcunit1 libcunit1-dev --yes
