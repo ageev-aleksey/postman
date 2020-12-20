@@ -35,7 +35,7 @@ def make_x_header(sender, recivers):
 	X-Postman-To: <domain> [, <domain> [...]]
 	"""
 	x_header = "X-Postman-From: " + sender + "\r\n"
-	x_header = x_header +  "X-Postman-Date: " + str(time.time()) + "\r\n"
+	x_header = x_header +  "X-Postman-Date: " + str(int(time.time())) + "\r\n"
 	x_header = x_header +  "X-Postman-To: "
 	for i in range(0, len(recivers)-1):
 		x_header = x_header + recivers[i] + ","
@@ -68,7 +68,7 @@ def send_local_mail(sender, recivers):
 	"""
 	for reciver in recivers:
 		user, server = reciver.split("@", 2)
-		mail = mail_body
+		mail =  make_x_header(sender, [reciver]) + "\r\n" + mail_body
 		message_path = os.path.join(maildir_path, user, "new")
 		try:
 			os.makedirs(message_path)
