@@ -1,5 +1,5 @@
 #include "users_list_test.h"
-#include "server/global_context.h"
+#include "server/server.h"
 #include <CUnit/Basic.h>
 
 

@@ -120,4 +120,6 @@ smtp_mailbox* smtp_get_sender(smtp_state *smtp);
 
 smtp_status smtp_get_status(smtp_state *smtp);
 
+smtp_address smtp_get_hello_addr(smtp_state *smtp);
+
 #endif

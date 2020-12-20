@@ -11,6 +11,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <stdarg.h>
+#include <netdb.h>
+
 #define ERROR (-1)
 #define UTIL_MAX_NUMBER_OF_VARIANT_PARAMETERS 50
 
@@ -112,6 +114,34 @@ int make_server_socket(const char *ip, int port, err_t *error) {
     }
     return ERROR;
 }
+
+char* dns_get_ptr(const char *ip) {
+    if (ip != NULL) {
+        struct sockaddr_in addr;
+        memset(&addr, 0, sizeof(struct sockaddr_in));
+        addr.sin_family = AF_INET;
+        if(!inet_aton(ip, &addr.sin_addr)) {
+            return NULL;
+        }
+
+
+        char *hbuf = malloc(NI_MAXHOST);
+        if (hbuf == NULL) {
+            return NULL;
+        }
+
+        if (getnameinfo((const struct sockaddr*)&addr, sizeof(struct sockaddr_in),
+                        hbuf, NI_MAXHOST,
+                        NULL, 0, NI_NAMEREQD))
+        {
+            free(hbuf);
+            return NULL;
+        }
+        return hbuf;
+    }
+    return NULL;
+}
+
 
 client_addr get_addr(struct sockaddr_in* addr, err_t *error) {
     client_addr ret = {{0}};

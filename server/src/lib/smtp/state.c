@@ -569,3 +569,11 @@ smtp_mailbox* smtp_get_sender(smtp_state *smtp) {
 smtp_status smtp_get_status(smtp_state *smtp) {
     return smtp->pr_status;
 }
+
+smtp_address smtp_get_hello_addr(smtp_state *smtp) {
+    if (smtp != NULL && smtp->pr_hello_addr != NULL) {
+        return *smtp->pr_hello_addr;
+    }
+    smtp_address ret = {0};
+    return ret;
+}

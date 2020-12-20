@@ -2,7 +2,7 @@
 // Created by nrx on 23.10.2020.
 //
 
-#include "server/global_context.h"
+#include "server/server.h"
 #include "log/context.h"
 #include "event_loop/event_loop.h"
 #include <stdio.h>
@@ -24,7 +24,7 @@ void *worker_thread (void *args) {
             LOG_ERROR("el_run: %s", error.message);
             return NULL;
         }
-        sleep(1);
+       // sleep(1);
     }
 
     LOG_INFO("%s", "thread stop");

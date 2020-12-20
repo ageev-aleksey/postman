@@ -43,7 +43,7 @@ def server_response_parse(string):
 
 
 def smtp_transaction(s, sender, recipients):
-    s.send(b"ehlo [127.0.0.1]\r\n")
+    s.send(b"ehlo mx.yandex.ru\r\n")
     buf = s.recv(100)
     response = server_response_parse(buf)
     test_runner.assert_equal(response[0], SMTP_CODE_OK)

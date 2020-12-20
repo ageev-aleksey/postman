@@ -1,5 +1,5 @@
 #include "server/users_list.h"
-#include "server/global_context.h"
+#include "server/server.h"
 #include "server_test.h"
 #include "log/context.h"
 #include <string.h>

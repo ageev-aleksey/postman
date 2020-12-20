@@ -5,7 +5,7 @@
 #ifndef SERVER_OPTIONS_H
 #define SERVER_OPTIONS_H
 #include <stdbool.h>
-#include "server/global_context.h"
+#include "server/server.h"
 
 bool args_parse(int argc, char **argv, struct server_configuration*);
 
