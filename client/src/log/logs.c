@@ -47,22 +47,27 @@ void print_message(log *l) {
 
     switch (l->type) {
         case LOG_INFO:
-            fprintf(stdout, COLOR_MAGENTA "[%s] " COLOR_BLUE "%s    " COLOR_CYAN " [%s] [%s:%d]: " COLOR_BLINK " %s\n",
+            printf(COLOR_MAGENTA "[%s] " COLOR_BLUE "%s    " COLOR_CYAN " [%s] [%s:%d]: " " %s\n",
                     buffer, "INFO", l->thread, l->filename, l->line, l->message);
             break;
         case LOG_ERROR:
-            fprintf(stdout, COLOR_MAGENTA "[%s] " COLOR_RED "%s   " COLOR_CYAN " [%s] [%s:%d]: " COLOR_BLINK " %s\n",
+            printf(COLOR_MAGENTA "[%s] " COLOR_RED "%s   " COLOR_CYAN " [%s] [%s:%d]: " " %s\n",
                     buffer, "ERROR", l->thread, l->filename, l->line, l->message);
             break;
         case LOG_DEBUG:
-            fprintf(stdout, COLOR_MAGENTA "[%s] " COLOR_GREEN "%s   " COLOR_CYAN " [%s] [%s:%d]: " COLOR_BLINK " %s\n",
+            printf(COLOR_MAGENTA "[%s] " COLOR_GREEN "%s   " COLOR_CYAN " [%s] [%s:%d]: " " %s\n",
                     buffer, "DEBUG", l->thread, l->filename, l->line, l->message);
             break;
         case LOG_WARN:
-            fprintf(stdout, COLOR_MAGENTA "[%s] " COLOR_YELLOW "%s " COLOR_CYAN " [%s] [%s:%d]: " COLOR_BLINK " %s\n",
+            printf(COLOR_MAGENTA "[%s] " COLOR_YELLOW "%s " COLOR_CYAN " [%s] [%s:%d]: " " %s\n",
                     buffer, "WARNING", l->thread, l->filename, l->line, l->message);
             break;
+        case LOG_ADDINFO:
+            printf( COLOR_CYAN "\t%s\n", l->message);
+            break;
     }
+
+    printf(COLOR_RESET);
 }
 
 _Noreturn void *logs_queue_func() {
@@ -175,6 +180,22 @@ void log_warn(char *message, char *filename, int line, ...) {
     l->filename = filename;
     l->type = LOG_WARN;
     l->line = line;
+
+    pthread_t self = pthread_self();
+
+    asprintf(&l->thread, "Thread %lu", (unsigned long int) (self));
+    vasprintf(&l->message, message, args);
+
+    push_log(l);
+}
+
+void log_addinfo(char *message, ...) {
+    va_list args;
+    va_start(args, message);
+    log *l = malloc(sizeof(log));
+
+    l->time = get_time();
+    l->type = LOG_ADDINFO;
 
     pthread_t self = pthread_self();
 

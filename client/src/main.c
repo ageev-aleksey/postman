@@ -2,6 +2,7 @@
 #include "util.h"
 #include "logs.h"
 #include "config.h"
+#include "maildir.h"
 
 int main(int argc, char **argv) {
     start_logger();
@@ -11,18 +12,17 @@ int main(int argc, char **argv) {
     }
     init_signals_handler();
 
-    smtp_context **contexts = malloc(sizeof **contexts);
-    smtp_context *context = smtp_open("mx.yandex.ru", "25", contexts);
-
-    if (context != NULL && context->state_code == OK) {
-        smtp_mail(context, "vladovchinnikov950@gmail.com", "Vladislav Ovchinnikov");
-        smtp_rcpt(context, "wedf97@yandex.ru", "Vladislav Ovchinnikov");
-        smtp_data(context, "Hello, Vladislav.\r\n.\r\n");
-        smtp_quit(context);
-    }
-
+    init_maildir("/home/ubuntu/maildir");
+//    smtp_context **contexts = malloc(sizeof **contexts);
+//    smtp_context *context = smtp_open("mx.yandex.ru", "25", contexts);
+//
+//    if (context != NULL && context->state_code == OK) {
+//        smtp_mail(context, "vladovchinnikov950@gmail.com", "Vladislav Ovchinnikov");
+//        smtp_rcpt(context, "wedf97@yandex.ru", "Vladislav Ovchinnikov");
+//        smtp_data(context, "Hello, Vladislav.\r\n.\r\n");
+//        smtp_quit(context);
+//    }
+//
     while (1) {}
 
 }
-
-

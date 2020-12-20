@@ -35,12 +35,14 @@
 #define LOG_INFO(message, args...) log_info(message, __FILE__, __LINE__, args)
 #define LOG_ERROR(message, args...) log_error(message, __FILE__, __LINE__, args)
 #define LOG_WARN(message, args...) log_warn(message, __FILE__, __LINE__, args)
+#define LOG_ADDINFO(message, args...) log_addinfo(message, args)
 
 typedef enum log_type {
     LOG_ERROR,
     LOG_INFO,
     LOG_DEBUG,
-    LOG_WARN
+    LOG_WARN,
+    LOG_ADDINFO
 } log_type;
 
 typedef struct log {
@@ -64,5 +66,6 @@ void log_debug(char *message, char *filename, int line, ...);
 void log_info(char *message, char *filename, int line, ...);
 void log_error(char *message, char *filename, int line, ...);
 void log_warn(char *message, char *filename, int line, ...);
+void log_addinfo(char *message, ...);
 void logger_finalize();
 
