@@ -5,6 +5,11 @@ import signal
 import re
 
 
+def skip(f):
+	def wrapper(object):
+		print("-==SKIP==-")
+	return wrapper
+
 
 class ServerTestSuite:
 	def __init__(self, test_name, config, application, timeout, server_manual=False):

@@ -11,9 +11,9 @@
 #define RE_ROUTE_PATH "((" RE_AT_DOMAIN "[[:space:]]*,[[:space:]]*)*" RE_AT_DOMAIN "[[:space:]]*:[[:space:]]*){0,1}"
 #define RE_PATH "<" RE_ROUTE_PATH RE_MAILBOX ">"
 #define RE_SERVER_NAME "(" RE_ADDRESS_LITERAL ")|(" RE_DOMAIN_LITERAL ")";
-#define RE_HELLO "(ehlo)|(helo)[[:space:]]*:"
+#define RE_HELLO "((ehlo)|(helo))[[:space:]]+"
 #define RE_EMPTY_PATH "<>"
-#define RE_MAIL_FROM_PATH "(" RE_EMPTY_PATH ")|(" RE_PATH ")"
+#define RE_MAIL_FROM_PATH "((" RE_EMPTY_PATH ")|(" RE_PATH "))"
 #define RE_MAIL_FROM "mail[[:space:]]+from[[:space:]]*:[[:space:]]*"
 #define RE_RCPT_DOMAIN "<(postmaster" RE_AT_DOMAIN ")|(postmaster)|(" RE_PATH ")>"
 #define RE_RCPT_TO "rcpt[[:space:]]+to[[:space:]]*:[[:space:]]*"

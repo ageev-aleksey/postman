@@ -1,0 +1,480 @@
+Delivered-To: ageevav97@gmail.com
+Received: by 2002:a92:984b:0:0:0:0:0 with SMTP id l72csp3431617ili;
+        Tue, 8 Dec 2020 05:22:36 -0800 (PST)
+X-Google-Smtp-Source: ABdhPJxYDO+H0HJt+CwyLXF0dJ9L61tETIYwBro2x0SGLC/aC1YRpjSGFSzB6bDt19U0sBZxXlf2
+X-Received: by 2002:a9d:7c98:: with SMTP id q24mr16448229otn.147.1607433756429;
+        Tue, 08 Dec 2020 05:22:36 -0800 (PST)
+ARC-Seal: i=1; a=rsa-sha256; t=1607433756; cv=none;
+        d=google.com; s=arc-20160816;
+        b=hQxag5912czka7T+t3ygYM1p4RybP3+Hytw9rawwsAmZCZ6XMcviM9YrAO2SFqwU1o
+         aWFbY7QoZ73OPky2uxobk643A8yAehhbJnzxrI1DFqz9n1+KRjIOFdXRNY4eV2s9+cdk
+         5cWAUMRDjEiigos2lQM6YzjQP0sZztN8t3CFGaHcL+nUQY7wB3+JDJW69FtORG9DLcn3
+         JYpp9tBogRiklAhc0Nx0mV9DSd+asUsomWrqBjWb5OuLaGALmwvdcv3uK33ohLn8H7+/
+         zxqGoV4doaS0DMktRByz6C7UcUib1SIBwW/HHocvC4UJJBWrmhjToKmNn7NPoH6nD4+E
+         qPLA==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20160816;
+        h=auto-submitted:list-id:content-transfer-encoding:mime-version
+         :subject:message-id:reply-to:from:date:sender:dkim-signature
+         :dkim-signature;
+        bh=OR+962pB5RwZvci6whgGzoT+uJ5/NsK2ih9BBu7+pGA=;
+        b=IoEBR+yDKOZJ5y+1z1U1Qd3Z64LSt7BQLS3IatR6SX/K98zCD4w9Joui2FxeoA6J7q
+         ljDz3XI+QQeUlBpL2+uG3zlkKELulMoUtjw4pqc2l+PiXgQlt93IhEEWavvTSaCFKpCD
+         S/9f+9bYejldTGvrWVLJxEJGJInQMYpHWFL6qzVHTMIg3KzCzcsdaepszIe/PgucRELR
+         RZa2YVdEP+In2xJZt5JMbkF0YWDucN38PF4JvYr7iKZtJ2iFg1Df5tykXvZio3rbOMs7
+         rJuoUkJaPVK3HV338Eii0mY3tlMuWBdod4gFFs55Tly8nS0EdbNFxpULc0/vVASy4+QB
+         QjvA==
+ARC-Authentication-Results: i=1; mx.google.com;
+       dkim=pass header.i=@mg.gitlab.com header.s=mailo header.b=jSPgx3xL;
+       dkim=pass header.i=@mailgun.org header.s=mg header.b=KRmuOROA;
+       spf=pass (google.com: domain of bounce+fb0b22.947b4-ageevav97=gmail.com@mg.gitlab.com designates 192.237.158.143 as permitted sender) smtp.mailfrom="bounce+fb0b22.947b4-ageevav97=gmail.com@mg.gitlab.com";
+       dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=gitlab.com
+Return-Path: <bounce+fb0b22.947b4-ageevav97=gmail.com@mg.gitlab.com>
+Received: from do158-143.mg.gitlab.com (do158-143.mg.gitlab.com. [192.237.158.143])
+        by mx.google.com with UTF8SMTPS id r67si8339048oig.247.2020.12.08.05.22.34
+        for <ageevav97@gmail.com>
+        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
+        Tue, 08 Dec 2020 05:22:36 -0800 (PST)
+Received-SPF: pass (google.com: domain of bounce+fb0b22.947b4-ageevav97=gmail.com@mg.gitlab.com designates 192.237.158.143 as permitted sender) client-ip=192.237.158.143;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@mg.gitlab.com header.s=mailo header.b=jSPgx3xL;
+       dkim=pass header.i=@mailgun.org header.s=mg header.b=KRmuOROA;
+       spf=pass (google.com: domain of bounce+fb0b22.947b4-ageevav97=gmail.com@mg.gitlab.com designates 192.237.158.143 as permitted sender) smtp.mailfrom="bounce+fb0b22.947b4-ageevav97=gmail.com@mg.gitlab.com";
+       dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=gitlab.com
+DKIM-Signature: a=rsa-sha256; v=1; c=relaxed/relaxed; d=mg.gitlab.com; q=dns/txt; s=mailo; t=1607433756; h=List-Id: Content-Transfer-Encoding: Content-Type: Mime-Version: Subject: Message-ID: Reply-To: From: Date: Sender: X-Feedback-Id; bh=OR+962pB5RwZvci6whgGzoT+uJ5/NsK2ih9BBu7+pGA=; b=jSPgx3xLXkntrcBwU0yhF+4q+eNQJvXPqpUHlNF8oAdyoR1SwfQE/Yb7p1AA+kyOFaqw3OWW uQua9UT4csYEC2SJevfGxV83MCjgO9PrSdBdLNVy78ub9huZJqL+j9AxTGssuFaCT5P/1CAz TLtWF7G7PHrVzcOy3R56W4v/wSg=
+DKIM-Signature: a=rsa-sha256; v=1; c=relaxed/relaxed; d=mailgun.org; q=dns/txt; s=mg; t=1607433756; h=List-Id: Content-Transfer-Encoding: Content-Type: Mime-Version: Subject: Message-ID: Reply-To: From: Date: Sender: X-Feedback-Id; bh=OR+962pB5RwZvci6whgGzoT+uJ5/NsK2ih9BBu7+pGA=; b=KRmuOROAS/iz0npxjNrUwHKGibIWzqiLFxgXXqaF5jqgYQF/RENjscwvNsajFltgqAXJyz6r 0OYDT9zWyhXdbME+I7JCoK+6kHHvclGnPnziuR09A8Ap/VrFqpGBinPIYHXMA9YDje/ZYS5Q d5zXVwdiYhXToZrBzDPbegli0cg=
+X-Feedback-Id: 531ee07d5a76185406c6480b:mailgun
+X-Mailgun-Sending-Ip: 192.237.158.143
+X-Mailgun-Sid: WyI2YzJjYiIsICJhZ2VldmF2OTdAZ21haWwuY29tIiwgIjk0N2I0Il0=
+Received: from mg.gitlab.com (73.90.74.34.bc.googleusercontent.com [34.74.90.73]) by smtp-out-n03.prod.us-east-1.postgun.com with SMTP id 5fcf7e10fab0cd40733cfd0f (version=TLS1.3, cipher=TLS_AES_128_GCM_SHA256); Tue, 08 Dec 2020 13:22:24 GMT
+Sender: gitlab@mg.gitlab.com
+Date: Tue, 08 Dec 2020 13:22:24 +0000
+From: GitLab <gitlab@mg.gitlab.com>
+Reply-To: GitLab <noreply@gitlab.com>
+Message-ID: <5fcf7e1069d2c_8396981259f2@gitlab-sidekiq-catchall-v1-ffb665848-ckl66.mail>
+Subject: pvs-postman | Pipeline #226799409 has failed for feature/client | 00805423
+Mime-Version: 1.0
+Content-Type: multipart/alternative; boundary="--==_mimepart_5fcf7e10600fe_839698125855"; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-GitLab-Project: pvs-postman
+X-GitLab-Project-Id: 21704732
+X-GitLab-Project-Path: ageevav97/pvs-postman
+List-Id: ageevav97/pvs-postman <21704732.pvs-postman.ageevav97.gitlab.com>
+X-GitLab-Pipeline-Id: 226799409
+X-GitLab-Pipeline-Ref: feature/client
+X-GitLab-Pipeline-Status: failed
+Auto-Submitted: auto-generated
+X-Auto-Response-Suppress: All
+
+----==_mimepart_5fcf7e10600fe_839698125855
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+
+
+Your pipeline has failed.
+
+Project: pvs-postman ( https://gitlab.com/ageevav97/pvs-postman )
+Branch: feature/client ( https://gitlab.com/ageevav97/pvs-postman/-/commits=
+/feature/client )
+
+Commit: 00805423 ( https://gitlab.com/ageevav97/pvs-postman/-/commit/008054=
+23350daaf25a850fe014a37547b1469339 )
+Commit Message: add util, smtp-open
+
+Commit Author: Vladislav Ovchinnikov ( https://gitlab.com/vladovchinnikov95=
+0 )
+
+Pipeline #226799409 ( https://gitlab.com/ageevav97/pvs-postman/-/pipelines/=
+226799409 ) triggered by =D0=90=D0=BB=D0=B5=D0=BA=D1=81=D0=B5=D0=B9 =D0=90=
+=D0=B3=D0=B5=D0=B5=D0=B2 ( https://gitlab.com/ageevav97 )
+had 1 failed build.
+
+Job #897237518 ( https://gitlab.com/ageevav97/pvs-postman/-/jobs/897237518/=
+raw )
+
+Stage: build
+Name: server_build
+
+--=20
+You're receiving this email because of your account on gitlab.com.
+
+
+
+
+----==_mimepart_5fcf7e10600fe_839698125855
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.=
+w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns=3D"http://www.w3.org/1999/xhtml" lang=3D"en" xml:lang=3D"en">
+<head>
+<meta content=3D"text/html; charset=3DUTF-8" http-equiv=3D"Content-Type" />
+<meta content=3D"width=3Ddevice-width, initial-scale=3D1" name=3D"viewport"=
+ />
+<meta content=3D"IE=3Dedge" http-equiv=3D"X-UA-Compatible" />
+<title>pvs-postman | Pipeline #226799409 has failed for feature/client | 00=
+805423</title>
+<style data-premailer=3D"ignore" type=3D"text/css">
+body,table,td,a{-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%}tab=
+le,td{mso-table-lspace:0pt;mso-table-rspace:0pt}img{-ms-interpolation-mode:=
+bicubic}.hidden{display:none !important;visibility:hidden !important}a[x-ap=
+ple-data-detectors]{color:inherit !important;text-decoration:none !importan=
+t;font-size:inherit !important;font-family:inherit !important;font-weight:i=
+nherit !important;line-height:inherit !important}div[style*=3D'margin: 16px=
+ 0']{margin:0 !important}@media only screen and (max-width: 639px){body,#bo=
+dy{min-width:320px !important}table.wrapper{width:100% !important;min-width=
+:320px !important}table.wrapper td.wrapper-cell{border-left:0 !important;bo=
+rder-right:0 !important;border-radius:0 !important;padding-left:10px !impor=
+tant;padding-right:10px !important}}
+
+</style>
+
+<style>body {
+margin: 0 !important; background-color: #fafafa; padding: 0; text-align: ce=
+nter; min-width: 640px; width: 100%; height: 100%; font-family: "Helvetica =
+Neue", Helvetica, Arial, sans-serif;
+}
+</style></head>
+<body style=3D"text-align: center; min-width: 640px; width: 100%; height: 1=
+00%; font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif;=
+ margin: 0; padding: 0;" bgcolor=3D"#fafafa">
+<table border=3D"0" cellpadding=3D"0" cellspacing=3D"0" id=3D"body" style=
+=3D"text-align: center; min-width: 640px; width: 100%; margin: 0; padding: =
+0;" bgcolor=3D"#fafafa">
+<tbody>
+<tr class=3D"line">
+<td style=3D"font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, san=
+s-serif; height: 4px; font-size: 4px; line-height: 4px;" bgcolor=3D"#6b4fbb=
+"></td>
+</tr>
+<tr class=3D"header">
+<td style=3D"font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, san=
+s-serif; font-size: 13px; line-height: 1.6; color: #5c5c5c; padding: 25px 0=
+;">
+
+<img alt=3D"GitLab" src=3D"https://gitlab.com/assets/mailers/gitlab_header_=
+logo-153749eaa7ea6fafcb995161abd3247bc4c4500f31498b0c4024f50093983ac0.gif" =
+width=3D"55" height=3D"50" />
+</td>
+</tr>
+<tr>
+<td style=3D"font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, san=
+s-serif;">
+<table border=3D"0" cellpadding=3D"0" cellspacing=3D"0" class=3D"wrapper" s=
+tyle=3D"width: 640px; border-collapse: separate; border-spacing: 0; margin:=
+ 0 auto;">
+<tbody>
+<tr>
+<td class=3D"wrapper-cell" style=3D"font-family: &quot;Helvetica Neue&quot;=
+, Helvetica, Arial, sans-serif; border-radius: 3px; overflow: hidden; paddi=
+ng: 18px 25px; border: 1px solid #ededed;" align=3D"left" bgcolor=3D"#fff">
+<table border=3D"0" cellpadding=3D"0" cellspacing=3D"0" class=3D"content" s=
+tyle=3D"width: 100%; border-collapse: separate; border-spacing: 0;">
+<tbody>
+<tr class=3D"alert">
+<td style=3D"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; bord=
+er-radius: 3px; font-size: 14px; line-height: 1.3; overflow: hidden; color:=
+ #ffffff; padding: 10px;" align=3D"center" bgcolor=3D"#d22f57">
+<table border=3D"0" cellpadding=3D"0" cellspacing=3D"0" class=3D"img" style=
+=3D"border-collapse: collapse; margin: 0 auto;">
+<tbody>
+<tr>
+<td style=3D"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; colo=
+r: #ffffff; padding-right: 5px; line-height: 1;" align=3D"center" valign=3D=
+"middle">
+<img alt=3D"&#10006;" height=3D"13" src=3D"https://gitlab.com/assets/mailer=
+s/ci_pipeline_notif_v1/icon-x-red-inverted-06edddd39ba2a7f9a32f6201e420175d=
+b85a4b6ac0348203fdc069001b440149.gif" style=3D"display: block;" width=3D"13=
+" />
+</td>
+<td style=3D"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; colo=
+r: #ffffff;" align=3D"center" valign=3D"middle">
+Your pipeline has failed.
+</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+<tr class=3D"spacer">
+<td style=3D"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; heig=
+ht: 18px; font-size: 18px; line-height: 18px;">
+&#160;
+</td>
+</tr>
+<tr class=3D"section">
+<td style=3D"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; bord=
+er-radius: 3px; overflow: hidden; padding: 0 15px; border: 1px solid #edede=
+d;">
+<table border=3D"0" cellpadding=3D"0" cellspacing=3D"0" class=3D"table-info=
+" style=3D"width: 100%;">
+<tbody>
+<tr>
+<td style=3D"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font=
+-size: 15px; line-height: 1.4; color: #8c8c8c; font-weight: 300; margin: 0;=
+ padding: 14px 0;">Project</td>
+<td style=3D"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font=
+-size: 15px; line-height: 1.4; font-weight: 500; color: #333333; width: 75%=
+; margin: 0; padding: 14px 0 14px 5px;">
+<a class=3D"muted" href=3D"https://gitlab.com/ageevav97" style=3D"color: #3=
+33333; text-decoration: none;">
+&#1040;&#1083;&#1077;&#1082;&#1089;&#1077;&#1081; &#1040;&#1075;&#1077;&#10=
+77;&#1074;
+</a>
+/
+<a class=3D"muted" href=3D"https://gitlab.com/ageevav97/pvs-postman" style=
+=3D"color: #333333; text-decoration: none;">
+pvs-postman
+</a>
+</td>
+</tr>
+<tr>
+<td style=3D"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font=
+-size: 15px; line-height: 1.4; color: #8c8c8c; font-weight: 300; border-top=
+-width: 1px; border-top-color: #ededed; border-top-style: solid; margin: 0;=
+ padding: 14px 0;">Branch</td>
+<td style=3D"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font=
+-size: 15px; line-height: 1.4; font-weight: 500; color: #333333; width: 75%=
+; border-top-width: 1px; border-top-color: #ededed; border-top-style: solid=
+; margin: 0; padding: 14px 0 14px 5px;">
+<table border=3D"0" cellpadding=3D"0" cellspacing=3D"0" class=3D"img" style=
+=3D"border-collapse: collapse;">
+<tbody>
+<tr>
+<td style=3D"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font=
+-size: 15px; line-height: 1.4; padding-right: 5px;" valign=3D"middle">
+<img alt=3D"" height=3D"13" src=3D"https://gitlab.com/assets/mailers/ci_pip=
+eline_notif_v1/icon-branch-gray-53618a7fc19d4d32ccbabac2f6d59bebe67202a9f2f=
+1255e3f72c69756c0dd9c.gif" style=3D"display: block;" width=3D"13" />
+</td>
+<td style=3D"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font=
+-size: 15px; line-height: 1.4;" valign=3D"middle">
+<a class=3D"muted" href=3D"https://gitlab.com/ageevav97/pvs-postman/-/commi=
+ts/feature/client" style=3D"color: #333333; text-decoration: none;">
+feature/client
+</a>
+</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+<tr>
+<td style=3D"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font=
+-size: 15px; line-height: 1.4; color: #8c8c8c; font-weight: 300; border-top=
+-width: 1px; border-top-color: #ededed; border-top-style: solid; margin: 0;=
+ padding: 14px 0;">Commit</td>
+<td style=3D"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font=
+-size: 15px; line-height: 1.4; font-weight: 400; color: #333333; width: 75%=
+; border-top-width: 1px; border-top-color: #ededed; border-top-style: solid=
+; margin: 0; padding: 14px 0 14px 5px;">
+<table border=3D"0" cellpadding=3D"0" cellspacing=3D"0" class=3D"img" style=
+=3D"border-collapse: collapse;">
+<tbody>
+<tr>
+<td style=3D"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font=
+-size: 15px; line-height: 1.4; padding-right: 5px;" valign=3D"middle">
+<img alt=3D"" height=3D"13" src=3D"https://gitlab.com/assets/mailers/ci_pip=
+eline_notif_v1/icon-commit-gray-c10243ac24cde64b549aec91de35e6b49c8739b506b=
+86472b54614c10d8b4aac.gif" style=3D"display: block;" width=3D"13" />
+</td>
+<td style=3D"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font=
+-size: 15px; line-height: 1.4;" valign=3D"middle">
+<a href=3D"https://gitlab.com/ageevav97/pvs-postman/-/commit/00805423350daa=
+f25a850fe014a37547b1469339" style=3D"color: #3777b0; text-decoration: none;=
+">
+00805423
+</a>
+</td>
+</tr>
+</tbody>
+</table>
+<div class=3D"commit" style=3D"color: #5c5c5c; font-weight: 300;">
+add util, smtp-open
+
+</div>
+</td>
+</tr>
+<tr>
+<td style=3D"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font=
+-size: 15px; line-height: 1.4; color: #8c8c8c; font-weight: 300; border-top=
+-width: 1px; border-top-color: #ededed; border-top-style: solid; margin: 0;=
+ padding: 14px 0;">Commit Author</td>
+<td style=3D"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font=
+-size: 15px; line-height: 1.4; font-weight: 500; color: #333333; width: 75%=
+; border-top-width: 1px; border-top-color: #ededed; border-top-style: solid=
+; margin: 0; padding: 14px 0 14px 5px;">
+<table border=3D"0" cellpadding=3D"0" cellspacing=3D"0" class=3D"img" style=
+=3D"border-collapse: collapse;">
+<tbody>
+<tr>
+<td style=3D"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font=
+-size: 15px; line-height: 1.4; padding-right: 5px;" valign=3D"middle">
+<img alt=3D"" class=3D"avatar" height=3D"24" src=3D"https://secure.gravatar=
+.com/avatar/6676ed09e1d39ae216653bbb0ca10823?s=3D48&amp;d=3Didenticon" styl=
+e=3D"display: block; border-radius: 12px; margin: -2px 0;" width=3D"24" />
+</td>
+<td style=3D"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font=
+-size: 15px; line-height: 1.4;" valign=3D"middle">
+<a class=3D"muted" href=3D"https://gitlab.com/vladovchinnikov950" style=3D"=
+color: #333333; text-decoration: none;">
+Vladislav Ovchinnikov
+</a>
+</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+<tr class=3D"spacer">
+<td style=3D"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; heig=
+ht: 18px; font-size: 18px; line-height: 18px;">
+&#160;
+</td>
+</tr>
+<tr class=3D"pre-section">
+<td style=3D"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; colo=
+r: #333333; font-size: 15px; font-weight: 400; line-height: 1.4; padding: 1=
+5px 5px 0;" align=3D"center">
+<table border=3D"0" cellpadding=3D"0" cellspacing=3D"0" class=3D"img" style=
+=3D"border-collapse: collapse; margin: 0 auto;">
+<tbody>
+<tr>
+<td style=3D"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font=
+-size: 15px; font-weight: 500; line-height: 1.4;" valign=3D"baseline">
+Pipeline
+<a href=3D"https://gitlab.com/ageevav97/pvs-postman/-/pipelines/226799409" =
+style=3D"color: #3777b0; text-decoration: none;">
+#226799409
+</a>
+triggered by
+</td>
+<td style=3D"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font=
+-size: 15px; line-height: 1.4; padding-right: 5px; padding-left: 5px;" widt=
+h=3D"24" valign=3D"middle">
+<img alt=3D"" class=3D"avatar" height=3D"24" src=3D"https://secure.gravatar=
+.com/avatar/6f62a66d859c503e5d936e2aa4cdc22e?s=3D48&amp;d=3Didenticon" styl=
+e=3D"display: block; border-radius: 12px; margin: -2px 0;" width=3D"24" />
+</td>
+<td style=3D"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font=
+-size: 15px; font-weight: 500; line-height: 1.4;" valign=3D"baseline">
+<a class=3D"muted" href=3D"https://gitlab.com/ageevav97" style=3D"color: #3=
+33333; text-decoration: none;">
+&#1040;&#1083;&#1077;&#1082;&#1089;&#1077;&#1081; &#1040;&#1075;&#1077;&#10=
+77;&#1074;
+</a>
+</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+<tr>
+<td colspan=3D"2" style=3D"font-family: 'Helvetica Neue',Helvetica,Arial,sa=
+ns-serif; color: #333333; font-size: 14px; font-weight: 400; line-height: 1=
+.4; padding: 0 8px 16px;" align=3D"center">
+had
+1
+failed
+build.
+</td>
+</tr>
+<tr class=3D"table-warning">
+<td style=3D"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; bord=
+er-radius: 4px 4px 0 0; overflow: hidden; color: #d22852; font-size: 14px; =
+line-height: 1.4; padding: 8px 16px; border-color: #ededed; border-style: s=
+olid; border-width: 1px 1px 0;" align=3D"center" bgcolor=3D"#fdf4f6">
+Failed builds
+</td>
+</tr>
+<tr class=3D"section">
+<td style=3D"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; over=
+flow: hidden; border-radius: 0 0 4px 4px; padding: 0 16px; border-color: #e=
+deded; border-style: solid; border-width: 0 1px 1px;">
+<table border=3D"0" cellpadding=3D"0" cellspacing=3D"0" class=3D"builds" st=
+yle=3D"width: 100%; border-collapse: collapse;">
+<tbody>
+<tr class=3D"build-state">
+<td style=3D"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; colo=
+r: #8c8c8c; font-weight: 500; font-size: 14px; padding: 16px 0;">
+<table border=3D"0" cellpadding=3D"0" cellspacing=3D"0" class=3D"img" style=
+=3D"border-collapse: collapse;">
+<tbody>
+<tr>
+<td style=3D"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; colo=
+r: #d22f57; font-weight: 500; font-size: 16px; padding-right: 8px; line-hei=
+ght: 10px;" valign=3D"middle">
+<img alt=3D"&#10006;" height=3D"10" src=3D"https://gitlab.com/assets/mailer=
+s/ci_pipeline_notif_v1/icon-x-red-67056b7b99899e30453df79abfbe16162f6a26ed7=
+89d8236f81afcaea216ffe6.gif" style=3D"display: block;" width=3D"10" />
+</td>
+<td style=3D"font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; colo=
+r: #8c8c8c; font-weight: 500; font-size: 14px;" valign=3D"middle">
+build
+</td>
+</tr>
+</tbody>
+</table>
+</td>
+<td align=3D"right" style=3D"font-family: 'Helvetica Neue',Helvetica,Arial,=
+sans-serif; color: #8c8c8c; font-weight: 500; font-size: 14px; padding: 16p=
+x 0;">
+<a href=3D"https://gitlab.com/ageevav97/pvs-postman/-/jobs/897237518" style=
+=3D"color: #3777b0; text-decoration: none;">
+server_build
+</a>
+
+</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+
+
+</tbody>
+</table>
+</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+
+<tr class=3D"footer">
+<td style=3D"font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, san=
+s-serif; font-size: 13px; line-height: 1.6; color: #5c5c5c; padding: 25px 0=
+;">
+<img alt=3D"GitLab" class=3D"footer-logo" src=3D"https://gitlab.com/assets/=
+mailers/gitlab_footer_logo-078860f148cc9596195e6bb3fa7db31c30538355576c5c3b=
+569c414902e3d095.gif" style=3D"display: block; width: 90px; height: 33px; m=
+argin: 0 auto 1em;" />
+<div>
+You're receiving this email because of your account on gitlab.com. <a class=
+=3D"mng-notif-link" href=3D"https://gitlab.com/-/profile/notifications" sty=
+le=3D"color: #3777b0; text-decoration: none;">Manage all notifications</a> =
+&#183; <a class=3D"help-link" href=3D"https://gitlab.com/help" style=3D"col=
+or: #3777b0; text-decoration: none;">Help</a>
+</div>
+</td>
+</tr>
+
+
+<tr>
+<td class=3D"footer-message" style=3D"font-family: &quot;Helvetica Neue&quo=
+t;, Helvetica, Arial, sans-serif; font-size: 13px; line-height: 1.6; color:=
+ #5c5c5c; padding: 25px 0;">
+
+</td>
+</tr>
+</tbody>
+</table>
+</body>
+</html>
+
+----==_mimepart_5fcf7e10600fe_839698125855--

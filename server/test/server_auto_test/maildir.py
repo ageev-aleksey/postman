@@ -2,7 +2,7 @@ import os
 from enum import Enum
 
 OTHER_SERVERS = ".OTHER_SERVERS"
-
+xPostmanTo = "X-Postman-To"
 
 class InvalidFileStructure(Exception):
 	def __init__(self, what):
@@ -56,7 +56,10 @@ class Mail:
 					s = line.split(":")
 					if len(s) != 2:
 						raise InvalidFileStructure(f"invalid x_header in file [{self._file_path}]: " + str(s))
-					self._x_headers[s[0].strip()] = s[1].strip()
+					if s[0] == xPostmanTo:
+						self._x_headers[s[0].strip()] = s[1].strip().split(',')
+					else:
+						self._x_headers[s[0].strip()] = s[1].strip()
 			else:
 				self._body = self._body + line
 		f.close()

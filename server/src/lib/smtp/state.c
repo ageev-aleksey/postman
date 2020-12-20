@@ -98,23 +98,42 @@ bool smtp_init(smtp_state *smtp, err_t *error) {
     smtp->pr_bsize = SMTP_START_BUFFER_SIZE;
     return true;
 }
-void smtp_free(smtp_state *smtp) {
-    if (smtp != NULL) {
-        for (size_t j = 0; j < VECTOR_SIZE(&smtp->pr_rcpt_list); j++) {
-            free(VECTOR(&smtp->pr_rcpt_list)[j].server_name);
-            free(VECTOR(&smtp->pr_rcpt_list)[j].user_name);
-        }
-        VECTOR_FREE(&smtp->pr_rcpt_list);
+
+// Освобождение памяти из под внутренносетй вектора
+// но из под вектора память не совобождается
+void pr_smtp_rcpt_list_free(vector_smtp_mailbox *rcpts_list) {
+    for (size_t j = 0; j < VECTOR_SIZE(rcpts_list); j++) {
+        free(VECTOR(rcpts_list)[j].server_name);
+        free(VECTOR(rcpts_list)[j].user_name);
+        VECTOR(rcpts_list)[j].server_name = NULL;
+        VECTOR(rcpts_list)[j].user_name = NULL;
+    }
+}
+
+// Осовобождение памяти из под внутренностей
+// необходимо освободить вектора после вызва функции
+void pr_smtp_buffers_free(smtp_state *smtp) {
+        pr_smtp_rcpt_list_free(&smtp->pr_rcpt_list);
         if (smtp->pr_hello_addr != NULL) {
             free(smtp->pr_hello_addr->address);
             free(smtp->pr_hello_addr);
+            smtp->pr_hello_addr = NULL;
         }
         if (smtp->pr_mail_from != NULL) {
             free(smtp->pr_mail_from->user_name);
             free(smtp->pr_mail_from->server_name);
             free(smtp->pr_mail_from);
+            smtp->pr_mail_from = NULL;
         }
         free(smtp->pr_buffer);
+        smtp->pr_buffer = NULL;
+        smtp->pr_bsize = 0;
+}
+
+void smtp_free(smtp_state *smtp) {
+    if (smtp != NULL) {
+        pr_smtp_buffers_free(smtp);
+        VECTOR_FREE(&smtp->pr_rcpt_list);
         VECTOR_FREE(&smtp->pr_mail_data);
     }
 }
@@ -411,12 +430,9 @@ smtp_status pr_smtp_command_data(smtp_state *smtp, smtp_command *command) {
 }
 
 smtp_status pr_smtp_command_rset(smtp_state *smtp, smtp_command *command) {
-    VECTOR_CLEAR(&smtp->pr_mail_data);
+    pr_smtp_buffers_free(smtp);
     VECTOR_CLEAR(&smtp->pr_rcpt_list);
-    free(smtp->pr_mail_from->user_name);
-    free(smtp->pr_mail_from->user_name);
-    free(smtp->pr_mail_from);
-    smtp->pr_mail_from = NULL;
+    VECTOR_CLEAR(&smtp->pr_mail_data);
     smtp_make_response(smtp, SMTP_CODE_OK, SMTP_CODE_OK_MSG);
     return SMTP_STATUS_OK;
 }
@@ -428,6 +444,33 @@ char *smtp_make_response(smtp_state *smtp, size_t code, const char* msg) {
     return smtp->pr_buffer;
 }
 
+void pr_smtp_command_hello_free(smtp_state *smtp, smtp_command *command) {
+    smtp_address *addr = command->arg;
+    free(addr->address);
+    addr->address = NULL;
+    free(addr);
+    addr = NULL;
+}
+
+void pr_smtp_command_mailfrom_free(smtp_state *smtp, smtp_command *command) {
+    struct smtp_mailbox *mailbox = command->arg;
+    free(mailbox->server_name);
+    mailbox->server_name = NULL;
+    free(mailbox->user_name);
+    mailbox->user_name = NULL;
+    free(mailbox);
+    mailbox = NULL;
+}
+
+void pr_smtp_command_rcpto_free(smtp_state *smtp, smtp_command *command) {
+    smtp_mailbox *rcpt = command->arg;
+    free(rcpt->user_name);
+    rcpt->user_name = NULL;
+    free(rcpt->server_name);
+    rcpt->server_name = NULL;
+    free(rcpt);
+    rcpt = NULL;
+}
 
 smtp_status smtp_parse(smtp_state *smtp, const char *message, char **buffer_reply, err_t *error) {
     CHECK_PTR(smtp, error, SMTP_DESCRIPTOR_IS_NULL);
@@ -446,7 +489,18 @@ smtp_status smtp_parse(smtp_state *smtp, const char *message, char **buffer_repl
                 // Неверная последовательность команд
                 smtp_make_response(smtp, SMTP_CODE_INVALID_SEQUENCE, SMTP_CODE_INVALID_SEQUENCE_MSG);
                 ret = SMTP_STATUS_WARNING;
+
+                // Осовобождение ресурсов из под команды
+                if (command.type == SMTP_HELLO) {
+                    pr_smtp_command_hello_free(smtp, &command);
+                } else if (command.type == SMTP_MAILFROM) {
+                    pr_smtp_command_mailfrom_free(smtp, &command);
+                } else if (command.type == SMTP_RCPTTO) {
+                    pr_smtp_command_rcpto_free(smtp, &command);
+                }
+
             } else {
+                // Обработка команд
                 if (command.type == SMTP_HELLO) {
                    ret = pr_smtp_command_hello(smtp, &command);
                 } else if (command.type == SMTP_MAILFROM) {
@@ -459,6 +513,10 @@ smtp_status smtp_parse(smtp_state *smtp, const char *message, char **buffer_repl
                     ret = pr_smtp_command_rset(smtp, &command);
                 } else if(command.type == SMTP_QUIT) {
                     ret = SMTP_STATUS_EXIT;
+                }   else if (command.type == SMTP_NOOP) {
+                    smtp_make_response(smtp, SMTP_CODE_OK,
+                                       SMTP_CODE_OK_MSG);
+                    ret = SMTP_STATUS_OK;
                 } else if (command.event == AUTOFSM_EV_TEST) {
                     smtp_make_response(smtp, SMTP_CODE_COMMAND_NOT_IMPLEMENTED,
                                        SMTP_CODE_COMMAND_NOT_IMPLEMENTED_MSG);

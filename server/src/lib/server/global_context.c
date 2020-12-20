@@ -575,12 +575,15 @@ bool send_mail(smtp_state *smtp) {
         }
     }
 
+    vector_smtp_mailbox current_mailbox;
+    VECTOR_INIT(struct smtp_mailbox, &current_mailbox, verr);
     for (int j = 0; j < VECTOR_SIZE(&self_recipients); j++) {
         smtp_mailbox *mb = &VECTOR(&self_recipients)[j];
 
         maildir_server server;
         maildir_user user;
         maildir_message mail;
+        char *x_headers = NULL;
         maildir_server_default_init(&server);
         maildir_user_default_init(&user);
         maildir_message_default_init(&mail);
@@ -603,6 +606,12 @@ bool send_mail(smtp_state *smtp) {
         maildir_user_create_message(&user, &mail, sender_mailbox_str, &md_error);
         ERROR_LOG_AND_CLEANUP(md_error, loop_cleanup);
 
+        VECTOR_PUSH_BACK(struct smtp_mailbox, &current_mailbox, *mb, verr);
+        x_headers = make_x_headers(&current_mailbox, sender);
+        VECTOR_CLEAR(&current_mailbox);
+
+        maildir_message_write(&mail, x_headers, strlen(x_headers), &md_error);
+        ERROR_LOG_AND_CLEANUP(md_error, loop_cleanup);
         if (message_len != 0) {
             maildir_message_write(&mail, message, message_len, &md_error);
             ERROR_LOG_AND_CLEANUP(md_error, loop_cleanup);
@@ -616,10 +625,12 @@ bool send_mail(smtp_state *smtp) {
         maildir_message_free(&mail);
         maildir_user_free(&user);
         maildir_server_free(&server);
+        free(x_headers);
         if(status == false) {
             goto exit;
         }
     }
+    VECTOR_FREE(&current_mailbox);
 
     if (VECTOR_SIZE(&foreign_recipients) != 0) {
         // Отправка пиьсма внешним сревреам

@@ -16,6 +16,8 @@ class AssertException(Exception):
         return "AssertException{" + self.what + "}"
 
 
+
+
 def assert_equal(actual: object, expected: object) -> object:
     if actual != expected:
         raise AssertException(f"equal error: expected -> {expected}; actual -> {actual}")
@@ -52,7 +54,7 @@ class TestRunner:
             test.before()
             time.sleep(2)
             for name, test_case in test.test_cases.items():
-                print(" -- " + name + ": ")
+                print("-------- " + name.upper() + " --------")
                 sys.stdout.flush()
                 is_passed = False
                 try:
