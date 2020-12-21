@@ -18,6 +18,11 @@ void posix_signal_handler(int signal) {
     }
 }
 
+struct log_file_settings {
+    char *path;
+    log_level level;
+};
+
 bool server_config_init(const char *path) {
     err_t error;
     server_config.loop = el_init(&error);
@@ -104,6 +109,68 @@ bool server_config_init(const char *path) {
         return false;
     };
 
+    // Настройка уровня логирования
+    config_setting_t *log_settings = config_lookup(&cfg, "server.log");
+    log_level  console_level = DEBUG;
+    if (log_settings != NULL) {
+
+        const char *console_level_char = NULL;
+        if (!config_setting_lookup_string(log_settings, "console_level", &console_level_char)) {
+            LOG_ERROR("%s", "error server.log.console_level");
+            return false;
+        }
+
+        console_level = log_char_to_level(console_level_char);
+        if (console_level == INVALID_LEVEL) {
+            LOG_ERROR("%s", "error server.log.console_level - invalid value");
+            return false;
+        }
+
+        config_setting_t *log_files_settings = config_setting_lookup(log_settings, "files");
+        struct log_file_settings *file_settings = NULL;
+        if (log_files_settings != NULL) {
+            int len = config_setting_length(log_files_settings);
+            file_settings = malloc(sizeof(struct log_file_settings)*len);
+            for (int i = 0; i < len; i++) {
+                config_setting_t *el = config_setting_get_elem(log_files_settings, i);
+
+                const char *file_path = NULL;
+                if (!config_setting_lookup_string(el, "path", &file_path)) {
+                    LOG_ERROR("%s", "error server.log.console_level");
+                    return false;
+                }
+
+                const char *file_level = NULL;
+                if (!config_setting_lookup_string(el, "level", &file_level)) {
+                    LOG_ERROR("%s", "error server.log.console_level");
+                    return false;
+                }
+                log_level  fl = log_char_to_level(file_level);
+                if (fl == INVALID_LEVEL) {
+                    LOG_ERROR("%s", "error server.log.files.level - invalid value");
+                    return false;
+                }
+                file_settings[i].path = malloc(strlen(file_path));
+                strcpy(file_settings[i].path, file_path);
+                file_settings[i].level = fl;
+            }
+
+            for (int i = 0; i < len; i++) {
+                if (!log_file_writer(&GLOBAL_LOG_CONTEXT, file_settings[i].level, file_settings[i].path)) {
+                    printf("LOG SETTINGS FATAL ERROR!\n");
+                    return false;
+                }
+                free(file_settings[i].path);
+            }
+            free(file_settings);
+        }
+
+
+    } else {
+        LOG_INFO("%s", "server.log not found. Using default settings for logging");
+    }
+    // log_file_writer(&GLOBAL_LOG_CONTEXT, DEBUG_LEVEL, "./debug_server.log");
+     log_console_set_level(&GLOBAL_LOG_CONTEXT, console_level);
 
     server_config.ip = malloc(sizeof(char) * strlen(host)+1);
     server_config.self_server_name = malloc(sizeof(char) * strlen(domain)+1);
@@ -144,6 +211,7 @@ bool server_config_init(const char *path) {
     sig_act.sa_mask = set;
     sigaction(SIGTERM, &sig_act, NULL);
     sigaction(SIGINT, &sig_act, NULL);
+
 
     return true;
 }
