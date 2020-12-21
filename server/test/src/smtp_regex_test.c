@@ -54,7 +54,7 @@ void smtp_regex_hello_test() {
     regcomp(&reg_domain, RE_DOMAIN_LITERAL, REG_EXTENDED | REG_ICASE);
     if (regexec(&reg_hello, line, 1, matcher_hello, 0) == 0) {
         CU_ASSERT_EQUAL(matcher_hello[0].rm_so, 0);
-        CU_ASSERT_EQUAL(matcher_hello[0].rm_eo, 4);
+        CU_ASSERT_EQUAL(matcher_hello[0].rm_eo, 5);
     } else {
         CU_FAIL("Error find substring: 'helo'");
     }
