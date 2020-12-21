@@ -10,6 +10,8 @@ server/test_report/
 *.info
 *.aux
 *.log
-test_report/
+test_report/	
 __pycache__/
-
+*.toc
+*.out
+*.idx

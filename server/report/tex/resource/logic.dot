@@ -1,0 +1,87 @@
+digraph server {
+rankdir = LR;
+size="10,20";
+  subgraph cluster_s1 {
+    label="Бесконечный цикл в отдельном потоке";
+    event_wait_client[shape="rect", label="Событие\n'Ожидание подключения нового клиента'"];
+    event_client_connected[shape="rect", label="Событие\n'Клиент подключился'"];
+    event_send_welcome_message[shape="rect", label="Событие\n'Отправка клиенту приветственного сообщения'"];
+    event_was_send[shape="rect", label="Событие\n'Клиенту отправлено сообщение'"];
+    event_socket_read[shape="rect", label="Событие\n'Чтение данных от клиента'"];
+    
+    event_loop[shape="diamond", label="Менеджер цикла событий"];
+    registered_events[shape="rect", label="Зарегистрированные события"];
+    occured_events[shape="rect", label="Произошедшие события"];
+    pollfd[shape="rect", label="pollfd[]"];
+    master_socket[shape="diamond", label="master socket + poll"];
+
+    master_socket->event_loop[style=dotted];
+    occured_events->event_loop[style=dotted];
+    registered_events->event_loop[style=dotted];
+
+    #event_wait_client->registered_events[style=dotted];
+    #event_client_connected->registered_events[style=dotted]
+    #event_send_welcome_message->registered_events[style=dotted]
+    #event_was_send->registered_events[style=dotted];
+    #event_socket_read->registered_events[style=dotted];
+
+
+   # event_wait_client->occured_events[style=dotted];
+    #event_client_connected->occured_events[style=dotted]
+   # event_send_welcome_message->occured_events[style=dotted]
+   #event_was_send->occured_events[style=dotted];
+   # event_socket_read->occured_events[style=dotted];
+
+    event_loop->event_wait_client[label="Создание"]
+    event_loop->event_client_connected[label="Создание"]
+    event_loop->event_send_welcome_message[label="Создание"]
+    event_loop->event_was_send[label="Создание"]
+    event_loop->event_socket_read[label="Создание"]
+
+    pollfd->event_loop[style=dotted]
+
+  }
+
+
+  subgraph cluster_s2 {
+    label="Бесконечный цикл в отдельном потоке";
+    worker[shape="diamond", label="Рабочий поток"];
+  }
+
+  subgraph cluster_s3 {
+    label="maildir_format";
+    md[label="maildir", shape="diamond"];
+    user_md[shape="rect", label="адресант"];
+    server_md[shape="rect", label="Cервер"];
+    mails_md[shape="rect", label="Письмо"]
+    
+    md->server_md[style=dotted]
+    server_md->user_md[style=dotted]
+    user_md->mails_md[style=dotted]
+  }
+
+  handler[shape="diamond", label="обработчик"];
+
+  main[label="main()"];
+  main->event_loop[ltail=cluster_s1]
+  main->worker[ltail=cluster_s2]
+  client[label="Клиент"];
+  client->master_socket[label="Подключение и отправка запросов"]
+  master_socket->client[label="Отправка ответов"]
+  user[shape="rect", label="пользователь"];
+  users_list[shape="rect", label="Список подключившихся пользователей"];
+
+  worker->user[label="Создание контекста"];
+  user->users_list[style=dotted];
+  worker->users_list[label="Добавление контекста"];
+  users_list->worker[label="Извлечение контекста"];
+
+  worker->event_loop[label="Регистрация обработчиков событий и опрос произошедших событий"];
+  event_loop->worker[label="Выдача произошедших событий"]
+  handler->worker[style=dotted];
+  handler->event_loop[style=dotted];
+  worker->handler[label="Вызов"];
+
+  worker->md[label="Создать письмо"]
+
+}

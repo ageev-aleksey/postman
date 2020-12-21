@@ -289,6 +289,17 @@ void handler_read(event_loop *loop, int client_socket, char *buffer, int size, c
     }
 }
 
+void handler_write_msg_of_close_connection_by_timeout(
+        event_loop *el, int client_socket, char* buffer, int size, int writing, client_status status, err_t error)
+{
+    free(buffer);
+    err_t err;
+    el_socket_close(el, client_socket, handler_close_socket, &err);
+    if (err.error) {
+        LOG_ERROR("el_socket_close: %s", err.message);
+    }
+}
+
 void handler_timer(event_loop* el, int sock, struct timer_event_entry *descriptor) {
     LOG_INFO("timer [%d]", sock);
     if (!timers_is_exist_for_socket(&server_config.timers, sock)) {
@@ -297,9 +308,14 @@ void handler_timer(event_loop* el, int sock, struct timer_event_entry *descripto
         LOG_INFO("%s", "таймер истек, закрываем сокет");
         el_timer_free(el, descriptor);
         err_t err;
-        el_socket_close(el, sock, handler_close_socket, &err);
+        char *response = NULL;
+        int len = asprintf(&response, "%d %s",
+                           SMTP_CODE_CLOSE_CONNECTION_BY_TIMEOUT,
+                           SMTP_CODE_CLOSE_CONNECTION_BY_TIMEOUT_MSG);
+
+        el_async_write(el, sock,response, len, handler_write_msg_of_close_connection_by_timeout, &err);
         if (err.error) {
-            LOG_ERROR("el_socket_close: %s", err.message);
+            LOG_ERROR("el_async_write: %s", err.message);
         }
     }
 }

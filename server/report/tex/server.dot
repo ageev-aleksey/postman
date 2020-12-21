@@ -1,0 +1,87 @@
+digraph server {
+
+
+subgraph cluster_s1 {
+label="\T2A\CYRB \T2A\cyre \T2A\cyrs \T2A\cyrk \T2A\cyro \T2A\cyrn \T2A\cyre \T2A\cyrch \T2A\cyrn \T2A\cyrery \T2A\cyrishrt  \T2A\cyrc \T2A\cyri \T2A\cyrk \T2A\cyrl  \T2A\cyrv  \T2A\cyro \T2A\cyrt \T2A\cyrd \T2A\cyre \T2A\cyrl \T2A\cyrsftsn \T2A\cyrn \T2A\cyro \T2A\cyrm  \T2A\cyrp \T2A\cyro \T2A\cyrt \T2A\cyro \T2A\cyrk \T2A\cyre ";
+event_wait_client[shape="rect\penalty \@M \hskip .2em\ignorespaces  label="\T2A\CYRS \T2A\cyro \T2A\cyrb \T2A\cyrery \T2A\cyrt \T2A\cyri \T2A\cyre '\T2A\CYRO \T2A\cyrzh \T2A\cyri \T2A\cyrd \T2A\cyra \T2A\cyrn \T2A\cyri \T2A\cyre  \T2A\cyrp \T2A\cyro \T2A\cyrd \T2A\cyrk \T2A\cyrl \T2A\cyryu \T2A\cyrch \T2A\cyre \T2A\cyrn \T2A\cyri \T2A\cyrya  \T2A\cyrn \T2A\cyro \T2A\cyrv \T2A\cyro \T2A\cyrg \T2A\cyro  \T2A\cyrk \T2A\cyrl \T2A\cyri \T2A\cyre \T2A\cyrn \T2A\cyrt \T2A\cyra '"];
+event_client_connected[shape="rect\penalty \@M \hskip .2em\ignorespaces  label="\T2A\CYRS \T2A\cyro \T2A\cyrb \T2A\cyrery \T2A\cyrt \T2A\cyri \T2A\cyre '\T2A\CYRK \T2A\cyrl \T2A\cyri \T2A\cyre \T2A\cyrn \T2A\cyrt  \T2A\cyrp \T2A\cyro \T2A\cyrd \T2A\cyrk \T2A\cyrl \T2A\cyryu \T2A\cyrch \T2A\cyri \T2A\cyrl \T2A\cyrs \T2A\cyrya '"];
+event_send_welcome_message[shape="rect\penalty \@M \hskip .2em\ignorespaces  label="\T2A\CYRS \T2A\cyro \T2A\cyrb \T2A\cyrery \T2A\cyrt \T2A\cyri \T2A\cyre '\T2A\CYRO \T2A\cyrt \T2A\cyrp \T2A\cyrr \T2A\cyra \T2A\cyrv \T2A\cyrk \T2A\cyra  \T2A\cyrk \T2A\cyrl \T2A\cyri \T2A\cyre \T2A\cyrn \T2A\cyrt \T2A\cyru  \T2A\cyrp \T2A\cyrr \T2A\cyri \T2A\cyrv \T2A\cyre \T2A\cyrt \T2A\cyrs \T2A\cyrt \T2A\cyrv \T2A\cyre \T2A\cyrn \T2A\cyrn \T2A\cyro \T2A\cyrg \T2A\cyro  \T2A\cyrs \T2A\cyro \T2A\cyro \T2A\cyrb \T2A\cyrshch \T2A\cyre \T2A\cyrn \T2A\cyri \T2A\cyrya '"];
+event_was_send[shape="rect\penalty \@M \hskip .2em\ignorespaces  label="\T2A\CYRS \T2A\cyro \T2A\cyrb \T2A\cyrery \T2A\cyrt \T2A\cyri \T2A\cyre '\T2A\CYRK \T2A\cyrl \T2A\cyri \T2A\cyre \T2A\cyrn \T2A\cyrt \T2A\cyru  \T2A\cyro \T2A\cyrt \T2A\cyrp \T2A\cyrr \T2A\cyra \T2A\cyrv \T2A\cyrl \T2A\cyre \T2A\cyrn \T2A\cyro  \T2A\cyrs \T2A\cyro \T2A\cyro \T2A\cyrb \T2A\cyrshch \T2A\cyre \T2A\cyrn \T2A\cyri \T2A\cyre '"];
+event_socket_read[shape="rect\penalty \@M \hskip .2em\ignorespaces  label="\T2A\CYRS \T2A\cyro \T2A\cyrb \T2A\cyrery \T2A\cyrt \T2A\cyri \T2A\cyre '\T2A\CYRCH \T2A\cyrt \T2A\cyre \T2A\cyrn \T2A\cyri \T2A\cyre  \T2A\cyrd \T2A\cyra \T2A\cyrn \T2A\cyrn \T2A\cyrery \T2A\cyrh  \T2A\cyro \T2A\cyrt  \T2A\cyrk \T2A\cyrl \T2A\cyri \T2A\cyre \T2A\cyrn \T2A\cyrt \T2A\cyra '"];
+
+event_loop[shape="diamond\penalty \@M \hskip .2em\ignorespaces  label="\T2A\CYRM \T2A\cyre \T2A\cyrn \T2A\cyre \T2A\cyrd \T2A\cyrzh \T2A\cyre \T2A\cyrr  \T2A\cyrc \T2A\cyri \T2A\cyrk \T2A\cyrl \T2A\cyra  \T2A\cyrs \T2A\cyro \T2A\cyrb \T2A\cyrery \T2A\cyrt \T2A\cyri \T2A\cyrishrt "];
+registered_events[shape="rect\penalty \@M \hskip .2em\ignorespaces  label="\T2A\CYRZ \T2A\cyra \T2A\cyrr \T2A\cyre \T2A\cyrg \T2A\cyri \T2A\cyrs \T2A\cyrt \T2A\cyrr \T2A\cyri \T2A\cyrr \T2A\cyro \T2A\cyrv \T2A\cyra \T2A\cyrn \T2A\cyrn \T2A\cyrery \T2A\cyre  \T2A\cyrs \T2A\cyro \T2A\cyrb \T2A\cyrery \T2A\cyrt \T2A\cyri \T2A\cyrya "];
+occured_events[shape="rect\penalty \@M \hskip .2em\ignorespaces  label="\T2A\CYRP \T2A\cyrr \T2A\cyro \T2A\cyri \T2A\cyrz \T2A\cyro \T2A\cyrsh \T2A\cyre \T2A\cyrd \T2A\cyrsh \T2A\cyri \T2A\cyre  \T2A\cyrs \T2A\cyro \T2A\cyrb \T2A\cyrery \T2A\cyrt \T2A\cyri \T2A\cyrya "];
+pollfd[shape="rect\penalty \@M \hskip .2em\ignorespaces  label="pollfd[]"];
+master_socket[shape="diamond\penalty \@M \hskip .2em\ignorespaces  label="master socket + poll"];
+
+master_socket->event_loop[style=dotted];
+occured_events->event_loop[style=dotted];
+registered_events->event_loop[style=dotted];
+
+##event_wait_client->registered_events[style=dotted];
+##event_client_connected->registered_events[style=dotted]
+##event_send_welcome_message->registered_events[style=dotted]
+##event_was_send->registered_events[style=dotted];
+##event_socket_read->registered_events[style=dotted];
+
+
+## event_wait_client->occured_events[style=dotted];
+##event_client_connected->occured_events[style=dotted]
+## event_send_welcome_message->occured_events[style=dotted]
+##event_was_send->occured_events[style=dotted];
+## event_socket_read->occured_events[style=dotted];
+
+event_loop->event_wait_client[label="\T2A\CYRS \T2A\cyro \T2A\cyrz \T2A\cyrd \T2A\cyra \T2A\cyrn \T2A\cyri \T2A\cyre "]
+event_loop->event_client_connected[label="\T2A\CYRS \T2A\cyro \T2A\cyrz \T2A\cyrd \T2A\cyra \T2A\cyrn \T2A\cyri \T2A\cyre "]
+event_loop->event_send_welcome_message[label="\T2A\CYRS \T2A\cyro \T2A\cyrz \T2A\cyrd \T2A\cyra \T2A\cyrn \T2A\cyri \T2A\cyre "]
+event_loop->event_was_send[label="\T2A\CYRS \T2A\cyro \T2A\cyrz \T2A\cyrd \T2A\cyra \T2A\cyrn \T2A\cyri \T2A\cyre "]
+event_loop->event_socket_read[label="\T2A\CYRS \T2A\cyro \T2A\cyrz \T2A\cyrd \T2A\cyra \T2A\cyrn \T2A\cyri \T2A\cyre "]
+
+pollfd->event_loop[style=dotted]
+
+}
+
+
+subgraph cluster_s2 {
+label="\T2A\CYRB \T2A\cyre \T2A\cyrs \T2A\cyrk \T2A\cyro \T2A\cyrn \T2A\cyre \T2A\cyrch \T2A\cyrn \T2A\cyrery \T2A\cyrishrt  \T2A\cyrc \T2A\cyri \T2A\cyrk \T2A\cyrl  \T2A\cyrv  \T2A\cyro \T2A\cyrt \T2A\cyrd \T2A\cyre \T2A\cyrl \T2A\cyrsftsn \T2A\cyrn \T2A\cyro \T2A\cyrm  \T2A\cyrp \T2A\cyro \T2A\cyrt \T2A\cyro \T2A\cyrk \T2A\cyre ";
+worker[shape="diamond\penalty \@M \hskip .2em\ignorespaces  label="\T2A\CYRR \T2A\cyra \T2A\cyrb \T2A\cyro \T2A\cyrch \T2A\cyri \T2A\cyrishrt  \T2A\cyrp \T2A\cyro \T2A\cyrt \T2A\cyro \T2A\cyrk "];
+}
+
+subgraph cluster_s3 {
+label="maildir_format";
+md[label="maildir\penalty \@M \hskip .2em\ignorespaces  shape="diamond"];
+user_md[shape="rect\penalty \@M \hskip .2em\ignorespaces  label="\T2A\cyra \T2A\cyrd \T2A\cyrr \T2A\cyre \T2A\cyrs \T2A\cyra \T2A\cyrn \T2A\cyrt "];
+server_md[shape="rect\penalty \@M \hskip .2em\ignorespaces  label="C\T2A\cyre \T2A\cyrr \T2A\cyrv \T2A\cyre \T2A\cyrr "];
+mails_md[shape="rect\penalty \@M \hskip .2em\ignorespaces  label="\T2A\CYRP \T2A\cyri \T2A\cyrs \T2A\cyrsftsn \T2A\cyrm \T2A\cyro "]
+
+md->server_md[style=dotted]
+server_md->user_md[style=dotted]
+user_md->mails_md[style=dotted]
+}
+
+handler[shape="diamond\penalty \@M \hskip .2em\ignorespaces  label="\T2A\cyro \T2A\cyrb \T2A\cyrr \T2A\cyra \T2A\cyrb \T2A\cyro \T2A\cyrt \T2A\cyrch \T2A\cyri \T2A\cyrk "];
+
+main[label="main()"];
+main->event_loop[ltail=cluster_s1]
+main->worker[ltail=cluster_s2]
+client[label="\T2A\CYRK \T2A\cyrl \T2A\cyri \T2A\cyre \T2A\cyrn \T2A\cyrt "];
+client->master_socket[label="\T2A\CYRP \T2A\cyro \T2A\cyrd \T2A\cyrk \T2A\cyrl \T2A\cyryu \T2A\cyrch \T2A\cyre \T2A\cyrn \T2A\cyri \T2A\cyre  \T2A\cyri  \T2A\cyro \T2A\cyrt \T2A\cyrp \T2A\cyrr \T2A\cyra \T2A\cyrv \T2A\cyrk \T2A\cyra  \T2A\cyrz \T2A\cyra \T2A\cyrp \T2A\cyrr \T2A\cyro \T2A\cyrs \T2A\cyro \T2A\cyrv "]
+master_socket->client[label="\T2A\CYRO \T2A\cyrt \T2A\cyrp \T2A\cyrr \T2A\cyra \T2A\cyrv \T2A\cyrk \T2A\cyra  \T2A\cyro \T2A\cyrt \T2A\cyrv \T2A\cyre \T2A\cyrt \T2A\cyro \T2A\cyrv "]
+user[shape="rect\penalty \@M \hskip .2em\ignorespaces  label="\T2A\cyrp \T2A\cyro \T2A\cyrl \T2A\cyrsftsn \T2A\cyrz \T2A\cyro \T2A\cyrv \T2A\cyra \T2A\cyrt \T2A\cyre \T2A\cyrl \T2A\cyrsftsn "];
+users_list[shape="rect\penalty \@M \hskip .2em\ignorespaces  label="\T2A\CYRS \T2A\cyrp \T2A\cyri \T2A\cyrs \T2A\cyro \T2A\cyrk  \T2A\cyrp \T2A\cyro \T2A\cyrd \T2A\cyrk \T2A\cyrl \T2A\cyryu \T2A\cyrch \T2A\cyri \T2A\cyrv \T2A\cyrsh \T2A\cyri \T2A\cyrh \T2A\cyrs \T2A\cyrya  \T2A\cyrp \T2A\cyro \T2A\cyrl \T2A\cyrsftsn \T2A\cyrz \T2A\cyro \T2A\cyrv \T2A\cyra \T2A\cyrt \T2A\cyre \T2A\cyrl \T2A\cyre \T2A\cyrishrt "];
+
+worker->user[label="\T2A\CYRS \T2A\cyro \T2A\cyrz \T2A\cyrd \T2A\cyra \T2A\cyrn \T2A\cyri \T2A\cyre  \T2A\cyrk \T2A\cyro \T2A\cyrn \T2A\cyrt \T2A\cyre \T2A\cyrk \T2A\cyrs \T2A\cyrt \T2A\cyra "];
+user->users_list[style=dotted];
+worker->users_list[label="\T2A\CYRD \T2A\cyro \T2A\cyrb \T2A\cyra \T2A\cyrv \T2A\cyrl \T2A\cyre \T2A\cyrn \T2A\cyri \T2A\cyre  \T2A\cyrk \T2A\cyro \T2A\cyrn \T2A\cyrt \T2A\cyre \T2A\cyrk \T2A\cyrs \T2A\cyrt \T2A\cyra "];
+users_list->worker[label="\T2A\CYRI \T2A\cyrz \T2A\cyrv \T2A\cyrl \T2A\cyre \T2A\cyrch \T2A\cyre \T2A\cyrn \T2A\cyri \T2A\cyre  \T2A\cyrk \T2A\cyro \T2A\cyrn \T2A\cyrt \T2A\cyre \T2A\cyrk \T2A\cyrs \T2A\cyrt \T2A\cyra "];
+
+worker->event_loop[label="\T2A\CYRR \T2A\cyre \T2A\cyrg \T2A\cyri \T2A\cyrs \T2A\cyrt \T2A\cyrr \T2A\cyra \T2A\cyrc \T2A\cyri \T2A\cyrya  \T2A\cyro \T2A\cyrb \T2A\cyrr \T2A\cyra \T2A\cyrb \T2A\cyro \T2A\cyrt \T2A\cyrch \T2A\cyri \T2A\cyrk \T2A\cyro \T2A\cyrv  \T2A\cyrs \T2A\cyro \T2A\cyrb \T2A\cyrery \T2A\cyrt \T2A\cyri \T2A\cyrishrt  \T2A\cyri  \T2A\cyro \T2A\cyrp \T2A\cyrr \T2A\cyro \T2A\cyrs  \T2A\cyrp \T2A\cyrr \T2A\cyro \T2A\cyri \T2A\cyrz \T2A\cyro \T2A\cyrsh \T2A\cyre \T2A\cyrd \T2A\cyrsh \T2A\cyri \T2A\cyrh  \T2A\cyrs \T2A\cyro \T2A\cyrb \T2A\cyrery \T2A\cyrt \T2A\cyri \T2A\cyrishrt "];
+event_loop->worker[label="\T2A\CYRV \T2A\cyrery \T2A\cyrd \T2A\cyra \T2A\cyrch \T2A\cyra  \T2A\cyrp \T2A\cyrr \T2A\cyro \T2A\cyri \T2A\cyrz \T2A\cyro \T2A\cyrsh \T2A\cyre \T2A\cyrd \T2A\cyrsh \T2A\cyri \T2A\cyrh  \T2A\cyrs \T2A\cyro \T2A\cyrb \T2A\cyrery \T2A\cyrt \T2A\cyri \T2A\cyrishrt "]
+handler->worker[style=dotted];
+handler->event_loop[style=dotted];
+worker->handler[label="\T2A\CYRV \T2A\cyrery \T2A\cyrz \T2A\cyro \T2A\cyrv "];
+
+worker->md[label="\T2A\CYRS \T2A\cyro \T2A\cyrz \T2A\cyrd \T2A\cyra \T2A\cyrt \T2A\cyrsftsn  \T2A\cyrp \T2A\cyri \T2A\cyrs \T2A\cyrsftsn \T2A\cyrm \T2A\cyro "]
+
+}

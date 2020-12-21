@@ -5,7 +5,7 @@ PATH_INCLUDE_TEX = $(PATH_TEX)/include
 COV_REPORT = coverage_report.info
 COV_TEXGEN = perl $(UTILS)/lcov-latex/gentex
 #PDF = pdflatex -interaction nonstopmode -halt-on-error
-PDF = pdflatex -interaction nonstopmode
+PDF = pdflatex -shell-escape -interaction nonstopmode
 CFLOW = cflow --level "0= "
 CFLOW2DOT = python $(UTILS)/cflow2dot
 CFLOWFILES = $(shell find $(ROOT)/$(SRC_DIR) -name "*.c")
