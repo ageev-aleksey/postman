@@ -237,6 +237,7 @@ bool log_init(log_context *context) {
     log_console_printer stderr_printer;
     stderr_printer.level = DEBUG_LEVEL;
     stderr_printer.handler = pr_printer_in_console;
+    stderr_printer.type = LOG_PRINTER_CONSOLE;
     printer_t *ptr = (printer_t*)&stderr_printer;
     VECTOR_PUSH_BACK(printer_t, context->printers, *ptr, err);
     if (err.error) {
