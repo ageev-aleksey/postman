@@ -13,7 +13,7 @@ void exit_handler(int sig) {
 }
 
 int init_signals_handler() {
-    struct sigaction act;
+    struct sigaction act = { 0 };
     act.sa_handler = exit_handler;
 
     sigemptyset(&act.sa_mask);

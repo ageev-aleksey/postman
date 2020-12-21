@@ -1,6 +1,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <string.h>
+#include <ctype.h>
 #include "maildir.h"
 #include "logs.h"
 #include "util.h"
@@ -9,17 +10,13 @@
 #define DIRECTORY_CUR_MESSAGES "cur"
 #define DIRECTORY_OTHER_SERVERS ".OTHER_SERVERS"
 
-void update_maildir(maildir_main *maildir);
-
-void output_maildir(maildir_main *maildir);
-
 void read_maildir_servers_new(maildir_main *maildir);
 
 void read_maildir_user_new(maildir_user *maildir_user);
 
 void read_new_messages_list(maildir_user *maildir_user);
 
-message *read_message(char *filepath);
+pair* check_message_header(char *line);
 
 maildir_main *init_maildir(char *directory) {
     LOG_INFO("Инициализация maildir", NULL);
@@ -41,7 +38,6 @@ maildir_main *init_maildir(char *directory) {
 }
 
 void update_maildir(maildir_main *maildir) {
-    LOG_DEBUG("Чтение структуры maildir", NULL);
     if (maildir->directory == NULL) {
         LOG_ERROR("Ошибка чтения структуры maildir: директория не найдена", NULL);
         return;
@@ -94,8 +90,6 @@ void read_maildir_user_new(maildir_user *user) {
         return;
     }
 
-    LOG_DEBUG("Чтение сообщений пользователя: %s (%s)", user->username, user->directory);
-
     struct stat stat_info;
     if (!stat(user->directory, &stat_info)) {
         if (!S_ISDIR(stat_info.st_mode)) {
@@ -119,7 +113,6 @@ void read_maildir_user_new(maildir_user *user) {
 }
 
 void read_new_messages_list(maildir_user *user) {
-    LOG_DEBUG("Чтение сообщение пользователя: %s", user->username);
 
     char *user_fulldir_new;
     asprintf(&user_fulldir_new, "%s/%s", user->directory, DIRECTORY_NEW_MESSAGES);
@@ -168,8 +161,6 @@ void read_maildir_servers_new(maildir_main *maildir) {
     char *path_new;
     asprintf(&path_new, "%s/%s/%s", maildir->directory, DIRECTORY_OTHER_SERVERS, DIRECTORY_NEW_MESSAGES);
 
-    LOG_DEBUG("Чтение сообщений пользователей: %s (%s)", maildir->servers, path_new);
-
     struct stat stat_info;
     if (!stat(path_new, &stat_info)) {
         if (!S_ISDIR(stat_info.st_mode)) {
@@ -203,14 +194,113 @@ void read_maildir_servers_new(maildir_main *maildir) {
 message *read_message(char *filepath) {
     FILE *fp;
     if ((fp = fopen(filepath, "r")) != NULL) {
-        char *message = allocate_memory(256);
-        while ((fgets(message, 256, fp)) != NULL) {
-            LOG_INFO("%s", message);
+        message *mes = allocate_memory(sizeof(*mes));
+
+        char *read_string = allocate_memory(256);
+        while ((fgets(read_string, 256, fp)) != NULL) {
+            trim(read_string);
+            if (strcmp(read_string, "\r\n") == 0) {
+                break;
+            }
+
+            pair *p = check_message_header(read_string);
+            if (p != NULL) {
+                if (strcmp(p->first, "X-POSTMAN-FROM") == 0) {
+                    mes->from = p->second;
+                } else if (strcmp(p->first, "X-POSTMAN-TO") == 0) {
+                    mes->to = p->second;
+                } else if (strcmp(p->first, "X-POSTMAN-DATE") == 0) {
+                    mes->date = p->second;
+                }
+                LOG_INFO("%s/%s", p->first, p->second);
+            }
+            free(p);
         }
+
+        int strings_count = 0;
+        mes->strings = allocate_memory(sizeof(mes->strings));
+        while (fgets(read_string, 256, fp) != NULL) {
+            if (mes->strings != NULL) {
+                mes->strings = reallocate_memory(mes->strings, sizeof(mes->strings) * (strings_count + 1));
+            }
+            asprintf(&mes->strings[strings_count], "%s", read_string);
+            strings_count++;
+        }
+
+        if (feof(fp)) {
+            mes->strings_size = strings_count;
+            asprintf(&mes->directory, "%s", filepath);
+        } else {
+            LOG_ERROR("Ошибка чтения файла", NULL);
+        }
+
         fclose(fp);
-        free(message);
+        free(read_string);
+        return mes;
     }
-    free(filepath);
+
+    return NULL;
+}
+
+pair* check_message_header(char *line) {
+    if (line == NULL) {
+        LOG_ERROR("Ошибка считывания заголовка в сообщении", NULL);
+        return NULL;
+    }
+
+    pair *p = allocate_memory(sizeof(*p));
+
+    string_tokens tokens = split(line, ":");
+
+    if (tokens.tokens != NULL) {
+        char *str = tokens.tokens[0].chars;
+        for (int i = 0; i < strlen(str); i++) {
+            str[i] = toupper(str[i]);
+        }
+
+        if (strstr(str, "X-POSTMAN-FROM") != NULL) {
+            asprintf(&p->first, "%s", "X-POSTMAN-FROM");
+            if (tokens.count_tokens == 2) {
+                str = tokens.tokens[1].chars;
+                trim(str);
+                if (str[strlen(str) - 1] == '\n' && str[strlen(str) - 2] == '\r') {
+                    str[strlen(str) - 1] = 0;
+                    str[strlen(str) - 1] = 0;
+                }
+                asprintf(&p->second, "%s", tokens.tokens[1].chars);
+            }
+            free_string_tokens(&tokens);
+            return p;
+        } else if (strstr(str, "X-POSTMAN-TO") != NULL) {
+            asprintf(&p->first, "%s", "X-POSTMAN-TO");
+            if (tokens.count_tokens == 2) {
+                str = tokens.tokens[1].chars;
+                trim(str);
+                if (str[strlen(str) - 1] == '\n' && str[strlen(str) - 2] == '\r') {
+                    str[strlen(str) - 1] = 0;
+                    str[strlen(str) - 1] = 0;
+                }
+                asprintf(&p->second, "%s", tokens.tokens[1].chars);
+            }
+            free_string_tokens(&tokens);
+            return p;
+        } else if (strstr(str, "X-POSTMAN-DATE") != NULL) {
+            asprintf(&p->first, "X-POSTMAN-DATE");
+            if (tokens.count_tokens == 2) {
+                str = tokens.tokens[1].chars;
+                trim(str);
+                if (str[strlen(str) - 1] == '\n' && str[strlen(str) - 2] == '\r') {
+                    str[strlen(str) - 1] = 0;
+                    str[strlen(str) - 1] = 0;
+                }
+                asprintf(&p->second, "%s", tokens.tokens[1].chars);
+            }
+            free_string_tokens(&tokens);
+            return p;
+        }
+    }
+
+    return NULL;
 }
 
 void output_maildir(maildir_main *maildir) {
@@ -238,4 +328,49 @@ void output_maildir(maildir_main *maildir) {
             }
         }
     }
+}
+
+void remove_message(maildir_main *maildir, message *mes) {
+    if (mes == NULL || mes->directory == NULL) {
+        LOG_ERROR("Невозможно удалить сообщение: mes = NULL || mes->directory == NULL", NULL);
+        return;
+    }
+
+    struct stat stat_info;
+    if (!stat(mes->directory, &stat_info)) {
+        if (!S_ISREG(stat_info.st_mode)) {
+            LOG_ERROR("Ошибка удаления письма: %s - не файл", mes->directory);
+            return;
+        }
+    }
+
+    if (strstr(mes->directory, DIRECTORY_OTHER_SERVERS) != NULL) {
+        if (remove(mes->directory) != 0) {
+            LOG_ERROR("Не удалось удалить письмо", NULL);
+            return;
+        }
+
+        if (maildir->servers.message_full_file_names != NULL) {
+            for (int i = 0; i < maildir->servers.messages_size; i++) {
+                if (strcmp(maildir->servers.message_full_file_names[i], mes->directory) == 0) {
+                    int j = i;
+                    while (j < maildir->servers.messages_size - 1) {
+                        maildir->servers.message_full_file_names[j] = maildir->servers.message_full_file_names[j + 1];
+                        j++;
+                    }
+                    maildir->servers.messages_size--;
+                }
+            }
+        }
+    }
+
+    free(mes->directory);
+    free(mes->to);
+    free(mes->from);
+    free(mes->date);
+    for (int i = 0; i < mes->strings_size; i++) {
+        free(mes->strings[i]);
+    }
+    free(mes->strings);
+    free(mes);
 }

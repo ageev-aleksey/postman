@@ -175,7 +175,7 @@ state_code init_to_header(smtp_context *smtp_cont) {
     return smtp_cont->state_code;
 }
 
-state_code smtp_data(smtp_context *smtp_cont, char *message) {
+state_code smtp_data(smtp_context *smtp_cont) {
     init_to_header(smtp_cont);
 
     if (send_smtp_request(smtp_cont, "DATA\r\n") == OK) {
@@ -189,52 +189,27 @@ state_code smtp_data(smtp_context *smtp_cont, char *message) {
         free(response.message);
     }
 
-    char *result_message = NULL;
-    for (int i = 0; i < smtp_cont->num_headers; i++) {
-        if (smtp_cont->header_list && smtp_cont->header_list[i].value != NULL) {
-            if (result_message == NULL) {
-                result_message = allocate_memory(strlen(smtp_cont->header_list[i].key)
-                        + strlen(smtp_cont->header_list[i].value) + 10);
-                strcpy(result_message, smtp_cont->header_list[i].key);
-                strcat(result_message, ": ");
-                strcat(result_message, smtp_cont->header_list[i].value);
-                strcat(result_message, "\r\n");
-            } else {
-                result_message = reallocate_memory(result_message, strlen(result_message) + strlen(smtp_cont->header_list[i].key)
-                                        + strlen(smtp_cont->header_list[i].value) + 10);
-                strcat(result_message, smtp_cont->header_list[i].key);
-                strcat(result_message, ": ");
-                strcat(result_message, smtp_cont->header_list[i].value);
-                strcat(result_message, "\r\n");
-            }
-        }
-    }
+    return smtp_cont->state_code;
+}
 
-    if (result_message == NULL) {
-        result_message = allocate_memory(strlen(result_message) + 1);
-        strcpy(result_message, "\r\n");
-        strcat(result_message, message);
-    } else {
-        result_message = reallocate_memory(result_message,strlen(result_message) + strlen(message) + 3);
-        strcat(result_message, "\r\n");
-        strcat(result_message, message);
-    }
+state_code smtp_message(smtp_context *smtp_cont, char *message) {
+    if (send_smtp_request(smtp_cont, message) == OK) {}
 
-    if (send_smtp_request(smtp_cont, result_message) == OK) {
+    return smtp_cont->state_code;
+}
+
+state_code smtp_send_dot(smtp_context *smtp_cont) {
+    if (send_smtp_request(smtp_cont, "\r\n.\r\n") == OK) {
         smtp_response response = get_smtp_response(smtp_cont);
 
         LOG_INFO("Response <send message from %s to %s>: %d, %s", smtp_cont->from.email, smtp_cont->to->email,
                  response.status_code, response.message);
         if (!is_smtp_success(response.status_code)) {
-            free(result_message);
             free(response.message);
             return smtp_cont->state_code;
         }
         free(response.message);
     }
-
-    free(result_message);
-    return smtp_cont->state_code;
 }
 
 state_code smtp_rset(smtp_context *smtp_cont) {
@@ -290,10 +265,10 @@ smtp_response get_smtp_response(smtp_context *smtp_cont) {
         return smtp_response;
     }
 
+    int i = 0;
     char code[3];
-    size_t i = 0;
     size_t size_str = strlen(buffer);
-    for (; i < size_str; i++) {
+    for (; i < 3; i++) {
         if (buffer[i] == ' ') {
             break;
         }
@@ -371,28 +346,33 @@ int smtp_connect(char *server, char *port, smtp_context *smtp_cont) {
         exit(-1);
     }
 
-    asprintf(&serv_domain, "%s", server);
-    smtp_ip = get_ip_by_hostname(serv_domain);
+    char *mxx[10];
+    int len = resolvmx(server, mxx, 10);
 
-    server_addr.sin_family = PF_INET;
-    memset(&(server_addr.sin_zero), 0, sizeof(server_addr.sin_zero));
-    server_addr.sin_port = htons(convert_string_to_long_int(port));
+    for (int i = 0; i < len; i++) {
+        asprintf(&serv_domain, "%s", server);
+        smtp_ip = get_ip_by_hostname(mxx[i]);
 
-    for (int i = 0; i < smtp_ip->num_ips; i++) {
+        server_addr.sin_family = PF_INET;
+        memset(&(server_addr.sin_zero), 0, sizeof(server_addr.sin_zero));
+        server_addr.sin_port = htons(convert_string_to_long_int(port));
 
-        inet_aton(smtp_ip[i].ip, &(server_addr.sin_addr));
+        for (int j = 0; j < smtp_ip->num_ips; i++) {
 
-        socklen_t socklen = sizeof(struct sockaddr);
+            inet_aton(smtp_ip[i].ip, &(server_addr.sin_addr));
 
-        if (connect(server_socket, (struct sockaddr*) &server_addr, socklen) == -1 && errno != EINPROGRESS) {
-            LOG_ERROR("Ошибка в открытие сокетного соединения с SMTP-сервером", NULL);
-            continue;
-        } else {
-            smtp_cont->socket_desc = server_socket;
+            socklen_t socklen = sizeof(struct sockaddr);
 
-            free(smtp_ip);
-            free(serv_domain);
-            return 0;
+            if (connect(server_socket, (struct sockaddr *) &server_addr, socklen) == -1 && errno != EINPROGRESS) {
+                LOG_ERROR("Ошибка в открытие сокетного соединения с SMTP-сервером", NULL);
+                continue;
+            } else {
+                smtp_cont->socket_desc = server_socket;
+
+                free(smtp_ip);
+                free(serv_domain);
+                return 0;
+            }
         }
     }
 

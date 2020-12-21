@@ -121,7 +121,9 @@ state_code smtp_helo(smtp_context *smtp_cont);
 state_code smtp_ehlo(smtp_context *smtp_cont);
 state_code smtp_mail(smtp_context *smtp_cont, char *from_email, char *from_name);
 state_code smtp_rcpt(smtp_context *smtp_cont, char *to_email, char *from_name);
-state_code smtp_data(smtp_context *smtp_cont, char *message);
+state_code smtp_data(smtp_context *smtp_cont);
+state_code smtp_message(smtp_context *smtp_cont, char *message);
+state_code smtp_send_dot(smtp_context *smtp_cont);
 state_code smtp_rset(smtp_context *smtp_cont);
 state_code smtp_quit(smtp_context *smtp_cont);
 

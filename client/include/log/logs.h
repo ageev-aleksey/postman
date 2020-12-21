@@ -54,18 +54,14 @@ typedef struct log {
     struct tm time;
 } log;
 
-typedef struct node {
-    log *data;
-    TAILQ_ENTRY(node) nodes;
-} node;
-
 extern int interrupt_thread_local;
 
-void start_logger();
 void log_debug(char *message, char *filename, int line, ...);
 void log_info(char *message, char *filename, int line, ...);
 void log_error(char *message, char *filename, int line, ...);
 void log_warn(char *message, char *filename, int line, ...);
 void log_addinfo(char *message, ...);
+
+void start_logger();
 void logger_finalize();
 

@@ -8,7 +8,7 @@ UTIL_INCLUDES = -I$(ROOT)include/util
 CONTEXT_INCLUDES = -I$(ROOT)include/context
 INCLUDES += -I$(ROOT)include $(CONFIG_INCLUDES) $(LOG_INCLUDES) $(MAILDIR_INCLUDES)
 INCLUDES += $(SMTP_INCLUDES) $(UTIL_INCLUDES) $(CONTEXT_INCLUDES)
-LIBS = -lconfig -lpthread
+LIBS = -lconfig -lpthread -lresolv
 
 SRC_DIR = $(ROOT)src
 TEST_DIR = $(ROOT)test

@@ -27,7 +27,7 @@ string_tokens split(const char *const str, const char *const delim) {
     string *tokens = allocate_memory((sizeof(*tokens)));
 
     string *token = allocate_memory(sizeof(*token));
-    token->chars = 0;
+    token->chars = NULL;
     token->length = 0;
 
     for (int i = 0; i < strlen(str) + 1; i++) {
@@ -57,7 +57,9 @@ string_tokens split(const char *const str, const char *const delim) {
 }
 
 void free_string_tokens(string_tokens *tokens) {
-    free_string(tokens->tokens);
+    for (int i = 0; i < tokens->count_tokens; i++) {
+        free(tokens->tokens[i].chars);
+    }
 }
 
 string *get_string_from_characters(string *str, char *characters) {
@@ -86,22 +88,19 @@ string *get_string_from_characters(string *str, char *characters) {
 
 string *add_character(string *str, char character) {
     size_t capacity = str->length + 1;
-    char *s;
     if (str->chars == NULL) {
         str->length = 0;
-        s = (char *) allocate_memory(sizeof(char));
+        str->chars = allocate_memory(sizeof(char));
     }
 
-    s[(str->length)++] = character;
+    str->chars[(str->length)++] = character;
 
     if (str->length >= capacity) {
         capacity *= 2; // увеличиваем ёмкость строки в два раза
-        s = (char *) reallocate_memory(s, capacity); // создаём новую строку с увеличенной ёмкостью
+        str->chars = (char *) reallocate_memory(str->chars, capacity); // создаём новую строку с увеличенной ёмкостью
     }
 
-    s[str->length] = '\0';
-
-    str->chars = s;
+    str->chars[str->length] = '\0';
 
     return str;
 }
@@ -111,7 +110,7 @@ void free_string(string *str) {
     free(str);
 }
 
-void* allocate_memory(size_t bytes) {
+void *allocate_memory(size_t bytes) {
     void *buffer = malloc(bytes);
 
     if (buffer != NULL) {
@@ -122,7 +121,7 @@ void* allocate_memory(size_t bytes) {
     return NULL;
 }
 
-void* reallocate_memory(void *buffer, size_t bytes) {
+void *reallocate_memory(void *buffer, size_t bytes) {
     buffer = realloc(buffer, bytes);
 
     if (buffer != NULL) {
@@ -131,4 +130,68 @@ void* reallocate_memory(void *buffer, size_t bytes) {
 
     LOG_ERROR("Ошибка перераспределения памяти", NULL);
     return NULL;
+}
+
+void trim(char *str) {
+    {
+        // удаляем пробелы и табы с начала строки:
+        size_t i = 0, j;
+        while ((str[i] == ' ') || (str[i] == '\t')) {
+            i++;
+        }
+        if (i > 0) {
+            for (j = 0; j < strlen(str); j++) {
+                str[j] = str[j + i];
+            }
+            str[j] = '\0';
+        }
+
+        // удаляем пробелы и табы с конца строки:
+        i = strlen(str) - 1;
+        while ((str[i] == ' ') || (str[i] == '\t')) {
+            i--;
+        }
+        if (i < (strlen(str) - 1)) {
+            str[i + 1] = '\0';
+        }
+    }
+}
+
+int resolvmx(const char *name, char **mxs, int limit) {
+    unsigned char response[NS_PACKETSZ];  /* big enough, right? */
+    ns_msg handle;
+    ns_rr rr;
+    int mx_index, ns_index, len;
+    char dispbuf[4096];
+
+    if ((len = res_search(name, C_IN, T_MX, response, sizeof(response))) < 0) {
+        /* WARN: res_search failed */
+        return -1;
+    }
+
+    if (ns_initparse(response, len, &handle) < 0) {
+        /* WARN: ns_initparse failed */
+        return 0;
+    }
+
+    len = ns_msg_count(handle, ns_s_an);
+    if (len < 0)
+        return 0;
+
+    for (mx_index = 0, ns_index = 0;
+         mx_index < limit && ns_index < len;
+         ns_index++) {
+        if (ns_parserr(&handle, ns_s_an, ns_index, &rr)) {
+            /* WARN: ns_parserr failed */
+            continue;
+        }
+        ns_sprintrr (&handle, &rr, NULL, NULL, dispbuf, sizeof (dispbuf));
+        if (ns_rr_class(rr) == ns_c_in && ns_rr_type(rr) == ns_t_mx) {
+            char mxname[MAXDNAME];
+            dn_expand(ns_msg_base(handle), ns_msg_base(handle) + ns_msg_size(handle), ns_rr_rdata(rr) + NS_INT16SZ, mxname, sizeof(mxname));
+            mxs[mx_index++] = strdup(mxname);
+        }
+    }
+
+    return mx_index;
 }

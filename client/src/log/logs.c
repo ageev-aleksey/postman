@@ -3,11 +3,16 @@
 #include "logs.h"
 #include "config.h"
 
-TAILQ_HEAD(logs_queue, node) head;
+typedef struct node {
+    log *data;
+    TAILQ_ENTRY(node) nodes;
+} node;
 
 int interrupt_thread_local = 0;
 pthread_t *thread_logger = NULL;
 pthread_mutex_t mutex_queue;
+
+TAILQ_HEAD(logs_queue, node) head;
 
 void init_logs() {
     TAILQ_INIT(&head);
