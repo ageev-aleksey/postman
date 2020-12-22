@@ -39,13 +39,21 @@ bool loading_config() {
         LOG_INFO("Режим DEBUG активен", NULL);
     }
 
-    config_context.maildir.path = allocate_memory(strlen(maildir_path) + 1);
-    strcpy(config_context.maildir.path, maildir_path);
+    const char *hostname = NULL;
+    if (!config_lookup_string(&cfg, "application.hostname", &hostname)) {
+        LOG_ERROR("Ошибка получения конфигурации: application.maildir.path", NULL);
+        return false;
+    }
+
+    asprintf(&config_context.maildir.path, "%s", maildir_path);
     config_context.threads = threads;
     config_context.debug = debug;
+    asprintf(&config_context.hostname, "%s", hostname);
 
-    LOG_DEBUG("Конфигурация - application.maildir.path = '%s'", maildir_path);
-    LOG_INFO("Конфигурация - application.threads = %d", threads);
+    LOG_INFO("Конфигурация - application.maildir.path = '%s'", config_context.maildir.path);
+    LOG_INFO("Конфигурация - application.threads = %d", config_context.threads);
+    LOG_INFO("Конфигурация - application.debug = %d", config_context.debug);
+    LOG_INFO("Конфигурация - application.hostname = %s", config_context.hostname);
 
     config_destroy(&cfg);
     return true;

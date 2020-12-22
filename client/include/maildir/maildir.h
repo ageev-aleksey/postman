@@ -3,9 +3,9 @@
 typedef struct message {
     char *from;
     char *to;
-    char *date;
     char **strings;
     char *directory;
+    char *address;
     int strings_size;
 } message;
 

@@ -210,7 +210,8 @@ message *read_message(char *filepath) {
                 } else if (strcmp(p->first, "X-POSTMAN-TO") == 0) {
                     mes->to = p->second;
                 } else if (strcmp(p->first, "X-POSTMAN-DATE") == 0) {
-                    mes->date = p->second;
+                   // mes->date = p->second;
+                   // TODO: пока игнорирую дату, а нужна ли она вообще?
                 }
                 LOG_INFO("%s/%s", p->first, p->second);
             }
@@ -367,7 +368,6 @@ void remove_message(maildir_main *maildir, message *mes) {
     free(mes->directory);
     free(mes->to);
     free(mes->from);
-    free(mes->date);
     for (int i = 0; i < mes->strings_size; i++) {
         free(mes->strings[i]);
     }

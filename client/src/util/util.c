@@ -1,4 +1,9 @@
 #include <string.h>
+#include <netdb.h>
+#include <resolv.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <fcntl.h>
 #include "logs.h"
 #include "util.h"
 
@@ -132,6 +137,17 @@ void *reallocate_memory(void *buffer, size_t bytes) {
     return NULL;
 }
 
+void *callocate_memory(size_t size, size_t bytes) {
+    void *buffer = calloc(size, bytes);
+
+    if (buffer != NULL) {
+        return buffer;
+    }
+
+    LOG_ERROR("Ошибка выделения памяти", NULL);
+    return NULL;
+}
+
 void trim(char *str) {
     {
         // удаляем пробелы и табы с начала строки:
@@ -155,6 +171,40 @@ void trim(char *str) {
             str[i + 1] = '\0';
         }
     }
+}
+
+char *get_addr_by_socket(int socket) {
+    struct sockaddr_in client_addr;
+    socklen_t s_len = sizeof(struct sockaddr);
+    if (getpeername(socket, (struct sockaddr *) &client_addr, &s_len) == -1) {
+        LOG_ERROR("Невозможно получить имя по сокету", NULL);
+        return NULL;
+    }
+    char *addr;
+    asprintf(&addr, "%s:%d", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+    client_addr.sin_addr;
+
+    return addr;
+}
+
+ips get_ips_by_hostname(char *hostname) {
+    struct hostent *hostent;
+    struct in_addr **addr_list;
+    ips ips = {0};
+
+    if ((hostent = gethostbyname(hostname)) == NULL) {
+        LOG_ERROR("Ошибка в получении адреса по доменному имени", NULL);
+        return ips;
+    }
+
+    addr_list = (struct in_addr **) hostent->h_addr_list;
+
+    for (int i = 0; addr_list[i] != NULL; i++) {
+        ips.ip[i] = strdup(inet_ntoa(*addr_list[i]));
+        ips.ips_size++;
+    }
+
+    return ips;
 }
 
 int resolvmx(const char *name, char **mxs, int limit) {
@@ -185,13 +235,23 @@ int resolvmx(const char *name, char **mxs, int limit) {
             /* WARN: ns_parserr failed */
             continue;
         }
-        ns_sprintrr (&handle, &rr, NULL, NULL, dispbuf, sizeof (dispbuf));
+        ns_sprintrr(&handle, &rr, NULL, NULL, dispbuf, sizeof(dispbuf));
         if (ns_rr_class(rr) == ns_c_in && ns_rr_type(rr) == ns_t_mx) {
             char mxname[MAXDNAME];
-            dn_expand(ns_msg_base(handle), ns_msg_base(handle) + ns_msg_size(handle), ns_rr_rdata(rr) + NS_INT16SZ, mxname, sizeof(mxname));
+            dn_expand(ns_msg_base(handle), ns_msg_base(handle) + ns_msg_size(handle), ns_rr_rdata(rr) + NS_INT16SZ,
+                      mxname, sizeof(mxname));
             mxs[mx_index++] = strdup(mxname);
         }
     }
 
     return mx_index;
+}
+
+bool set_socket_blocking_enabled(int socket, bool blocking) {
+    if (socket < 0) return false;
+
+    int flags = fcntl(socket, F_GETFL, 0);
+    if (flags == -1) return false;
+    flags = blocking ? (flags & ~O_NONBLOCK) : (flags | O_NONBLOCK);
+    return (fcntl(socket, F_SETFL, flags) == 0) ? true : false;
 }

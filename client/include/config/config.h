@@ -5,14 +5,15 @@
 
 #define APPLICATION_CONFIG "resources/application.cfg"
 
-typedef struct s_maildir_config {
+typedef struct maildir_config {
     char *path;
 } maildir_config;
 
-typedef struct s_config {
+typedef struct config {
     int threads;
     maildir_config maildir;
     int debug;
+    char *hostname;
 } config;
 
 config config_context;
