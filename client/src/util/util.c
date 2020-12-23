@@ -1,5 +1,5 @@
 #include <string.h>
-#include "logs.h"
+#include "log/logs.h"
 #include "util.h"
 
 // TODO: внимательно все проверить, отрефакторить, написать тесты

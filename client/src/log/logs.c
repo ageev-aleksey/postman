@@ -1,7 +1,7 @@
 #include <signal.h>
-#include "util.h"
+#include "util/util.h"
+#include "config/config.h"
 #include "logs.h"
-#include "config.h"
 
 // TODO: внимательно все проверить, отрефакторить, написать тесты
 

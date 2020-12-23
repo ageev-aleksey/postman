@@ -1,9 +1,8 @@
-#include "util.h"
+#include "util/util.h"
+#include "log/logs.h"
 #include "config.h"
-#include "logs.h"
 
 // TODO: внимательно все проверить
-// TODO: разделить инклуды на корректные папки в Makefile
 // TODO: добавить сборку тестов и gitlab
 // TODO: добавить обработку ошибок, где это возможно
 

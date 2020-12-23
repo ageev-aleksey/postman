@@ -1,8 +1,8 @@
-#include "config.h"
+#include "config/config.h"
+#include "util/util.h"
+#include "util/network.h"
+#include "log/logs.h"
 #include "smtp.h"
-#include "util.h"
-#include "network.h"
-#include "logs.h"
 
 #define MAX_MX_ADDRS 10
 

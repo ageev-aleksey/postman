@@ -1,10 +1,10 @@
-#include <config.h>
-#include "maildir.h"
-#include "util.h"
-#include "network.h"
+#include "config/config.h"
+#include "maildir/maildir.h"
+#include "util/util.h"
+#include "util/network.h"
+#include "smtp/smtp.h"
+#include "log/logs.h"
 #include "context.h"
-#include "smtp.h"
-#include "logs.h"
 
 typedef struct multiplex_context {
     smtp_context *smtp_context;

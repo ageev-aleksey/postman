@@ -6,8 +6,7 @@ MAILDIR_INCLUDES = -I$(ROOT)include/maildir
 SMTP_INCLUDES = -I$(ROOT)include/smtp
 UTIL_INCLUDES = -I$(ROOT)include/util
 CONTEXT_INCLUDES = -I$(ROOT)include/context
-INCLUDES += -I$(ROOT)include $(CONFIG_INCLUDES) $(LOG_INCLUDES) $(MAILDIR_INCLUDES)
-INCLUDES += $(SMTP_INCLUDES) $(UTIL_INCLUDES) $(CONTEXT_INCLUDES)
+INCLUDES = -I$(ROOT)include
 LIBS = -lconfig -lpthread -lresolv
 
 SRC_DIR = $(ROOT)src

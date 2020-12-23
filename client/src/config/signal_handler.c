@@ -1,6 +1,6 @@
 #include <signal.h>
-#include "context.h"
-#include "logs.h"
+#include "context/context.h"
+#include "log/logs.h"
 
 void exit_handler(int sig) {
     LOG_INFO("Получен сигнал %d. Завершение работы программы и освобождение всех ресурсов", sig);

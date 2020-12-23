@@ -2,9 +2,9 @@
 #include <sys/stat.h>
 #include <string.h>
 #include <ctype.h>
+#include "log/logs.h"
+#include "util/util.h"
 #include "maildir.h"
-#include "logs.h"
-#include "util.h"
 
 #define DIRECTORY_NEW_MESSAGES "new"
 #define DIRECTORY_CUR_MESSAGES "cur"

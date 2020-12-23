@@ -19,4 +19,5 @@ typedef struct config {
 
 config config_context;
 bool loading_config();
+int init_signals_handler();
 bool destroy_configuration();
