@@ -220,7 +220,7 @@ void read_maildir_servers_new(maildir_other_server *server) {
     int messages_count = 0;
     server->message_full_file_names = allocate_memory(sizeof(server->message_full_file_names));
     while (entry != NULL) {
-        if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
+        if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0 && strcmp(entry->d_name, "tmp") != 0) {
             messages_count++;
             server->message_full_file_names = reallocate_memory(server->message_full_file_names,
                                                                          sizeof(server->message_full_file_names)

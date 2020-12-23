@@ -75,11 +75,12 @@ smtp_context* smtp_connect(char *server, char *port, smtp_context *context) {
             ips = get_ips_by_hostname(mxs[i]);
 
             int server_socket;
-            if ((server_socket = server_connect(ips, "25")) != -1) {
+            if ((server_socket = server_connect(ips, port)) != -1) {
                 context->socket_desc = server_socket;
                 context->state_code = SMTP_CONNECT;
 
-                LOG_INFO("Успешное подключение к %s по адресу: %s:25", server, get_addr_by_socket(server_socket));
+                LOG_INFO("Успешное подключение к %s по адресу: %s:%s", server,
+                         get_addr_by_socket(context->socket_desc), port);
 
                 break;
             }
@@ -202,7 +203,7 @@ state_code smtp_send_end_message(smtp_context *context) {
 
 state_code smtp_send_rset(smtp_context *context) {
     if (send_smtp_request(context, "RSET\r\n") != SMTP_INVALID) {
-        context->state_code = SMTP_RSET;
+        context->state_code = SMTP_CONNECT;
         LOG_INFO("Request <%s>: %s", get_addr_by_socket(context->socket_desc), "RSET");
     }
 

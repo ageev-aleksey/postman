@@ -67,7 +67,6 @@ char *get_addr_by_socket(int socket) {
     }
     char *addr;
     asprintf(&addr, "%s:%d", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
-    client_addr.sin_addr;
 
     return addr;
 }

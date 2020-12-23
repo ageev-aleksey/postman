@@ -1,6 +1,7 @@
 #include <signal.h>
 #include "context/context.h"
 #include "log/logs.h"
+#include "config.h"
 
 void exit_handler(int sig) {
     LOG_INFO("Получен сигнал %d. Завершение работы программы и освобождение всех ресурсов", sig);
@@ -11,6 +12,7 @@ void exit_handler(int sig) {
 
     interrupt_thread_local = 1;
     logger_finalize();
+    destroy_configuration();
 }
 
 int init_signals_handler() {
