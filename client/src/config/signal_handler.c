@@ -5,14 +5,7 @@
 
 void exit_handler(int sig) {
     LOG_INFO("Получен сигнал %d. Завершение работы программы и освобождение всех ресурсов", sig);
-    struct timespec timespec;
-    timespec.tv_nsec = 0;
-    timespec.tv_sec = 10;
-    nanosleep(&timespec, &timespec);
-
     interrupt_thread_local = 1;
-    logger_finalize();
-    destroy_configuration();
 }
 
 int init_signals_handler() {

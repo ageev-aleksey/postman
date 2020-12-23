@@ -26,7 +26,7 @@ int init_context() {
     struct sigaction act = {0};
 
     memset(&act, 0, sizeof(act));
-    act.sa_handler = pselect_close_connection;
+    act.sa_handler = exit_handler;
     sigaction(SIGTERM, &act, 0);
     sigemptyset(&mask);
     sigaddset(&mask, SIGTERM);
@@ -90,7 +90,7 @@ void *start_thread(thread *thr) {
         int ret = pselect(app_context.fdmax, &app_context.read_fds,
                           &app_context.write_fds, NULL, &thr->tv, &orig_mask);
 
-        if (interrupt_thread_local) {
+        if (is_interrupt()) {
             break;
         }
 
@@ -164,7 +164,7 @@ void *start_thread(thread *thr) {
                         if (is_success_response(&thr->multiplex_context[i].smtp_context) &&
                             is_smtp_sender_ready(&thr->multiplex_context[i].smtp_context)) {
                             if (thr->multiplex_context[i].iteration < mess->to_size) {
-                                smtp_send_mail(&thr->multiplex_context[i].smtp_context, mess->to[thr->multiplex_context[i].iteration]);
+                                smtp_send_rcpt(&thr->multiplex_context[i].smtp_context, mess->to[thr->multiplex_context[i].iteration]);
                                 thr->multiplex_context[i].iteration++;
                             } else {
                                 thr->multiplex_context[i].iteration = 0;

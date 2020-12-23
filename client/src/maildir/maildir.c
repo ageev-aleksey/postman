@@ -240,19 +240,20 @@ message *read_message(char *filepath) {
         message *mes = allocate_memory(sizeof(*mes));
         memset(mes, 0, sizeof(*mes));
 
-        char *read_string = allocate_memory(256);
-        while ((fgets(read_string, 256, fp)) != NULL) {
-            trim(read_string);
-            if (strcmp(read_string, "\n") == 0 || strcmp(read_string, "\r\n") == 0) {
+        char *string;
+        while ((string = file_readline(fp)) != NULL) {
+            trim(string);
+
+            if (strcmp(string, "\n") == 0 || strcmp(string, "\r\n") == 0) {
                 break;
             }
 
-            pair *p = check_message_header(read_string);
+            pair *p = check_message_header(string);
             if (p != NULL) {
                 if (strcmp(p->first, "X-POSTMAN-FROM") == 0) {
                     string_tokens tokens = split(p->second, ",");
                     mes->from_size = tokens.count_tokens;
-                    mes->from = callocate_memory(mes->from_size, sizeof(**mes->from));
+                    mes->from = callocate_memory(mes->from_size, sizeof(*mes->from));
                     for (size_t i = 0; i < mes->from_size; i++) {
                         mes->from[i] = tokens.tokens[i].chars;
                     }
@@ -260,8 +261,8 @@ message *read_message(char *filepath) {
                 } else if (strcmp(p->first, "X-POSTMAN-TO") == 0) {
                     string_tokens tokens = split(p->second, ",");
                     mes->to_size = tokens.count_tokens;
-                    mes->to = callocate_memory(mes->to_size, sizeof(**mes->to));
-                    mes->addresses = callocate_memory(1, sizeof(**mes->addresses));
+                    mes->to = callocate_memory(mes->to_size, sizeof(*mes->to));
+                    mes->addresses = callocate_memory(1, sizeof(*mes->addresses));
                     for (size_t i = 0; i < mes->to_size; i++) {
                         mes->to[i] = tokens.tokens[i].chars;
                         string_tokens ts = split(p->second, "@");
@@ -273,9 +274,7 @@ message *read_message(char *filepath) {
                                 }
                             }
                             if (flag) {
-                                mes->addresses = reallocate_memory(mes->addresses,
-                                                                   sizeof(**mes->addresses) *
-                                                                   (mes->addresses_size + 1));
+                                mes->addresses = reallocate_memory(mes->addresses,sizeof(*mes->addresses) * (mes->addresses_size + 1));
                                 mes->addresses[mes->addresses_size++] = ts.tokens[1].chars;
                             }
                         }
@@ -288,16 +287,18 @@ message *read_message(char *filepath) {
                 LOG_INFO("%s/%s", p->first, p->second);
             }
             free(p);
+            free(string);
         }
 
         int strings_count = 0;
-        mes->strings = allocate_memory(sizeof(mes->strings));
-        while (fgets(read_string, 256, fp) != NULL) {
+        mes->strings = allocate_memory(sizeof(*mes->strings));
+        while ((string = file_readline(fp)) != NULL) {
             if (mes->strings != NULL) {
                 mes->strings = reallocate_memory(mes->strings, sizeof(mes->strings) * (strings_count + 1));
             }
-            asprintf(&mes->strings[strings_count], "%s", read_string);
+            asprintf(&mes->strings[strings_count], "%s", string);
             strings_count++;
+            free(string);
         }
 
         if (feof(fp)) {
@@ -308,7 +309,6 @@ message *read_message(char *filepath) {
         }
 
         fclose(fp);
-        free(read_string);
         return mes;
     }
 

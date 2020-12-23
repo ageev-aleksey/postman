@@ -4,6 +4,8 @@
 
 // TODO: внимательно все проверить, отрефакторить, написать тесты
 
+pthread_mutex_t mutex_interrupt;
+
 long int convert_string_to_long_int(const char *str) {
     char *end;
     return strtol(str, &end, 10);
@@ -168,4 +170,34 @@ void trim(char *str) {
             str[i + 1] = '\0';
         }
     }
+}
+
+char* file_readline(FILE *fp) {
+    char read_string[256] = { 0 };
+    size_t offset = 0;
+    size_t size = 256;
+
+    char *string = allocate_memory(sizeof(char) * 256);
+    while ((fgets(read_string, 256, fp)) != NULL) {
+        if (offset >= size - 1) {
+            size = offset * 2;
+            string = reallocate_memory(string, sizeof(char) * size);
+        }
+
+        strcpy(string + offset, read_string);
+        offset += strlen(read_string);
+
+        if (string[offset - 1] == '\n') {
+            return string;
+        }
+    }
+    return NULL;
+}
+
+bool is_interrupt() {
+    bool interrupt = false;
+    pthread_mutex_lock(&mutex_interrupt);
+    interrupt = interrupt_thread_local;
+    pthread_mutex_unlock(&mutex_interrupt);
+    return interrupt;
 }

@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <stdarg.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 #define strsize(args...) snprintf(NULL, 0, args) + sizeof('\0')
 #define vstrsize(args...) snprintf(NULL, 0, args) + sizeof('\0')
@@ -34,3 +35,7 @@ void trim(char *str);
 void* allocate_memory(size_t bytes);
 void* reallocate_memory(void* buffer, size_t bytes);
 void* callocate_memory(size_t size, size_t bytes);
+
+char* file_readline(FILE *fp);
+
+bool is_interrupt();

@@ -16,7 +16,7 @@ BUILD_DIR = $(ROOT)build
 REPORT_DIR = $(ROOT)report
 RESOURCES_DIR = $(ROOT)resources
 CC = gcc
-CCFLAGS = -std=gnu99 -DDEBUG -D_GNU_SOURCE -g --coverage # -Wall -Werror
+CCFLAGS = -std=gnu99 -DDEBUG -D_GNU_SOURCE -g # -Wall -Werror
 CLEAN_DIR = $(BIN_DIR) $(BUILD_DIR) $(ROOT)main.gcno
 
 include $(SRC_DIR)/Makefile

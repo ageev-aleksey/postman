@@ -78,7 +78,7 @@ void print_message(log *l) {
 }
 
 void *logs_queue_func() {
-    if (interrupt_thread_local) {
+    if (is_interrupt()) {
         pthread_exit((void *) 0);
     }
 
@@ -90,7 +90,7 @@ void *logs_queue_func() {
     sigemptyset(&orig);
     pthread_sigmask(SIG_BLOCK, &set, &orig);
 
-    if (interrupt_thread_local) {
+    if (is_interrupt()) {
         pthread_sigmask(SIG_SETMASK, &orig, 0);
         pthread_exit((void *) 0);
     }
@@ -109,14 +109,12 @@ void *logs_queue_func() {
             free(l);
         }
 
-        if (interrupt_thread_local) {
-            printf("Попытка приостановить поток");
+        if (is_interrupt() && is_logs_queue_empty()) {
             pthread_sigmask(SIG_SETMASK, &orig, 0);
             break;
         }
     }
 
-    printf("Поток остановлен");
     pthread_exit((void *) 0);
 }
 
@@ -223,7 +221,7 @@ void start_logger() {
 }
 
 void logger_finalize() {
-    pthread_kill(*thread_logger, SIGINT);
+    pthread_join(*thread_logger, NULL);
     free(thread_logger);
 }
 

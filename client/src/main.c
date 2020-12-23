@@ -13,6 +13,12 @@ int main(int argc, char **argv) {
     init_signals_handler();
     init_context();
 
-    while (true) {}
-
+    while (true) {
+        if (is_interrupt()) {
+            destroy_configuration();
+            LOG_INFO("Сервер остановлен", NULL);
+            logger_finalize();
+            return 0;
+        }
+    }
 }
