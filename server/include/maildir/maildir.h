@@ -54,8 +54,8 @@ bool maildir_release(maildir *md, err_t *error);
 // SERVERS
 //bool maildir_server_list(maildir *md, maildir_servers_list *servers_list, err_t *error);
 bool maildir_get_self_server(maildir *md, maildir_server *server, err_t *error);
-bool maildir_get_server(maildir *md, maildir_server *server, err_t *error);
-//bool maildir_create_server(maildir *md, maildir_server *server, char *server_name, err_t *error);
+bool maildir_get_server(maildir *md, maildir_server *server, char *server_name, err_t *error);
+bool maildir_create_server(maildir *md, maildir_server *server, char *server_name, err_t *error);
 bool maildir_delete_server(maildir *md, maildir_server *server, err_t *error);
 // LOGGING
 bool maildir_set_logger_handlers(maildir *md, struct maildir_log_handlers *handlers);

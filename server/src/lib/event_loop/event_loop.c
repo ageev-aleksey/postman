@@ -118,11 +118,11 @@ void pr_manager_step(event_loop *loop, int fd_timeout, err_t *error) {
         } else if (fd_array[index].revents & POLLOUT) {
             pr_create_pollout_event(loop, &fd_array[index], index, error);
         } else if (fd_array[index].revents & POLLERR) {
-            printf("%s", "POLLERR");
+         //   printf("%s", "POLLERR");
         } else if (fd_array[index].revents & POLLNVAL) {
-            printf("%s", "POLLNVAL");
+          //  printf("%s", "POLLNVAL");
         } else if (fd_array[index].revents & POLLHUP) {
-            printf("%s", "POLLHUP");
+           // printf("%s", "POLLHUP");
         }
     }
     exit:

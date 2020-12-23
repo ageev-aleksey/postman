@@ -14,8 +14,8 @@ typedef struct smtp_mailbox {
     char *server_name;
 } smtp_mailbox;
 
-VECTOR_DECLARE(vector_smtp_mailbox, smtp_mailbox);
 
+VECTOR_DECLARE(vector_smtp_mailbox, smtp_mailbox);
 enum smtp_address_type {
     SMTP_ADDRESS_TYPE_IPv4, SMTP_ADDRESS_TYPE_IPv6, SMTP_ADDRESS_TYPE_DOMAIN, SMTP_ADDRESS_TYPE_NONE
 };

@@ -150,7 +150,7 @@ bool server_config_init(const char *path) {
                     LOG_ERROR("%s", "error server.log.files.level - invalid value");
                     return false;
                 }
-                file_settings[i].path = malloc(strlen(file_path));
+                file_settings[i].path = malloc(strlen(file_path)+1);
                 strcpy(file_settings[i].path, file_path);
                 file_settings[i].level = fl;
             }

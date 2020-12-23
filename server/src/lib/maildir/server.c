@@ -54,10 +54,11 @@ bool pr_maildir_server_path(maildir_server *server, char **path) {
     if (!maildir_server_is_self(server, &is_self, NULL)) {
         return false;
     }
+
     if (is_self) {
         return char_make_buf_concat(path, &length, 1, server->pr_md->pr_path);
     } else {
-        return char_make_buf_concat(path, &length, 2, server->pr_md->pr_path, SERVERS_ROOT_NAME_PART);
+        return char_make_buf_concat(path, &length, 3, server->pr_md->pr_path, SERVERS_ROOT_NAME_PART, server->pr_server_domain);
     }
 
 }

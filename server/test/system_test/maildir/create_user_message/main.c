@@ -36,6 +36,12 @@ int main() {
    // bool status = maildir_get_server(md, &server, MD_SERVER_NAME, &error);
     bool status = maildir_get_self_server(md, &server, &error);
 
+//    if (error.error) {
+//        if (error.error == NOT_FOUND) {
+//          status = maildir_create_server(md, &server, MD_SERVER_NAME, &error);
+//        }
+//    }
+
     if (!status) {
         if (error.error == ERRNO) {
             printf("Error maildir create server: %s\n", strerror(error.errno_value));

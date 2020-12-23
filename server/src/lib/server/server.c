@@ -1,6 +1,7 @@
 #include "server/server.h"
 #include "server/users_list.h"
 #include "server/timers.h"
+#include "server/table.h"
 #include "log/context.h"
 #include "event_loop/event_loop.h"
 #include "smtp/state.h"
@@ -418,14 +419,6 @@ char* make_x_headers(vector_smtp_mailbox *rcpts, smtp_mailbox *from) {
 }
 
 bool send_mail(smtp_state *smtp) {
-    // 1. ПРоходимся по всем получателям
-    // 2. Для каждого получателя инициализируем структуры сервера
-    //      -- Если домен сервера соответсвтует домену из конфиграционного файла
-    //          то это означает, что письма адресовано нашему серверу
-    //      -- Иначе, письмо адресовано внешнему серверу
-    // 3. Инициализируем структуру пользователя
-    // 4. Инициализируем структуру сообщения
-    // 5. Записываем сообщение
     bool status = true;
     smtp_mailbox *sender = smtp_get_sender(smtp);
     char *sender_mailbox_str = NULL;
@@ -521,37 +514,66 @@ bool send_mail(smtp_state *smtp) {
 
     if (VECTOR_SIZE(&foreign_recipients) != 0) {
         // Отправка пиьсма внешним сревреам
-        maildir_server server;
-        maildir_user user;
-        maildir_message mail;
-        maildir_server_default_init(&server);
-        maildir_user_default_init(&user);
-        maildir_message_default_init(&mail);
-        char *x_headers = NULL;
-        err_t md_error;
-        maildir_get_server(&server_config.md, &server, &md_error);
-        ERROR_LOG_AND_CLEANUP(md_error, cleanup2);
-        maildir_server_user(&server, &user, "", &md_error);
-        ERROR_LOG_AND_CLEANUP(md_error, cleanup2);
-        maildir_user_create_message(&user, &mail, sender_mailbox_str, &md_error);
-        ERROR_LOG_AND_CLEANUP(md_error, cleanup2);
-
-        x_headers = make_x_headers(&foreign_recipients, sender);
-        maildir_message_write(&mail, x_headers, strlen(x_headers), &md_error);
-        ERROR_LOG_AND_CLEANUP(md_error, cleanup2);
-        if (message_len != 0) {
-            maildir_message_write(&mail, message, message_len, &md_error);
-            ERROR_LOG_AND_CLEANUP(md_error, cleanup2);
+        // Распределяем получателей по серверам
+        table_t table;
+        table_init(&table);
+        for (int j = 0; j < VECTOR_SIZE(&foreign_recipients); j++) {
+            table_push(&table, VECTOR(&foreign_recipients)[j].server_name, &VECTOR(&foreign_recipients)[j]);
         }
 
-        maildir_message_finalize(&mail, &md_error);
-        ERROR_LOG_AND_CLEANUP(md_error, cleanup2);
+        // Теперь отправлем письма группам
+        table_vector_keys keys;
+        VECTOR_INIT(table_key_t, &keys, e);
+        table_keys(&table, &keys);
 
-    cleanup2:
-        maildir_message_free(&mail);
-        maildir_user_free(&user);
-        maildir_server_free(&server);
-        free(x_headers);
+        for (int j = 0; j < VECTOR_SIZE(&keys); j++) {
+            maildir_server server;
+            maildir_user user;
+            maildir_message mail;
+            maildir_server_default_init(&server);
+            maildir_user_default_init(&user);
+            maildir_message_default_init(&mail);
+            char *x_headers = NULL;
+
+            err_t md_error;
+            maildir_get_server(&server_config.md, &server, VECTOR(&keys)[j].value, &md_error);
+            if (md_error.error) {
+                if (md_error.error == NOT_FOUND) {
+                    maildir_create_server(&server_config.md, &server, VECTOR(&keys)[j].value, &md_error);
+                } else {
+                    ERROR_LOG_AND_CLEANUP(md_error, cleanup2);
+                }
+            }
+
+            maildir_server_user(&server, &user, "", &md_error);
+            ERROR_LOG_AND_CLEANUP(md_error, cleanup2);
+            maildir_user_create_message(&user, &mail, sender_mailbox_str, &md_error);
+            ERROR_LOG_AND_CLEANUP(md_error, cleanup2);
+
+            struct vector_smtp_mailbox *server_recipients = table_get(&table, VECTOR(&keys)[j].value);
+            x_headers = make_x_headers(server_recipients, sender);
+
+            maildir_message_write(&mail, x_headers, strlen(x_headers), &md_error);
+            ERROR_LOG_AND_CLEANUP(md_error, cleanup2);
+            if (message_len != 0) {
+                maildir_message_write(&mail, message, message_len, &md_error);
+                ERROR_LOG_AND_CLEANUP(md_error, cleanup2);
+            }
+
+            maildir_message_finalize(&mail, &md_error);
+            ERROR_LOG_AND_CLEANUP(md_error, cleanup2);
+
+            cleanup2:
+            maildir_message_free(&mail);
+            maildir_user_free(&user);
+            maildir_server_free(&server);
+            free(x_headers);
+
+        }
+
+        table_free(&table);
+        VECTOR_FREE(&keys);
+
     }
 
 

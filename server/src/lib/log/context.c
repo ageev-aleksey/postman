@@ -336,6 +336,12 @@ void log_free(log_context *context) {
     pthread_mutex_destroy(&context->mutex_messages);
     pthread_cond_destroy(&context->cv);
     pthread_mutex_destroy(&context->mutex_property);
+    for (int j = 0; j < VECTOR_SIZE(context->printers); j++) {
+        if (VECTOR(context->printers)[j].type == LOG_PRINTER_FILE) {
+            log_file_printer *ptr = (log_file_printer*)&VECTOR(context->printers)[j];
+            fclose(ptr->file);
+        }
+    }
     VECTOR_FREE(context->printers);
     free(context->printers);
 }

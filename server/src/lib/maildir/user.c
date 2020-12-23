@@ -54,9 +54,9 @@ bool pr_maildir_make_full_path(maildir_user *user, char **result_path, err_t *er
             return false;
         }
     } else {
-        char_make_buf_concat(result_path, &size, 2,
+        char_make_buf_concat(result_path, &size, 3,
                              user->pr_server->pr_md->pr_path,
-                             SERVERS_ROOT_NAME_PART);
+                             SERVERS_ROOT_NAME_PART, user->pr_server->pr_server_domain);
         if (*result_path == NULL) {
             return false;
         }
