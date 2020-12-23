@@ -14,8 +14,9 @@ typedef struct config {
     maildir_config maildir;
     int debug;
     char *hostname;
+    char *server_port;
 } config;
 
 config config_context;
 bool loading_config();
-int init_signals_handler();
+bool destroy_configuration();

@@ -10,13 +10,15 @@
 #define DIRECTORY_CUR_MESSAGES "cur"
 #define DIRECTORY_OTHER_SERVERS ".OTHER_SERVERS"
 
-void read_maildir_servers_new(maildir_main *maildir);
+void read_maildir_servers(maildir_main *maildir);
+
+void read_maildir_servers_new(maildir_other_server *maildir);
 
 void read_maildir_user_new(maildir_user *maildir_user);
 
 void read_new_messages_list(maildir_user *maildir_user);
 
-pair* check_message_header(char *line);
+pair *check_message_header(char *line);
 
 maildir_main *init_maildir(char *directory) {
     LOG_INFO("Инициализация maildir", NULL);
@@ -60,7 +62,7 @@ void update_maildir(maildir_main *maildir) {
     while (entry != NULL) {
         if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
             if (strcmp(entry->d_name, DIRECTORY_OTHER_SERVERS) == 0) {
-                read_maildir_servers_new(maildir);
+                read_maildir_servers(maildir);
             } else {
                 users_count++;
                 users = reallocate_memory(users, sizeof(*users) * users_count);
@@ -146,47 +148,90 @@ void read_new_messages_list(maildir_user *user) {
     free(user_fulldir_new);
 }
 
-void read_maildir_servers_new(maildir_main *maildir) {
-    if (maildir == NULL) {
-        LOG_ERROR("Ошибка чтения сообщений пользователей других серверов: main = NULL", NULL);
-        return;
-    }
+void read_maildir_servers(maildir_main *maildir) {
     if (maildir->directory == NULL) {
-        LOG_ERROR("Ошибка чтения сообщений пользователей других серверов: main.directory == NULL", NULL);
+        LOG_ERROR("Ошибка чтения структуры maildir: директория не найдена", NULL);
         return;
     }
-
-    char *path_new;
-    asprintf(&path_new, "%s/%s/%s", maildir->directory, DIRECTORY_OTHER_SERVERS, DIRECTORY_NEW_MESSAGES);
 
     struct stat stat_info;
-    if (!stat(path_new, &stat_info)) {
+    if (!stat(maildir->directory, &stat_info)) {
         if (!S_ISDIR(stat_info.st_mode)) {
-            LOG_ERROR("Ошибка чтения структуры maildir: %s - не директория", path_new);
+            LOG_ERROR("Ошибка чтения структуры maildir: %s - не директории", maildir->directory);
             return;
         }
     }
 
-    maildir->servers.message_full_file_names = NULL;
-    maildir->servers.messages_size = 0;
+    char *path_other_servers;
+    asprintf(&path_other_servers, "%s/%s", maildir->directory, DIRECTORY_OTHER_SERVERS);
 
-    DIR *dir = opendir(path_new);
+    maildir->servers = NULL;
+    maildir->servers_size = 0;
+
+    int servers_count = 0;
+    DIR *dir = opendir(path_other_servers);
     struct dirent *entry = readdir(dir);
-    int messages_count = 0;
-    maildir->servers.message_full_file_names = allocate_memory(sizeof(maildir->servers.message_full_file_names));
+    maildir_other_server *servers = allocate_memory(sizeof(*servers));
+
     while (entry != NULL) {
         if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
-            messages_count++;
-            maildir->servers.message_full_file_names = reallocate_memory( maildir->servers.message_full_file_names,
-                                                                          sizeof( maildir->servers.message_full_file_names)
-                                                                          * messages_count);
-            asprintf(&maildir->servers.message_full_file_names[messages_count - 1], "%s/%s", path_new, entry->d_name);
+            servers_count++;
+            servers = reallocate_memory(servers, sizeof(*servers) * servers_count);
+
+            maildir_other_server server = { 0 };
+
+            asprintf(&server.server, "%s", entry->d_name);
+            asprintf(&server.directory, "%s/%s", path_other_servers, server.server);
+            read_maildir_servers_new(&server);
+
+            servers[servers_count - 1] = server;
         }
         entry = readdir(dir);
     }
     closedir(dir);
 
-    maildir->servers.messages_size = messages_count;
+    maildir->servers = servers;
+    maildir->servers_size = servers_count;
+}
+
+void read_maildir_servers_new(maildir_other_server *server) {
+    if (server == NULL) {
+        LOG_ERROR("Ошибка чтения сообщений пользователей других серверов: main = NULL", NULL);
+        return;
+    }
+    if (server->directory == NULL) {
+        LOG_ERROR("Ошибка чтения сообщений пользователей других серверов: main.directory == NULL", NULL);
+        return;
+    }
+
+    struct stat stat_info;
+    if (!stat(server->directory, &stat_info)) {
+        if (!S_ISDIR(stat_info.st_mode)) {
+            LOG_ERROR("Ошибка чтения структуры maildir: %s - не директория", server->directory);
+            return;
+        }
+    }
+
+    server->message_full_file_names = NULL;
+    server->messages_size = 0;
+
+    DIR *dir = opendir(server->directory);
+    struct dirent *entry = readdir(dir);
+    int messages_count = 0;
+    server->message_full_file_names = allocate_memory(sizeof(server->message_full_file_names));
+    while (entry != NULL) {
+        if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
+            messages_count++;
+            server->message_full_file_names = reallocate_memory(server->message_full_file_names,
+                                                                         sizeof(server->message_full_file_names)
+                                                                         * messages_count);
+            asprintf(&server->message_full_file_names[messages_count - 1], "%s/%s", server->directory, entry->d_name);
+        }
+        entry = readdir(dir);
+    }
+    closedir(dir);
+
+    server->messages_size = messages_count;
 }
 
 message *read_message(char *filepath) {
@@ -237,8 +282,8 @@ message *read_message(char *filepath) {
                     }
                     free(tokens.tokens);
                 } else if (strcmp(p->first, "X-POSTMAN-DATE") == 0) {
-                   // mes->date = p->second;
-                   // TODO: пока игнорирую дату, а нужна ли она вообще?
+                    // mes->date = p->second;
+                    // TODO: пока игнорирую дату, а нужна ли она вообще?
                 }
                 LOG_INFO("%s/%s", p->first, p->second);
             }
@@ -270,7 +315,7 @@ message *read_message(char *filepath) {
     return NULL;
 }
 
-pair* check_message_header(char *line) {
+pair *check_message_header(char *line) {
     if (line == NULL) {
         LOG_ERROR("Ошибка считывания заголовка в сообщении", NULL);
         return NULL;
@@ -346,11 +391,16 @@ void output_maildir(maildir_main *maildir) {
     }
 
     LOG_INFO("Вывод структуры каталогов maildir: ", NULL);
-    maildir_other_server servers = maildir->servers;
+    maildir_other_server *servers = maildir->servers;
     LOG_ADDINFO("\t.other_servers", NULL);
-    if (servers.message_full_file_names != NULL) {
-        for (int i = 0; i < servers.messages_size; i++) {
-            LOG_ADDINFO("\t\t%s", servers.message_full_file_names[i]);
+    if (servers != NULL) {
+        for (int i = 0; i < maildir->servers_size; i++) {
+            LOG_ADDINFO("\t%s", servers[i].server);
+            if (servers[i].message_full_file_names != NULL) {
+                for (int j = 0; j < servers[i].messages_size; j++) {
+                    LOG_ADDINFO("\t\t%s", servers[i].message_full_file_names[j]);
+                }
+            }
         }
     }
 
@@ -367,7 +417,7 @@ void output_maildir(maildir_main *maildir) {
     }
 }
 
-void remove_message(maildir_main *maildir, message *mes) {
+void remove_message_server(maildir_other_server *server, message *mes) {
     if (mes == NULL || mes->directory == NULL) {
         LOG_ERROR("Невозможно удалить сообщение: mes = NULL || mes->directory == NULL", NULL);
         return;
@@ -387,15 +437,15 @@ void remove_message(maildir_main *maildir, message *mes) {
             return;
         }
 
-        if (maildir->servers.message_full_file_names != NULL) {
-            for (int i = 0; i < maildir->servers.messages_size; i++) {
-                if (strcmp(maildir->servers.message_full_file_names[i], mes->directory) == 0) {
+        if (server->message_full_file_names != NULL) {
+            for (int i = 0; i < server->messages_size; i++) {
+                if (strcmp(server->message_full_file_names[i], mes->directory) == 0) {
                     int j = i;
-                    while (j < maildir->servers.messages_size - 1) {
-                        maildir->servers.message_full_file_names[j] = maildir->servers.message_full_file_names[j + 1];
+                    while (j < server->messages_size - 1) {
+                        server->message_full_file_names[j] = server->message_full_file_names[j + 1];
                         j++;
                     }
-                    maildir->servers.messages_size--;
+                    server->messages_size--;
                 }
             }
         }

@@ -63,7 +63,6 @@ typedef struct smtp_header {
 typedef struct smtp_context {
     int socket_desc;
     state_code state_code;
-    void *message;
 } smtp_context;
 
 typedef struct smtp_response {

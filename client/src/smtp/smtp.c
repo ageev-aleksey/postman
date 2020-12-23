@@ -1,13 +1,45 @@
 #include "config.h"
 #include "smtp.h"
 #include "util.h"
+#include "network.h"
 #include "logs.h"
 
 #define MAX_MX_ADDRS 10
 
-char *receive_line(int socket_d);
+// TODO: все внимательно проверить, написать тесты и отрефакторить
 
-int send_line(int socket_d, char *message);
+int server_connect(ips ips, char *port) {
+    int server_socket = socket(PF_INET, SOCK_STREAM, 0);
+
+    if (server_socket == -1) {
+        LOG_ERROR("Критическая ошибка в выделении памяти под сокет", NULL);
+        return -1;
+    }
+
+    set_socket_blocking_enabled(server_socket, false);
+
+    struct sockaddr_in server_addr;
+
+    server_addr.sin_family = PF_INET;
+    memset(&(server_addr.sin_zero), 0, sizeof(server_addr.sin_zero));
+    server_addr.sin_port = htons(convert_string_to_long_int(port));
+
+    for (int j = 0; j < ips.ips_size; j++) {
+
+        inet_aton(ips.ip[j], &(server_addr.sin_addr));
+
+        socklen_t socklen = sizeof(struct sockaddr);
+
+        if (connect(server_socket, (struct sockaddr *) &server_addr, socklen) == -1 && errno != EINPROGRESS) {
+            LOG_ERROR("Ошибка в открытие сокетного соединения с SMTP-сервером", NULL);
+            continue;
+        } else {
+            return server_socket;
+        }
+    }
+
+    return -1;
+}
 
 smtp_context* smtp_connect(char *server, char *port, smtp_context *context) {
     LOG_INFO("Попытка соединения с сервером", NULL);
@@ -20,51 +52,43 @@ smtp_context* smtp_connect(char *server, char *port, smtp_context *context) {
     context->socket_desc = -1;
     context->state_code = SMTP_INVALID;
 
-    struct sockaddr_in server_addr;
-    ips ips;
+    ips ips = { 0 };
 
-    int server_socket = socket(PF_INET, SOCK_STREAM, 0);
+    // Хак, который позволяет не проверять доменное имя хоста
+    if (strcmp(server, config_context.hostname) == 0) {
+        ips.ip[0] = "127.0.0.1";
+        ips.ips_size++;
 
+        int server_socket;
+        if ((server_socket = server_connect(ips, config_context.server_port)) != -1) {
+            context->socket_desc = server_socket;
+            context->state_code = SMTP_CONNECT;
 
-    if (server_socket == -1) {
-        LOG_ERROR("Критическая ошибка в выделении памяти под сокет", NULL);
-        return NULL;
-    }
+            LOG_INFO("Успешное подключение к %s по адресу: %s:", server, get_addr_by_socket(server_socket),
+                     config_context.server_port);
+        }
+    } else {
+        char *mxs[MAX_MX_ADDRS];
+        int len = resolvmx(server, mxs, MAX_MX_ADDRS);
 
-    set_socket_blocking_enabled(server_socket, false);
+        for (int i = 0; i < len; i++) {
+            ips = get_ips_by_hostname(mxs[i]);
 
-    char *mxs[MAX_MX_ADDRS];
-    int len = resolvmx(server, mxs, MAX_MX_ADDRS);
-
-    for (int i = 0; i < len; i++) {
-        ips = get_ips_by_hostname(mxs[i]);
-
-        server_addr.sin_family = PF_INET;
-        memset(&(server_addr.sin_zero), 0, sizeof(server_addr.sin_zero));
-        server_addr.sin_port = htons(convert_string_to_long_int(port));
-
-        for (int j = 0; j < ips.ips_size; i++) {
-
-            inet_aton(ips.ip[j], &(server_addr.sin_addr));
-
-            socklen_t socklen = sizeof(struct sockaddr);
-
-            if (connect(server_socket, (struct sockaddr *) &server_addr, socklen) == -1 && errno != EINPROGRESS) {
-                LOG_ERROR("Ошибка в открытие сокетного соединения с SMTP-сервером", NULL);
-                continue;
-            } else {
+            int server_socket;
+            if ((server_socket = server_connect(ips, "25")) != -1) {
                 context->socket_desc = server_socket;
                 context->state_code = SMTP_CONNECT;
-                LOG_INFO("Успешное подключение к %s по адресу: %s", server, ips.ip[j]);
 
-                goto exit;
+                LOG_INFO("Успешное подключение к %s по адресу: %s:25", server, get_addr_by_socket(server_socket));
+
+                break;
             }
-        }
-    }
 
-    exit:
-    for (int l = 0; l < len; l++) {
-        free(mxs[l]);
+        }
+
+        for (int l = 0; l < len; l++) {
+            free(mxs[l]);
+        }
     }
 
     for (int l = 0; l < ips.ips_size; l++) {
@@ -246,59 +270,4 @@ bool is_smtp_success(status_code status_code) {
         return true;
     }
     return false;
-}
-
-// TODO: отрефакторить (убрать end_chars_count при первой возможности)
-char *receive_line(int socket_d) {
-    int end_chars_count = 0;
-
-    size_t size = 100;
-
-    char *dist_buffer = allocate_memory(size);
-    char *ptr = dist_buffer;
-    int count_size = 0;
-
-    int bytes;
-    while ((bytes = recv(socket_d, ptr, 1, 0)) > 0) {
-        if (bytes <= 0) {
-            return NULL;
-        }
-
-        count_size++;
-
-        if (*ptr == '\0') {
-            return NULL;
-        }
-
-        if (*ptr == '\n' || *ptr == '\r') {
-            end_chars_count++;
-        }
-        ptr++;
-
-        if (end_chars_count == 2) {
-            *(ptr - 2) = '\0';
-            return dist_buffer;
-        }
-
-        if (count_size == size - 2) {
-            size += (size / 2);
-            dist_buffer = reallocate_memory(dist_buffer, size);
-            ptr = dist_buffer + count_size;
-        }
-    }
-    return dist_buffer;
-}
-
-int send_line(int socket_d, char *message) {
-    char *ptr = message;
-    size_t all_size = strlen(message);
-    while (all_size > 0) {
-        int send_size = send(socket_d, message, all_size, 0);
-        if (send_size == -1) {
-            return 0;
-        }
-        all_size -= send_size;
-        ptr += send_size;
-    }
-    return 1;
 }

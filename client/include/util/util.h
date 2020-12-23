@@ -6,11 +6,6 @@
 #define strsize(args...) snprintf(NULL, 0, args) + sizeof('\0')
 #define vstrsize(args...) snprintf(NULL, 0, args) + sizeof('\0')
 
-typedef struct ips {
-    char *ip[15];
-    size_t ips_size;
-} ips;
-
 typedef struct pair {
     char *first;
     char *second;
@@ -39,8 +34,3 @@ void trim(char *str);
 void* allocate_memory(size_t bytes);
 void* reallocate_memory(void* buffer, size_t bytes);
 void* callocate_memory(size_t size, size_t bytes);
-
-char* get_addr_by_socket(int socket);
-ips get_ips_by_hostname(char *hostname);
-int resolvmx(const char *name, char **mxs, int limit);
-bool set_socket_blocking_enabled(int socket, bool blocking);

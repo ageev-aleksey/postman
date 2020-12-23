@@ -1,4 +1,5 @@
 #include <signal.h>
+#include "context.h"
 #include "logs.h"
 
 void exit_handler(int sig) {

@@ -2,19 +2,23 @@
 #include "logs.h"
 #include "config.h"
 #include "maildir.h"
-#include "message_queue.h"
+//#include "message_queue.h"
 #include "smtp.h"
 #include "context.h"
 
+// TODO: внимательно все проверить, отрефакторить
+
 int main(int argc, char **argv) {
     start_logger();
-    LOG_INFO("Начало работы SMTP-клиента", NULL);
-    if (!loading_config()) {
-        return -1;
-    }
-    init_signals_handler();
-   // start_message_queue();
-    init_context();
+    loading_config();
+//    start_logger();
+//    LOG_INFO("Начало работы SMTP-клиента", NULL);
+//    if (!loading_config()) {
+//        return -1;
+//    }
+//    init_signals_handler();
+//   // start_message_queue();
+//    init_context();
 //    smtp_context *context = smtp_connect("yandex.ru", "25", NULL);
 //    smtp_response response = get_smtp_response(context);
 //    smtp_send_helo(context);

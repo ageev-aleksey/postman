@@ -3,6 +3,8 @@
 #include "logs.h"
 #include "config.h"
 
+// TODO: внимательно все проверить, отрефакторить, написать тесты
+
 typedef struct node {
     log *data;
     TAILQ_ENTRY(node) nodes;
@@ -75,7 +77,7 @@ void print_message(log *l) {
     printf(COLOR_RESET);
 }
 
-_Noreturn void *logs_queue_func() {
+void *logs_queue_func() {
     if (interrupt_thread_local) {
         pthread_exit((void *) 0);
     }
