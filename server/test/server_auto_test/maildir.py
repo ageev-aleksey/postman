@@ -97,6 +97,13 @@ class User:
 	def __str__(self):
 		return "User{" + self._name + "}"
 
+class Server:
+	def __init__(self, md, domain):
+		self._md = md
+		self._domain = domain
+		path = os.path.join(md.path, domain)
+		if not os.path.exists(path):
+			os.mkdir(path)
 
 
 class Maildir:
@@ -118,6 +125,10 @@ class Maildir:
 			if d == username:
 				return User(self, d)
 		return None
+
+	@property
+	def servers(self):
+		curr
 
 	@property
 	def outer_mails(self):

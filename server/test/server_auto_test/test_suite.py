@@ -16,7 +16,7 @@ class ServerTestSuite:
 		self.test_name = test_name
 		self.application = application
 		self.cfg = config
-		self.cfg_name = "./app_config_test.cfg"
+		self.cfg_name = "./config.cfg"
 		self.application.append("--config")
 		self.application.append(self.cfg_name)
 		self.timeout = timeout
@@ -36,7 +36,7 @@ class ServerTestSuite:
 
 	def before(self):
 		print("before")
-		config.to_file(self.cfg, self.cfg_name)
+		#config.to_file(self.cfg, self.cfg_name)
 		print(self.application)
 		if not self.is_manual:
 			self.app = subprocess.Popen(self.application)

@@ -571,17 +571,17 @@ bool maildir_create_server(maildir *md, maildir_server *server, char* server_dom
     }
     free(path);
 
-    path = pr_maildir_char_concatenate(5, md->pr_path, SERVERS_ROOT_NAME_PART, server_domain, "/", USER_PATH_NEW);
-    if (mkdir(path, RWX_MODE) == -1) {
-        if (error != NULL) {
-            error->error = ERRNO;
-            error->errno_value = errno;
-            error->message = MAILDIR_ERROR_CREATE_DIRECTORY;
-        }
-        free(path);
-        return false;
-    }
-    free(path);
+//    path = pr_maildir_char_concatenate(5, md->pr_path, SERVERS_ROOT_NAME_PART, server_domain, "/", USER_PATH_NEW);
+//    if (mkdir(path, RWX_MODE) == -1) {
+//        if (error != NULL) {
+//            error->error = ERRNO;
+//            error->errno_value = errno;
+//            error->message = MAILDIR_ERROR_CREATE_DIRECTORY;
+//        }
+//        free(path);
+//        return false;
+//    }
+//    free(path);
 
     path = pr_maildir_char_concatenate(5, md->pr_path, SERVERS_ROOT_NAME_PART, server_domain, "/", USER_PATH_TMP);
     if (mkdir(path, RWX_MODE) == -1) {

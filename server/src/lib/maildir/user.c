@@ -123,10 +123,21 @@ bool maildir_user_create_message(maildir_user *user, maildir_message *message, c
     // Если бло принято MAX_NUM_ATTEMPTS_TO_CREATE_FILENAME попыток, то выход из функции с ошибкой
     while (is_continue) {
         pr_maildir_message_filename_generate(message->pr_filename);
+
         char_make_buf_concat(&tmp_path, &tmp_path_size, 5, user_full_path, "/",
                              USER_PATH_TMP, "/", message->pr_filename);
-        char_make_buf_concat(&new_path, &new_path_size, 5, user_full_path, "/",
-                             USER_PATH_NEW, "/", message->pr_filename);
+
+        bool is_self = false;
+        maildir_server_is_self(user->pr_server, &is_self, NULL);
+        if (is_self) {
+            char_make_buf_concat(&new_path, &new_path_size, 5, user_full_path, "/",
+                                 USER_PATH_NEW, "/", message->pr_filename);
+        } else {
+            char_make_buf_concat(&new_path, &new_path_size, 3, user_full_path, "/", message->pr_filename);
+        }
+
+
+
         if (tmp_path == NULL || new_path == NULL) {
             if (error != NULL) {
                 error->error = FATAL;
