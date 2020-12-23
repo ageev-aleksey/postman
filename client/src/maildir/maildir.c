@@ -28,11 +28,9 @@ maildir_main *init_maildir(char *directory) {
     if (!stat(directory, &stat_info)) {
         if (S_ISDIR(stat_info.st_mode)) {
             maildir->directory = directory;
-            update_maildir(maildir);
         }
     }
     LOG_INFO("Инициализация maildir завершена", NULL);
-    output_maildir(maildir);
 
     return maildir;
 }
@@ -195,20 +193,49 @@ message *read_message(char *filepath) {
     FILE *fp;
     if ((fp = fopen(filepath, "r")) != NULL) {
         message *mes = allocate_memory(sizeof(*mes));
+        memset(mes, 0, sizeof(*mes));
 
         char *read_string = allocate_memory(256);
         while ((fgets(read_string, 256, fp)) != NULL) {
             trim(read_string);
-            if (strcmp(read_string, "\r\n") == 0) {
+            if (strcmp(read_string, "\n") == 0 || strcmp(read_string, "\r\n") == 0) {
                 break;
             }
 
             pair *p = check_message_header(read_string);
             if (p != NULL) {
                 if (strcmp(p->first, "X-POSTMAN-FROM") == 0) {
-                    mes->from = p->second;
+                    string_tokens tokens = split(p->second, ",");
+                    mes->from_size = tokens.count_tokens;
+                    mes->from = callocate_memory(mes->from_size, sizeof(**mes->from));
+                    for (size_t i = 0; i < mes->from_size; i++) {
+                        mes->from[i] = tokens.tokens[i].chars;
+                    }
+                    free(tokens.tokens);
                 } else if (strcmp(p->first, "X-POSTMAN-TO") == 0) {
-                    mes->to = p->second;
+                    string_tokens tokens = split(p->second, ",");
+                    mes->to_size = tokens.count_tokens;
+                    mes->to = callocate_memory(mes->to_size, sizeof(**mes->to));
+                    mes->addresses = callocate_memory(1, sizeof(**mes->addresses));
+                    for (size_t i = 0; i < mes->to_size; i++) {
+                        mes->to[i] = tokens.tokens[i].chars;
+                        string_tokens ts = split(p->second, "@");
+                        if (ts.count_tokens == 2) {
+                            bool flag = true;
+                            for (int k = 0; k < mes->addresses_size; k++) {
+                                if (strcmp(ts.tokens[1].chars, mes->addresses[k]) == 0) {
+                                    flag = false;
+                                }
+                            }
+                            if (flag) {
+                                mes->addresses = reallocate_memory(mes->addresses,
+                                                                   sizeof(**mes->addresses) *
+                                                                   (mes->addresses_size + 1));
+                                mes->addresses[mes->addresses_size++] = ts.tokens[1].chars;
+                            }
+                        }
+                    }
+                    free(tokens.tokens);
                 } else if (strcmp(p->first, "X-POSTMAN-DATE") == 0) {
                    // mes->date = p->second;
                    // TODO: пока игнорирую дату, а нужна ли она вообще?
@@ -268,6 +295,9 @@ pair* check_message_header(char *line) {
                     str[strlen(str) - 1] = 0;
                     str[strlen(str) - 1] = 0;
                 }
+                if (str[strlen(str) - 1] == '\n') {
+                    str[strlen(str) - 1] = 0;
+                }
                 asprintf(&p->second, "%s", tokens.tokens[1].chars);
             }
             free_string_tokens(&tokens);
@@ -281,6 +311,9 @@ pair* check_message_header(char *line) {
                     str[strlen(str) - 1] = 0;
                     str[strlen(str) - 1] = 0;
                 }
+                if (str[strlen(str) - 1] == '\n') {
+                    str[strlen(str) - 1] = 0;
+                }
                 asprintf(&p->second, "%s", tokens.tokens[1].chars);
             }
             free_string_tokens(&tokens);
@@ -292,6 +325,9 @@ pair* check_message_header(char *line) {
                 trim(str);
                 if (str[strlen(str) - 1] == '\n' && str[strlen(str) - 2] == '\r') {
                     str[strlen(str) - 1] = 0;
+                    str[strlen(str) - 1] = 0;
+                }
+                if (str[strlen(str) - 1] == '\n') {
                     str[strlen(str) - 1] = 0;
                 }
                 asprintf(&p->second, "%s", tokens.tokens[1].chars);

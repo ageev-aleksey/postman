@@ -1,7 +1,10 @@
+#include <config.h>
+#include "maildir.h"
 #include "util.h"
 #include "context.h"
 #include "smtp.h"
 #include "logs.h"
+#include "message_queue.h"
 
 int pselect_exit_request = 0;
 sigset_t orig_mask;
@@ -30,13 +33,14 @@ int init_context() {
     sigaddset(&mask, SIGTERM);
     sigprocmask(SIG_BLOCK, &mask, &orig_mask);
 
-    struct timespec tv = { 0 };
-    tv.tv_sec = 5;
+    struct timespec tv = {0};
+    tv.tv_sec = 10;
     tv.tv_nsec = 0;
 
     thr_context.pthreads = allocate_memory(sizeof(*thr_context.pthreads));
     pthread_create(thr_context.pthreads, NULL, start_thread, &tv);
-//
+
+    // TODO: сделать множество потоков
 //    if (thread_message_queue == NULL) {
 //        thread_message_queue = allocate_memory(sizeof(*thread_message_queue));
 //        pthread_create(thread_message_queue, NULL, message_queue_func, NULL);
@@ -66,30 +70,27 @@ bool is_smtp_sender_ready(smtp_context *context) {
     return false;
 }
 
-void *start_thread(struct timespec *tv) {
+message **get_messages(maildir_main *maildir) {
+    message **messages = callocate_memory(maildir->servers.messages_size, sizeof(**messages));
+    if (maildir != NULL) {
+        for (int i = 0; i < maildir->servers.messages_size; i++) {
+            messages[i] = read_message(maildir->servers.message_full_file_names[i]);
+        }
+    }
 
-    TAILQ_HEAD(message_queue, node) head;
+    return messages;
+}
 
-    char *server[1];
-    server[0] = "yandex.ru";
-
-    char *mail[2];
-    mail[0] = "ovchinnikovasv73@gmail.com";
-    mail[1] = "vladovchinnikov950@gmail.com";
-
-    char *rcpt[1];
-    rcpt[0] = "wedf97@yandex.ru";
+// TODO: переделать на одно-подключение равно несколько писем
+_Noreturn void *start_thread(struct timespec *tv) {
 
     smtp_context **contexts = callocate_memory(1, sizeof(**contexts));
 
-    int j = 0;
-    int count_mail = 0;
-    while (true) {
-        if (contexts[j] != NULL) {
-            add_socket_to_context(contexts[j]->socket_desc);
-        }
+    maildir_main *maildir = init_maildir(config_context.maildir.path);
 
-        // TODO: читать письма из maildir тут
+    int size = 0;
+    int count = 0;
+    while (true) {
 
         int ret = pselect(app_context.fdmax, &app_context.read_fds,
                           &app_context.write_fds, NULL, tv, &orig_mask);
@@ -102,45 +103,79 @@ void *start_thread(struct timespec *tv) {
             LOG_ERROR("Ошибка в мультиплексировании", NULL);
         } else if (ret == 0) {
             LOG_INFO("Таймаут подключения", NULL);
-            smtp_context *cont = smtp_connect(server[j], "25", NULL);
-            contexts[j] = cont;
+
+            update_maildir(maildir);
+            message **messages = get_messages(maildir);
+
+            for (int j = 0; j < maildir->servers.messages_size; j++) {
+                for (int i = 0; i < messages[j]->addresses_size; i++) {
+                    smtp_context *cont = smtp_connect(messages[j]->addresses[i], "25", NULL);
+                    contexts[i] = cont;
+                    cont->message = messages[j];
+                    add_socket_to_context(contexts[i]->socket_desc);
+                    size++;
+                }
+            }
         } else {
-            for (int i = 0; i < 1; i++) {
+            for (int i = 0; i < size; i++) {
+                message *mess = (message *) contexts[i]->message;
                 switch (contexts[i]->state_code) {
                     case SMTP_CONNECT:
                         if (is_success_response(contexts[i]) && is_smtp_sender_ready(contexts[i])) {
                             smtp_send_helo(contexts[i]);
                         }
+                        add_socket_to_context(contexts[i]->socket_desc);
                         break;
                     case SMTP_HELO:
                         if (is_success_response(contexts[i]) && is_smtp_sender_ready(contexts[i])) {
-                            smtp_send_mail(contexts[i], mail[0]);
+                            smtp_send_mail(contexts[i], mess->from[0]);
+                            count++;
                         }
+                        add_socket_to_context(contexts[i]->socket_desc);
                         break;
                     case SMTP_MAIL:
                         if (is_success_response(contexts[i]) && is_smtp_sender_ready(contexts[i])) {
-                            if (count_mail < 1) {
-                                smtp_send_mail(contexts[i], mail[1]);
-                                count_mail++;
+                            if (count < mess->from_size) {
+                                smtp_send_mail(contexts[i], mess->from[count]);
+                                count++;
                             } else {
-                                smtp_send_rcpt(contexts[i], rcpt[0]);
+                                count = 0;
+                                smtp_send_rcpt(contexts[i], mess->to[0]);
+                                count++;
                             }
                         }
+                        add_socket_to_context(contexts[i]->socket_desc);
                         break;
                     case SMTP_RCPT:
                         if (is_success_response(contexts[i]) && is_smtp_sender_ready(contexts[i])) {
-                            smtp_send_data(contexts[i]);
+                            if (count < mess->to_size) {
+                                smtp_send_mail(contexts[i], mess->to[count]);
+                                count++;
+                            } else {
+                                count = 0;
+                                smtp_send_data(contexts[i]);
+                            }
                         }
+                        add_socket_to_context(contexts[i]->socket_desc);
                         break;
                     case SMTP_DATA:
                         if (is_success_response(contexts[i]) && is_smtp_sender_ready(contexts[i])) {
-                            smtp_send_message(contexts[i], "\r\ntodo: message");
+                            smtp_send_message(contexts[i], mess->strings[count]);
+                            count++;
                         }
+                        add_socket_to_context(contexts[i]->socket_desc);
                         break;
                     case SMTP_MESSAGE:
                         if (is_smtp_sender_ready(contexts[i])) {
-                            smtp_send_end_message(contexts[i]);
+                            if (count < mess->strings_size) {
+                                smtp_send_message(contexts[i], mess->strings[count]);
+                                count++;
+                            } else {
+                                count = 0;
+                                smtp_send_end_message(contexts[i]);
+                            }
                         }
+                        add_socket_to_context(contexts[i]->socket_desc);
                         break;
                     case SMTP_END_MESSAGE:
                         // TODO: если есть еще письма переходим на reset, иначе разрываем соединение
@@ -151,14 +186,23 @@ void *start_thread(struct timespec *tv) {
                             } else {
                                 smtp_send_quit(contexts[i]);
                             }
+                            remove_message(maildir, mess);
                         }
+                        add_socket_to_context(contexts[i]->socket_desc);
                         break;
                     case SMTP_RSET:
                         contexts[i]->state_code = SMTP_CONNECT;
+                        add_socket_to_context(contexts[i]->socket_desc);
                         break;
                     case SMTP_QUIT:
                         LOG_INFO("Соединение с %s успешно закрыто.", get_addr_by_socket(contexts[i]->socket_desc));
+                        remove_socket_from_context(contexts[i]->socket_desc);
+                        size--;
                         free(contexts[i]);
+                        contexts[i] = NULL;
+                        for (int k = i; k < size - 1; k++) {
+                            contexts[k] = contexts[k + 1];
+                        }
                         // TODO: удалить SMTP-context из списка
                         break;
                     case SMTP_EHLO:
@@ -188,6 +232,9 @@ int remove_socket_from_context(int socket) {
     shutdown(socket, SHUT_RDWR);
     close(socket);
     FD_CLR(socket, &app_context.master);
+    FD_ZERO(&app_context.master);
+    FD_ZERO(&app_context.read_fds);
+    FD_ZERO(&app_context.write_fds);
     return 0;
 }
 

@@ -1,12 +1,15 @@
 #include <stdio.h>
 
 typedef struct message {
-    char *from;
-    char *to;
+    char **from;
+    size_t from_size;
+    char **to;
+    size_t to_size;
     char **strings;
+    size_t strings_size;
     char *directory;
-    char *address;
-    int strings_size;
+    char **addresses;
+    size_t addresses_size;
 } message;
 
 typedef struct maildir_user {

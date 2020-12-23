@@ -13,9 +13,8 @@ int main(int argc, char **argv) {
         return -1;
     }
     init_signals_handler();
+   // start_message_queue();
     init_context();
-
-    //start_message_queue();
 //    smtp_context *context = smtp_connect("yandex.ru", "25", NULL);
 //    smtp_response response = get_smtp_response(context);
 //    smtp_send_helo(context);
