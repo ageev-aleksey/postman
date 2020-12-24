@@ -183,11 +183,12 @@ char* file_readline(FILE *fp) {
     char *string = allocate_memory(sizeof(char) * 256);
     while ((fgets(read_string, 256, fp)) != NULL) {
         if (offset >= size - 1) {
-            size = offset * 2;
+            size = offset * 2 + 1;
             string = reallocate_memory(string, sizeof(char) * size);
         }
 
         strcpy(string + offset, read_string);
+
         offset += strlen(read_string);
 
         if (string[offset - 1] == '\n') {

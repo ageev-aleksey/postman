@@ -78,6 +78,10 @@ smtp_context* smtp_connect(char *server, char *port, smtp_context *context) {
                 context->socket_desc = server_socket;
                 context->state_code = SMTP_CONNECT;
 
+                struct timespec tv = { 0 };
+                tv.tv_sec = 1;
+                nanosleep(&tv, &tv);
+
                 char *addr = get_addr_by_socket(server_socket);
                 LOG_INFO("Успешное подключение к %s по адресу: %s", server, addr);
                 free(addr);
@@ -196,7 +200,7 @@ state_code smtp_send_message(smtp_context *context, char *message) {
         }
 
         char *addr = get_addr_by_socket(context->socket_desc);
-        LOG_INFO("Request <%s>: %s", addr, body_request);
+        LOG_DEBUG("Request <%s>: %s", addr, body_request);
         free(addr);
         free(body_request);
     }
@@ -278,7 +282,7 @@ smtp_response get_smtp_response(smtp_context *context) {
 
     smtp_response.status_code = convert_string_to_long_int(code);
 
-    LOG_INFO("Response <%s>: %d %s", addr,
+    LOG_DEBUG("Response <%s>: %d %s", addr,
              smtp_response.status_code, smtp_response.message);
 
     free(addr);

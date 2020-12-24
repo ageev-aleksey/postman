@@ -21,18 +21,15 @@ void read_new_messages_list(maildir_user *maildir_user);
 pair *check_message_header(char *line);
 
 maildir_main *init_maildir(char *directory) {
-    LOG_INFO("Инициализация maildir", NULL);
-
     maildir_main *maildir = allocate_memory(sizeof(*maildir));
     memset(maildir, 0, sizeof(*maildir));
 
     struct stat stat_info;
     if (!stat(directory, &stat_info)) {
         if (S_ISDIR(stat_info.st_mode)) {
-            maildir->directory = directory;
+            asprintf(&maildir->directory, "%s", directory);
         }
     }
-    LOG_INFO("Инициализация maildir завершена", NULL);
 
     return maildir;
 }
@@ -457,11 +454,44 @@ void remove_message_server(maildir_other_server *server, message *mes) {
     }
 
     free(mes->directory);
+    for (int i = 0; i < mes->to_size; i++) {
+        free(mes->to[i]);
+    }
     free(mes->to);
+    for (int i = 0; i < mes->from_size; i++) {
+        free(mes->from[i]);
+    }
     free(mes->from);
+    for (int i = 0; i < mes->addresses_size; i++) {
+        free(mes->addresses[i]);
+    }
+    free(mes->addresses);
     for (int i = 0; i < mes->strings_size; i++) {
         free(mes->strings[i]);
     }
     free(mes->strings);
     free(mes);
+}
+
+void finalize_maildir(maildir_main *maildir) {
+    for (int i = 0; i < maildir->servers_size; i++) {
+        free(maildir->servers[i].server);
+        free(maildir->servers[i].directory);
+        for (int k = 0; k < maildir->servers[i].messages_size; k++) {
+            free(maildir->servers[i].message_full_file_names[k]);
+        }
+        free(maildir->servers[i].message_full_file_names);
+    }
+    free(maildir->servers);
+    for (int i = 0; i < maildir->users_size; i++) {
+        free(maildir->users[i].username);
+        free(maildir->users[i].directory);
+        for (int k = 0; k < maildir->users[i].messages_size; k++) {
+            free(maildir->users[i].message_full_file_names[k]);
+        }
+        free(maildir->users[i].message_full_file_names);
+    }
+    free(maildir->users);
+    free(maildir->directory);
+    free(maildir);
 }

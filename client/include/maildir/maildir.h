@@ -38,6 +38,7 @@ typedef struct maildir_main {
 
 maildir_main *init_maildir(char *directory);
 void update_maildir(maildir_main *maildir);
+void read_maildir_servers(maildir_main *maildir);
 void output_maildir(maildir_main *maildir);
 message *read_message(char *filepath);
 void finalize_maildir(maildir_main *maildir);

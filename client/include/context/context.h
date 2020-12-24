@@ -12,7 +12,7 @@
 typedef struct multiplex_context {
     smtp_context smtp_context;
     smtp_response response;
-    maildir_other_server *server;
+    maildir_other_server server;
     message *select_message;
     int iteration;
 } multiplex_context;

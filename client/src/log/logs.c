@@ -11,7 +11,7 @@ typedef struct node {
 } node;
 
 int interrupt_thread_local = 0;
-pthread_t *thread_logger = NULL;
+pthread_t thread_logger = { 0 };
 pthread_mutex_t mutex_queue;
 
 TAILQ_HEAD(logs_queue, node) head;
@@ -211,17 +211,11 @@ void log_addinfo(char *message, ...) {
 }
 
 void start_logger() {
-    if (thread_logger == NULL) {
-        thread_logger = allocate_memory(sizeof(*thread_logger));
-        init_logs();
-        pthread_create(thread_logger, NULL, logs_queue_func, NULL);
-    } else {
-        perror("Логгер уже инициализирован");
-    }
+    init_logs();
+    pthread_create(&thread_logger, NULL, logs_queue_func, NULL);
 }
 
 void logger_finalize() {
-    pthread_join(*thread_logger, NULL);
-    free(thread_logger);
+    pthread_join(thread_logger, NULL);
 }
 
