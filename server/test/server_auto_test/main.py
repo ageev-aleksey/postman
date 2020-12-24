@@ -14,7 +14,9 @@ import maildir
 IS_MANUAL = False
 SERVER_PATH = "../../bin/server.out"
 SERVER_RESPONSE_PATTERN = "([0-9]{3}) (.*)\r\n$"
-RUN_APP = ["valgrind", "--leak-check=full", "--show-leak-kinds=all", SERVER_PATH]
+RUN_APP_WITH_VALGRIND = ["valgrind", "--leak-check=full", "--show-leak-kinds=all", SERVER_PATH]
+RUN_APP_WITHOUT_VALGRIND = [SERVER_PATH]
+RUN_APP = None
 
 SMTP_CODE_START_SMTP_SERVICE      = 220
 SMTP_CODE_CLOSE_CONNECTION        = 221
@@ -90,6 +92,7 @@ class Test(test_suite.ServerTestSuite):
         test_runner.assert_equal(response[0], SMTP_CODE_START_SMTP_SERVICE)
         return s
 
+
     def test_empty_mail(self):
         md = maildir.Maildir(self.config["maildir_path"])
         try:
@@ -163,7 +166,8 @@ class Test(test_suite.ServerTestSuite):
             s.send(("test" * 1000 + "\r\n").encode("utf-8"))
             mbody = mbody + "test" * 1000 + "\r\n"
             s.send((("test" * 100 + "\r\n")*100).encode("utf-8"))
-            mbody = mbody + ("test" * 100 + "\r\n")*100 + "\r\n"
+            mbody = mbody + ("test" * 100 + "\r\n")*100
+            mbody = mbody.replace("\r\n", "\n")
 
             s.send(b".\r\n")
             buf = s.recv(100)
@@ -174,31 +178,31 @@ class Test(test_suite.ServerTestSuite):
             response = server_response_parse(buf)
             test_runner.assert_equal(response[0], SMTP_CODE_CLOSE_CONNECTION)
 
-            # user = md.getUser("user")
-            # self.check_one_mail("test@test.server.ru", user, mbody,
-            #                     {"X-Postman-From": "test@test.server.ru",
-            #                      "X-Postman-To": [f"user@{self.config['domain']}"]})
-            #
-            # user = md.getUser("client")
-            # self.check_one_mail("test@test.server.ru", user, mbody,
-            #                     {"X-Postman-From": "test@test.server.ru",
-            #                      "X-Postman-To": [f"client@{self.config['domain']}"]})
-            #
-            # servers = md.servers
-            # if len(servers) != 2:
-            #     raise AssertionError("Invalid number of outer servers")
-            # for s in servers:
-            #     if s.domain == "other.server":
-            #         self.check_one_mail("test@test.server.ru", s, mbody,
-            #                             {"X-Postman-From": "test@test.server.ru",
-            #                              "X-Postman-To": ["user@other.server", "client@other.server"]})
-            #
-            #     elif s.domain == "good.server.ru":
-            #         self.check_one_mail("test@test.server.ru", s, mbody,
-            #                             {"X-Postman-From": "test@test.server.ru",
-            #                              "X-Postman-To": ["client@good.server.ru", "foo@good.server.ru"]})
-            #     else:
-            #         raise AssertionError(f"Invalid server name [{s.domain}]")
+            user = md.getUser("user")
+            self.check_one_mail("test@test.server.ru", user, mbody,
+                                {"X-Postman-From": "test@test.server.ru",
+                                 "X-Postman-To": [f"user@{self.config['domain']}"]})
+
+            user = md.getUser("client")
+            self.check_one_mail("test@test.server.ru", user, mbody,
+                                {"X-Postman-From": "test@test.server.ru",
+                                 "X-Postman-To": [f"client@{self.config['domain']}"]})
+
+            servers = md.servers
+            if len(servers) != 2:
+                raise AssertionError("Invalid number of outer servers")
+            for s in servers:
+                if s.domain == "other.server":
+                    self.check_one_mail("test@test.server.ru", s, mbody,
+                                        {"X-Postman-From": "test@test.server.ru",
+                                         "X-Postman-To": ["user@other.server", "client@other.server"]})
+
+                elif s.domain == "good.server.ru":
+                    self.check_one_mail("test@test.server.ru", s, mbody,
+                                        {"X-Postman-From": "test@test.server.ru",
+                                         "X-Postman-To": ["client@good.server.ru", "foo@good.server.ru"]})
+                else:
+                    raise AssertionError(f"Invalid server name [{s.domain}]")
 
         finally:
             md.clear()
@@ -220,6 +224,7 @@ class Test(test_suite.ServerTestSuite):
     def test_rset(self):
         s = self.connect()
         s.send(b"helo domain.com\r\n")
+        response_check(s, SMTP_CODE_OK)
         s.send(b"mail from: <test@test.ru>\r\n")
         response_check(s, SMTP_CODE_OK)
         s.send(b"rset\r\n")
@@ -286,15 +291,11 @@ class Test(test_suite.ServerTestSuite):
         s.send(b"quit\r\n")
         response_check(s, SMTP_CODE_CLOSE_CONNECTION)
 
-    @test_suite.skip
-    def test_invalid_sequence(self):
-        pass
 
-    @test_suite.skip
-    def test_batch_of_commands(self):
+    def test_invalid_sequence(self):
         s = self.connect()
-        s.send(b"helo: [127.0.0.1]\r\nmail form: <test@test.ru>\r\nrcpt to: <aaa@ya.ru>\r\n")
-        buf = s.recv(1000)
+        s.send(b"mail from: <test@test.ru>\r\n")
+        s.send(b"quit\r\n")
 
 
 if __name__ == "__main__":
@@ -306,6 +307,14 @@ if __name__ == "__main__":
     # 	server_app = sub.Popen([server_exe])
     # 	time.sleep(10)
     # 	os.kill(server_app.pid, signal.SIGINT)
+    if len(sys.argv) == 2:
+        if sys.argv[1] == "valgrind":
+            RUN_APP = RUN_APP_WITH_VALGRIND
+        else:
+            print("Invalid argument")
+            sys.exit(1)
+    else:
+        RUN_APP = RUN_APP_WITHOUT_VALGRIND
     r = test_runner.TestRunner()
     r.add(Test())
     r.run()

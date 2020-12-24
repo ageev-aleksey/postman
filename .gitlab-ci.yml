@@ -69,6 +69,7 @@ server_system_testing:
   script:
     - cd ./server/test/server_auto_test/
     - python3 ./main.py
+    - python3 ./main.py valgrind
 
 
 server_report:
