@@ -16,7 +16,7 @@ class ServerTestSuite:
 		self.test_name = test_name
 		self.application = application
 		self.cfg = config
-		self.cfg_name = "./config.cfg"
+		self.cfg_name = "../../resource/config2.cfg"
 		self.application.append("--config")
 		self.application.append(self.cfg_name)
 		self.timeout = timeout
@@ -54,5 +54,5 @@ class ServerTestSuite:
 				print(exp)
 				self.app.kill()
 				status = False
-		os.remove(self.cfg_name)
+		#os.remove(self.cfg_name)
 		return status

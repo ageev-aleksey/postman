@@ -14,7 +14,7 @@ import maildir
 IS_MANUAL = False
 SERVER_PATH = "../../bin/server.out"
 SERVER_RESPONSE_PATTERN = "([0-9]{3}) (.*)\r\n$"
-RUN_APP = ["valgrind", "--leak-check=full", "--show-leak-kinds=all" , SERVER_PATH]
+RUN_APP = ["valgrind", "--leak-check=full", "--show-leak-kinds=all", SERVER_PATH]
 
 SMTP_CODE_START_SMTP_SERVICE      = 220
 SMTP_CODE_CLOSE_CONNECTION        = 221
@@ -113,52 +113,92 @@ class Test(test_suite.ServerTestSuite):
             response = server_response_parse(buf)
             test_runner.assert_equal(response[0], SMTP_CODE_CLOSE_CONNECTION)
 
-            # user = md.getUser("user")
-            # mails = user.mails
-            # if len(mails) == 1:
-            #     expected = {"X-Postman-From": "test@test.server.ru", "X-Postman-To": [f"user@{self.config['domain']}"]}
-            #     check_x_headers(mails[0].x_headers, expected)
-            #     test_runner.assert_equal(mails[0].body, "")
-            # else:
-            #     raise test_runner.AssertException(f"invalid number mail files in user maildir expected [1]; actual [{len(mails)}]")
-            # mails = md.outer_mails
-            # if len(mails) == 1:
-            #         expected = {"X-Postman-From": "test@test.server.ru", "X-Postman-To": ["user@other.server", "client@good.server.ru"]}
-            #         for m in mails:
-            #             check_x_headers(m.x_headers, expected)
-            #             test_runner.assert_equal(mails[0].body, "")
-            # else:
-            #     raise test_runner.AssertException(f"invalid number mail file in other servers path; expected [1]; actual [{len(mails)}];")
+            user = md.getUser("user")
+            self.check_one_mail("test@test.server.ru", user, "",
+                                {"X-Postman-From": "test@test.server.ru", "X-Postman-To": [f"user@{self.config['domain']}"]})
+
+            user = md.getUser("client")
+            self.check_one_mail("test@test.server.ru", user, "",
+                                {"X-Postman-From": "test@test.server.ru", "X-Postman-To": [f"client@{self.config['domain']}"]})
+
+            servers = md.servers
+            if len(servers) != 2:
+                raise AssertionError("Invalid number of outer servers")
+            for s in servers:
+                if s.domain == "other.server":
+                    self.check_one_mail("test@test.server.ru", s, "",
+                                        {"X-Postman-From": "test@test.server.ru",
+                                         "X-Postman-To": ["user@other.server", "client@other.server"]})
+
+                elif s.domain == "good.server.ru":
+                    self.check_one_mail("test@test.server.ru", s, "",
+                                        {"X-Postman-From": "test@test.server.ru",
+                                         "X-Postman-To": ["client@good.server.ru", "foo@good.server.ru"]})
+                else:
+                    raise AssertionError(f"Invalid server name [{s.domain}]")
+
         finally:
             md.clear()
 
-    @test_suite.skip
     def test_big_line(self):
         md = maildir.Maildir(self.config["maildir_path"])
         try:
-            s = self.connect()
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect((self.config["host"], self.config["port"]))
+            buf = s.recv(100)
+            response = server_response_parse(buf)
+            test_runner.assert_equal(response[0], SMTP_CODE_START_SMTP_SERVICE)
 
-            smtp_transaction(s, "test@test.server.ru", [f"user@{self.config['domain']}", "user@other.server"])
-
-            s.send(b"H"*5000)
+            smtp_transaction(s, "test@test.server.ru",
+                             [f"user@{self.config['domain']}", f"client@{self.config['domain']}",
+                              "user@other.server", "client@other.server",
+                              "client@good.server.ru", "foo@good.server.ru"])
+            mbody = ""
+            s.send(("test"*1000 + "\r\n").encode("utf-8"))
+            mbody = mbody + "test"*1000 + "\r\n"
             time.sleep(1)
-            s.send(b"H" * 5000)
+            s.send(("test" * 1000 + "\r\n").encode("utf-8"))
+            mbody = mbody + "test" * 1000 + "\r\n"
             time.sleep(1)
-            s.send(b"\r\n")
+            s.send(("test" * 1000 + "\r\n").encode("utf-8"))
+            mbody = mbody + "test" * 1000 + "\r\n"
+            s.send((("test" * 100 + "\r\n")*100).encode("utf-8"))
+            mbody = mbody + ("test" * 100 + "\r\n")*100 + "\r\n"
 
             s.send(b".\r\n")
             buf = s.recv(100)
             response = server_response_parse(buf)
             test_runner.assert_equal(response[0], SMTP_CODE_OK)
-
             s.send(b"quit\r\n")
             buf = s.recv(100)
             response = server_response_parse(buf)
             test_runner.assert_equal(response[0], SMTP_CODE_CLOSE_CONNECTION)
 
-            user = md.getUser("user")
-            # self.check_one_mail("test@test.server.ru", user, "H" * 10000 + "\n",
-            #                     {"X-Postman-From": "test@test.server.ru", "X-Postman-To": [f"user@{self.config['domain']}"]})
+            # user = md.getUser("user")
+            # self.check_one_mail("test@test.server.ru", user, mbody,
+            #                     {"X-Postman-From": "test@test.server.ru",
+            #                      "X-Postman-To": [f"user@{self.config['domain']}"]})
+            #
+            # user = md.getUser("client")
+            # self.check_one_mail("test@test.server.ru", user, mbody,
+            #                     {"X-Postman-From": "test@test.server.ru",
+            #                      "X-Postman-To": [f"client@{self.config['domain']}"]})
+            #
+            # servers = md.servers
+            # if len(servers) != 2:
+            #     raise AssertionError("Invalid number of outer servers")
+            # for s in servers:
+            #     if s.domain == "other.server":
+            #         self.check_one_mail("test@test.server.ru", s, mbody,
+            #                             {"X-Postman-From": "test@test.server.ru",
+            #                              "X-Postman-To": ["user@other.server", "client@other.server"]})
+            #
+            #     elif s.domain == "good.server.ru":
+            #         self.check_one_mail("test@test.server.ru", s, mbody,
+            #                             {"X-Postman-From": "test@test.server.ru",
+            #                              "X-Postman-To": ["client@good.server.ru", "foo@good.server.ru"]})
+            #     else:
+            #         raise AssertionError(f"Invalid server name [{s.domain}]")
 
         finally:
             md.clear()
@@ -166,42 +206,6 @@ class Test(test_suite.ServerTestSuite):
     # def test_timer_to_auto_disconnect(self):
     #     s = self.connect()
     #     s.sleep(30)
-
-    @test_suite.skip
-    def test_normal_mail(self):
-        md = maildir.Maildir(self.config["maildir_path"])
-        try:
-            mail_file = open("./mail.txt", "r")
-            mail_body = ""
-            for line in mail_file.readlines():
-                mail_body = mail_body + line
-            mail_body = mail_body.replace("\n", "\r\n") + "\r\n"
-
-            SENDER = "sender@sender.server.com"
-            RECIPIENTS = [f"user@{self.config['domain']}", f"client@{self.config['domain']}", f"support@{self.config['domain']}",
-                      "user1@server2.ru", "user2@server3.ru", "user3@server4.ru"]
-            s = self.connect()
-            smtp_transaction(s, SENDER, RECIPIENTS)
-
-            s.send((mail_body + ".\r\n").encode("utf-8"))
-            response_check(s, SMTP_CODE_OK)
-            s.send(b"quit\r\n")
-            response_check(s, SMTP_CODE_CLOSE_CONNECTION)
-
-            user = md.getUser("user")
-            self.check_one_mail(SENDER, user, mail_body,
-                                {"X-Postman-From": SENDER, "X-Postman-To": [f"user@{self.config['domain']}"]})
-
-            client = md.getUser("client")
-            self.check_one_mail(SENDER, client, mail_body,
-                                {"X-Postman-From": SENDER, "X-Postman-To": [f"client@{self.config['domain']}"]})
-
-            support = md.getUser("support")
-            self.check_one_mail(SENDER, support, mail_body,
-                                {"X-Postman-From": SENDER, "X-Postman-To": [f"support@{self.config['domain']}"]})
-
-        finally:
-            md.clear()
 
     def check_one_mail(self, SENDER, client, mail_body, x_headers):
         mails = client.mails
@@ -212,7 +216,7 @@ class Test(test_suite.ServerTestSuite):
             raise test_runner.AssertException(
                 f"invalid number mail file in other servers path; expected [1]; actual [{len(mails)}];")
 
-    @test_suite.skip
+
     def test_rset(self):
         s = self.connect()
         s.send(b"helo domain.com\r\n")
@@ -257,7 +261,7 @@ class Test(test_suite.ServerTestSuite):
         response_check(s, SMTP_CODE_CLOSE_CONNECTION)
         s.close()
 
-    @test_suite.skip
+
     def test_noop(self):
         s = self.connect()
         s.send(b"noop\r\n")

@@ -101,10 +101,21 @@ class Server:
 	def __init__(self, md, domain):
 		self._md = md
 		self._domain = domain
-		path = os.path.join(md.path, domain)
+		path = os.path.join(md.path, OTHER_SERVERS, domain)
 		if not os.path.exists(path):
 			os.mkdir(path)
 
+	@property
+	def mails(self):
+		current_dir, dirs, files = next(os.walk(os.path.join(self._md.path, OTHER_SERVERS, self._domain)))
+		mails_list = []
+		for mail_file in files:
+			mails_list.append(Mail(self._md, file_path=os.path.join(current_dir, mail_file)))
+		return mails_list
+
+	@property
+	def domain(self):
+		return self._domain
 
 class Maildir:
 	def __init__(self, root):
@@ -128,7 +139,11 @@ class Maildir:
 
 	@property
 	def servers(self):
-		curr
+		current_dir, dirs, files = next(os.walk(os.path.join(self._root, OTHER_SERVERS)))
+		servers_list = []
+		for server_dir in dirs:
+			servers_list.append(Server(self, server_dir))
+		return servers_list
 
 	@property
 	def outer_mails(self):
@@ -153,15 +168,20 @@ class Maildir:
 					os.remove(os.path.join(user_new_dir, f))
 				for f in user_cur_files:
 					os.remove(os.path.join(user_cur_dir, f))
-		outer_root, outer_dirs, outer_files = next(os.walk(os.path.join(self._root, OTHER_SERVERS, MailType.NEW.value)))
-		for f in outer_files:
-			os.remove(os.path.join(outer_root, f));
+		outer_root, outer_dirs, outer_files = next(os.walk(os.path.join(self._root, OTHER_SERVERS)))
+		for server_dir in outer_dirs:
+			server_root , inner_server_dirs, server_mails = next(os.walk(os.path.join(outer_root, server_dir)))
+			for file in server_mails:
+				os.remove(os.path.join(server_root, file))
 
 
 if __name__ == "__main__":
 	root = "./maildir"
 	md = Maildir(root)
 	md.clear()
+	# servers = md.servers
+	# for s in servers:
+	# 	print(s.domain, " : ", len(s.mails))
 	# for m in md.outer_mails:
 	# 	print(m.x_headers)
 	# 	print(m.body)
