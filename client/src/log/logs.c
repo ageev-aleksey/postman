@@ -124,7 +124,7 @@ void log_debug(char *message, char *filename, int line, ...) {
     va_list args;
     va_start(args, line);
 
-    log *l = malloc(sizeof(log));
+    log *l = allocate_memory(sizeof(log));
     l->time = get_time();
     l->filename = filename;
     l->type = LOG_DEBUG;
@@ -141,7 +141,7 @@ void log_debug(char *message, char *filename, int line, ...) {
 void log_info(char *message, char *filename, int line, ...) {
     va_list args;
     va_start(args, line);
-    log *l = malloc(sizeof(log));
+    log *l = allocate_memory(sizeof(log));
 
     l->time = get_time();
     l->filename = filename;
@@ -159,7 +159,7 @@ void log_info(char *message, char *filename, int line, ...) {
 void log_error(char *message, char *filename, int line, ...) {
     va_list args;
     va_start(args, line);
-    log *l = malloc(sizeof(log));
+    log *l = allocate_memory(sizeof(log));
 
     l->time = get_time();
     l->filename = filename;
@@ -177,7 +177,7 @@ void log_error(char *message, char *filename, int line, ...) {
 void log_warn(char *message, char *filename, int line, ...) {
     va_list args;
     va_start(args, line);
-    log *l = malloc(sizeof(log));
+    log *l = allocate_memory(sizeof(log));
 
     l->time = get_time();
     l->filename = filename;
@@ -195,7 +195,7 @@ void log_warn(char *message, char *filename, int line, ...) {
 void log_addinfo(char *message, ...) {
     va_list args;
     va_start(args, message);
-    log *l = malloc(sizeof(log));
+    log *l = allocate_memory(sizeof(log));
 
     l->time = get_time();
     l->type = LOG_ADDINFO;

@@ -42,6 +42,7 @@ void read_maildir_servers(maildir_main *maildir);
 void output_maildir(maildir_main *maildir);
 message *read_message(char *filepath);
 void finalize_maildir(maildir_main *maildir);
+void free_message(message *mess);
 void remove_all_message_server(maildir_other_server *server);
 void remove_message_server(maildir_other_server *server, message *mess);
 //void read_maildir_users_message(char *directory);

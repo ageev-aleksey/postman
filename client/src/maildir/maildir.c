@@ -21,8 +21,12 @@ void read_new_messages_list(maildir_user *maildir_user);
 pair *check_message_header(char *line);
 
 maildir_main *init_maildir(char *directory) {
-    maildir_main *maildir = allocate_memory(sizeof(*maildir));
-    memset(maildir, 0, sizeof(*maildir));
+    if (directory == NULL) {
+        return NULL;
+    }
+
+    maildir_main *maildir = allocate_memory(sizeof(maildir_main));
+    memset(maildir, 0, sizeof(maildir_main));
 
     struct stat stat_info;
     if (!stat(directory, &stat_info)) {
@@ -54,7 +58,7 @@ void update_maildir(maildir_main *maildir) {
     int users_count = 0;
     DIR *dir = opendir(maildir->directory);
     struct dirent *entry = readdir(dir);
-    maildir_user *users = allocate_memory(sizeof(*users));
+    maildir_user *users = allocate_memory(sizeof(maildir_user));
 
     while (entry != NULL) {
         if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
@@ -62,7 +66,7 @@ void update_maildir(maildir_main *maildir) {
                 read_maildir_servers(maildir);
             } else {
                 users_count++;
-                users = reallocate_memory(users, sizeof(*users) * users_count);
+                users = reallocate_memory(users, sizeof(maildir_user) * users_count);
                 asprintf(&users[users_count - 1].username, "%s", entry->d_name);
                 asprintf(&users[users_count - 1].directory, "%s/%s", maildir->directory,
                          users[users_count - 1].username);
@@ -128,12 +132,11 @@ void read_new_messages_list(maildir_user *user) {
     DIR *dir = opendir(user_fulldir_new);
     int messages_count = 0;
     struct dirent *entry = readdir(dir);
-    user->message_full_file_names = allocate_memory(sizeof(user->message_full_file_names));
+    user->message_full_file_names = allocate_memory(sizeof(char*));
     while (entry != NULL) {
         if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
             messages_count++;
-            user->message_full_file_names = reallocate_memory(user->message_full_file_names,
-                                                              sizeof(user->message_full_file_names) * messages_count);
+            user->message_full_file_names = reallocate_memory(user->message_full_file_names,sizeof(char*) * messages_count);
             asprintf(&user->message_full_file_names[messages_count - 1], "%s/%s", user_fulldir_new, entry->d_name);
         }
         entry = readdir(dir);
@@ -168,12 +171,12 @@ void read_maildir_servers(maildir_main *maildir) {
     int servers_count = 0;
     DIR *dir = opendir(path_other_servers);
     struct dirent *entry = readdir(dir);
-    maildir_other_server *servers = allocate_memory(sizeof(*servers));
+    maildir_other_server *servers = allocate_memory(sizeof(maildir_other_server));
 
     while (entry != NULL) {
         if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
             servers_count++;
-            servers = reallocate_memory(servers, sizeof(*servers) * servers_count);
+            servers = reallocate_memory(servers, sizeof(maildir_other_server) * servers_count);
 
             maildir_other_server server = {0};
 
@@ -217,13 +220,12 @@ void read_maildir_servers_new(maildir_other_server *server) {
     DIR *dir = opendir(server->directory);
     struct dirent *entry = readdir(dir);
     int messages_count = 0;
-    server->message_full_file_names = allocate_memory(sizeof(server->message_full_file_names));
+    server->message_full_file_names = allocate_memory(sizeof(char*));
     while (entry != NULL) {
         if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0 && strcmp(entry->d_name, "tmp") != 0) {
             messages_count++;
             server->message_full_file_names = reallocate_memory(server->message_full_file_names,
-                                                                sizeof(server->message_full_file_names)
-                                                                * messages_count);
+                                                                sizeof(char*) * messages_count);
             asprintf(&server->message_full_file_names[messages_count - 1], "%s/%s", server->directory, entry->d_name);
         }
         entry = readdir(dir);
@@ -236,8 +238,8 @@ void read_maildir_servers_new(maildir_other_server *server) {
 message *read_message(char *filepath) {
     FILE *fp;
     if ((fp = fopen(filepath, "r")) != NULL) {
-        message *mes = allocate_memory(sizeof(*mes));
-        memset(mes, 0, sizeof(*mes));
+        message *mes = allocate_memory(sizeof(message));
+        memset(mes, 0, sizeof(message));
 
         char *string;
         while ((string = file_readline(fp)) != NULL) {
@@ -253,7 +255,7 @@ message *read_message(char *filepath) {
                 if (strcmp(p->first, "X-POSTMAN-FROM") == 0) {
                     string_tokens tokens = split(p->second, ",");
                     mes->from_size = tokens.count_tokens;
-                    mes->from = callocate_memory(mes->from_size, sizeof(*mes->from));
+                    mes->from = callocate_memory(mes->from_size, sizeof(char*));
                     for (size_t i = 0; i < mes->from_size; i++) {
                         asprintf(&mes->from[i], "%s", tokens.tokens[i].chars);
                     }
@@ -261,8 +263,8 @@ message *read_message(char *filepath) {
                 } else if (strcmp(p->first, "X-POSTMAN-TO") == 0) {
                     string_tokens tokens = split(p->second, ",");
                     mes->to_size = tokens.count_tokens;
-                    mes->to = callocate_memory(mes->to_size, sizeof(*mes->to));
-                    mes->addresses = callocate_memory(1, sizeof(*mes->addresses));
+                    mes->to = callocate_memory(mes->to_size, sizeof(char*));
+                    mes->addresses = callocate_memory(1, sizeof(char*));
                     for (size_t i = 0; i < mes->to_size; i++) {
                         asprintf(&mes->to[i], "%s", tokens.tokens[i].chars);
                         string_tokens ts = split(p->second, "@");
@@ -275,7 +277,7 @@ message *read_message(char *filepath) {
                             }
                             if (flag) {
                                 mes->addresses = reallocate_memory(mes->addresses,
-                                                                   sizeof(*mes->addresses) * (mes->addresses_size + 1));
+                                                                   sizeof(char*) * (mes->addresses_size + 1));
                                 asprintf(&mes->addresses[mes->addresses_size++], "%s", ts.tokens[1].chars);
                             }
                         }
@@ -296,10 +298,10 @@ message *read_message(char *filepath) {
         }
 
         int strings_count = 0;
-        mes->strings = allocate_memory(sizeof(*mes->strings));
+        mes->strings = allocate_memory(sizeof(char*));
         while ((string = file_readline(fp)) != NULL) {
             if (mes->strings != NULL) {
-                mes->strings = reallocate_memory(mes->strings, sizeof(mes->strings) * (strings_count + 1));
+                mes->strings = reallocate_memory(mes->strings, sizeof(char*) * (strings_count + 1));
             }
             asprintf(&mes->strings[strings_count], "%s", string);
             strings_count++;
@@ -326,7 +328,7 @@ pair *check_message_header(char *line) {
         return NULL;
     }
 
-    pair *p = allocate_memory(sizeof(*p));
+    pair *p = allocate_memory(sizeof(pair));
 
     string_tokens tokens = split(line, ":");
 
@@ -471,6 +473,7 @@ void remove_message_server(maildir_other_server *server, message *mes) {
             for (int i = 0; i < server->messages_size; i++) {
                 if (strcmp(server->message_full_file_names[i], mes->directory) == 0) {
                     free(server->message_full_file_names[i]);
+                    server->message_full_file_names[i] = NULL;
                     for (int j = i; j < server->messages_size - 1; j++) {
                         server->message_full_file_names[j] = server->message_full_file_names[j + 1];
                     }
@@ -481,24 +484,28 @@ void remove_message_server(maildir_other_server *server, message *mes) {
         }
     }
 
-    free(mes->directory);
-    for (int i = 0; i < mes->to_size; i++) {
-        free(mes->to[i]);
+    free_message(mes);
+}
+
+void free_message(message *mess) {
+    free(mess->directory);
+    for (int i = 0; i < mess->to_size; i++) {
+        free(mess->to[i]);
     }
-    free(mes->to);
-    for (int i = 0; i < mes->from_size; i++) {
-        free(mes->from[i]);
+    free(mess->to);
+    for (int i = 0; i < mess->from_size; i++) {
+        free(mess->from[i]);
     }
-    free(mes->from);
-    for (int i = 0; i < mes->addresses_size; i++) {
-        free(mes->addresses[i]);
+    free(mess->from);
+    for (int i = 0; i < mess->addresses_size; i++) {
+        free(mess->addresses[i]);
     }
-    free(mes->addresses);
-    for (int i = 0; i < mes->strings_size; i++) {
-        free(mes->strings[i]);
+    free(mess->addresses);
+    for (int i = 0; i < mess->strings_size; i++) {
+        free(mess->strings[i]);
     }
-    free(mes->strings);
-    free(mes);
+    free(mess->strings);
+    free(mess);
 }
 
 void finalize_maildir(maildir_main *maildir) {

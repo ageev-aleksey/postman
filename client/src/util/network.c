@@ -3,13 +3,12 @@
 #include "network.h"
 #include "util.h"
 
-// TODO: отрефакторить (убрать end_chars_count при первой возможности)
 char *receive_line(int socket_d) {
     int end_chars_count = 0;
 
     size_t size = 4;
 
-    char *dist_buffer = allocate_memory(sizeof(*dist_buffer) * size);
+    char *dist_buffer = allocate_memory(sizeof(char) * size);
     memset(dist_buffer, 0, size);
     char *ptr = dist_buffer;
     int count_size = 0;
@@ -19,6 +18,7 @@ char *receive_line(int socket_d) {
         count_size++;
 
         if (*ptr == '\0') {
+            free(dist_buffer);
             return NULL;
         }
 
@@ -34,11 +34,13 @@ char *receive_line(int socket_d) {
 
         if (count_size == size - 2) {
             size += (size / 2);
-            dist_buffer = reallocate_memory(dist_buffer, size);
+            dist_buffer = reallocate_memory(dist_buffer, sizeof(char) * size);
             ptr = dist_buffer + count_size;
         }
     }
+
     if (bytes <= 0) {
+        free(dist_buffer);
         return NULL;
     }
 
@@ -49,7 +51,7 @@ int send_line(int socket_d, char *message) {
     char *ptr = message;
     size_t all_size = strlen(message);
     while (all_size > 0) {
-        int send_size = send(socket_d, message, all_size, 0);
+        int send_size = send(socket_d, message, all_size, MSG_NOSIGNAL);
         if (send_size == -1) {
             return 0;
         }
@@ -84,8 +86,10 @@ ips get_ips_by_hostname(char *hostname) {
 
     addr_list = (struct in_addr **) hostent->h_addr_list;
 
+    ips.ip_array = allocate_memory(sizeof(char*));
     for (int i = 0; addr_list[i] != NULL; i++) {
-        ips.ip[i] = strdup(inet_ntoa(*addr_list[i]));
+        ips.ip_array = reallocate_memory(ips.ip_array, sizeof(char*) * (ips.ips_size + 1));
+        ips.ip_array[i] = strdup(inet_ntoa(*addr_list[i]));
         ips.ips_size++;
     }
 

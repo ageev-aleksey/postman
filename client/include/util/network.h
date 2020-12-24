@@ -5,7 +5,7 @@
 #include <fcntl.h>
 
 typedef struct ips {
-    char *ip[15];
+    char **ip_array;
     size_t ips_size;
 } ips;
 

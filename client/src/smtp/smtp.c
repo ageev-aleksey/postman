@@ -26,7 +26,7 @@ int server_connect(ips ips, char *port) {
 
     for (int j = 0; j < ips.ips_size; j++) {
 
-        inet_aton(ips.ip[j], &(server_addr.sin_addr));
+        inet_aton(ips.ip_array[j], &(server_addr.sin_addr));
 
         socklen_t socklen = sizeof(struct sockaddr);
 
@@ -46,17 +46,19 @@ smtp_context* smtp_connect(char *server, char *port, smtp_context *context) {
 
     if (context == NULL) {
         LOG_INFO("Выделяем память под SMTP-контекст <%s>", server);
-        context = allocate_memory(sizeof(*context));
+        context = allocate_memory(sizeof(smtp_context));
     }
 
     context->socket_desc = -1;
     context->state_code = SMTP_INVALID;
 
     ips ips = { 0 };
+    ips.ip_array = NULL;
 
     // Хак, который позволяет не проверять доменное имя хоста
     if (strcmp(server, config_context.hostname) == 0) {
-        ips.ip[0] = "127.0.0.1";
+        ips.ip_array = allocate_memory(sizeof(char*));
+        ips.ip_array[0] = "127.0.0.1";
         ips.ips_size++;
 
         int server_socket;
@@ -64,7 +66,7 @@ smtp_context* smtp_connect(char *server, char *port, smtp_context *context) {
             context->socket_desc = server_socket;
             context->state_code = SMTP_CONNECT;
 
-            LOG_INFO("Успешное подключение к %s по адресу: %s:%s", server, ips.ip[0], port);
+            LOG_INFO("Успешное подключение к %s по адресу: %s:%s", server, ips.ip_array[0], port);
         }
     } else {
         char *mxs[MAX_MX_ADDRS];
@@ -99,12 +101,13 @@ smtp_context* smtp_connect(char *server, char *port, smtp_context *context) {
         for (int l = 0; l < len; l++) {
             free(mxs[l]);
         }
+
+        for (int l = 0; l < ips.ips_size; l++) {
+            free(ips.ip_array[l]);
+        }
     }
 
-    for (int l = 0; l < ips.ips_size; l++) {
-        free(ips.ip[l]);
-    }
-
+    free(ips.ip_array);
     return context;
 }
 
@@ -259,11 +262,12 @@ smtp_response get_smtp_response(smtp_context *context) {
     char *buffer = NULL;
     size_t size_str = 0;
 
+    smtp_response.message = NULL;
     char *addr = get_addr_by_socket(context->socket_desc);
     if ((buffer = receive_line(context->socket_desc)) == NULL) {
         LOG_WARN("Не удалось прочитать данные из входного буфера (%s)", addr);
-        smtp_response.message = "error";
         smtp_response.status_code = UNDEFINED_ERROR;
+        free(addr);
         return smtp_response;
     }
 

@@ -28,9 +28,9 @@ int check_equation_delim(const char *const str, const char *const delim, int off
 string_tokens split(const char *const str, const char *const delim) {
 
     int count_tokens = 0;
-    string *tokens = allocate_memory((sizeof(*tokens)));
+    string *tokens = allocate_memory((sizeof(string)));
 
-    string *token = allocate_memory(sizeof(*token));
+    string *token = allocate_memory(sizeof(string));
     token->chars = NULL;
     token->length = 0;
 
@@ -47,7 +47,7 @@ string_tokens split(const char *const str, const char *const delim) {
                 token = allocate_memory(sizeof(*token));
                 token->chars = NULL;
                 token->length = 0;
-                tokens = reallocate_memory(tokens, sizeof(*tokens) * (count_tokens + 1));
+                tokens = reallocate_memory(tokens, sizeof(string) * (count_tokens + 1));
                 continue;
             }
         }
@@ -69,30 +69,6 @@ void free_string_tokens(string_tokens *tokens) {
     free(tokens->tokens);
 }
 
-string *get_string_from_characters(string *str, char *characters) {
-    size_t capacity = str->length + 1;
-    char *s;
-    if (str->chars == NULL) {
-        str->length = 0;
-        s = (char *) allocate_memory(sizeof(char));
-    }
-
-    for (int i = 0; i < strlen(characters); i++) {
-        s[(str->length)++] = characters[i];
-
-        if (str->length >= capacity) {
-            capacity *= 2; // увеличиваем ёмкость строки в два раза
-            s = (char *) reallocate_memory(s, capacity); // создаём новую строку с увеличенной ёмкостью
-        }
-    }
-
-    s[str->length] = '\0';
-
-    str->chars = s;
-
-    return str;
-}
-
 string *add_character(string *str, char character) {
     size_t capacity = str->length + 1;
     if (str->chars == NULL) {
@@ -104,7 +80,7 @@ string *add_character(string *str, char character) {
 
     if (str->length >= capacity) {
         capacity *= 2; // увеличиваем ёмкость строки в два раза
-        str->chars = (char *) reallocate_memory(str->chars, capacity); // создаём новую строку с увеличенной ёмкостью
+        str->chars = reallocate_memory(str->chars, sizeof(char) * capacity); // создаём новую строку с увеличенной ёмкостью
     }
 
     str->chars[str->length] = '\0';
@@ -124,8 +100,7 @@ void *allocate_memory(size_t bytes) {
         return buffer;
     }
 
-    LOG_ERROR("Ошибка выделения памяти", NULL);
-    return NULL;
+    exit(-1);
 }
 
 void *reallocate_memory(void *buffer, size_t bytes) {
@@ -135,8 +110,7 @@ void *reallocate_memory(void *buffer, size_t bytes) {
         return buffer;
     }
 
-    LOG_ERROR("Ошибка перераспределения памяти", NULL);
-    return NULL;
+    exit(-1);
 }
 
 void *callocate_memory(size_t size, size_t bytes) {
@@ -146,8 +120,7 @@ void *callocate_memory(size_t size, size_t bytes) {
         return buffer;
     }
 
-    LOG_ERROR("Ошибка выделения памяти", NULL);
-    return NULL;
+    exit(-1);
 }
 
 void trim(char *str) {
