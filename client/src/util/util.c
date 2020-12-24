@@ -42,9 +42,10 @@ string_tokens split(const char *const str, const char *const delim) {
             }
             if (token->length != 0) {
                 tokens[count_tokens] = *token;
+                free(token);
                 count_tokens++;
                 token = allocate_memory(sizeof(*token));
-                token->chars = 0;
+                token->chars = NULL;
                 token->length = 0;
                 tokens = reallocate_memory(tokens, sizeof(*tokens) * (count_tokens + 1));
                 continue;
@@ -52,6 +53,7 @@ string_tokens split(const char *const str, const char *const delim) {
         }
         add_character(token, str[i]);
     }
+    free(token);
 
     string_tokens string_tokens;
     string_tokens.tokens = tokens;
@@ -64,6 +66,7 @@ void free_string_tokens(string_tokens *tokens) {
     for (int i = 0; i < tokens->count_tokens; i++) {
         free(tokens->tokens[i].chars);
     }
+    free(tokens->tokens);
 }
 
 string *get_string_from_characters(string *str, char *characters) {
@@ -191,6 +194,7 @@ char* file_readline(FILE *fp) {
             return string;
         }
     }
+    free(string);
     return NULL;
 }
 

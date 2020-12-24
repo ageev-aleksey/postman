@@ -5,7 +5,6 @@
 #include "context.h"
 
 sigset_t orig_mask;
-pthread_mutex_t mutex_pselect;
 
 void *start_thread();
 
@@ -18,10 +17,6 @@ void pselect_close_connection() {
 void free_multiplex_context(multiplex_context context);
 
 int init_context() {
-    FD_ZERO(&app_context.master);
-    FD_ZERO(&app_context.read_fds);
-    FD_ZERO(&app_context.write_fds);
-
     sigset_t mask = {0};
     struct sigaction act = {0};
 
@@ -32,19 +27,21 @@ int init_context() {
     sigaddset(&mask, SIGTERM);
     sigprocmask(SIG_BLOCK, &mask, &orig_mask);
 
-    struct timespec tv = { 0 };
-    tv.tv_sec = 5;
+    struct timespec tv = {0};
+    tv.tv_sec = 1;
     tv.tv_nsec = 0;
 
     app_context.threads = allocate_memory(sizeof(*app_context.threads));
     for (int i = 0; i < config_context.threads; i++) {
-        thread thr = { 0 };
+        thread thr = {0};
         thr.id_thread = app_context.threads_size;
         thr.multiplex_context = allocate_memory(sizeof(*thr.multiplex_context));
         thr.multiplex_context_size = 0;
+        thr.is_stopped = false;
         thr.tv = tv;
         app_context.threads_size++;
-        app_context.threads = reallocate_memory(app_context.threads, sizeof(*app_context.threads) * app_context.threads_size);
+        app_context.threads = reallocate_memory(app_context.threads,
+                                                sizeof(*app_context.threads) * app_context.threads_size);
         app_context.threads[i] = thr;
     }
 
@@ -55,30 +52,182 @@ int init_context() {
     return 0;
 }
 
-bool is_success_response(smtp_context *smtp) {
-    if (is_ready_for_read(smtp->socket_desc)) {
-        smtp_response response = get_smtp_response(smtp);
-        if (is_smtp_success(response.status_code)) {
-            return true;
+void set_response_to_context(multiplex_context *context, thread *thr) {
+    if (is_ready_for_read(context->smtp_context.socket_desc, thr)) {
+        context->response = get_smtp_response(&context->smtp_context);
+    }
+}
+
+bool is_smtp_sender_ready(smtp_context *smtp, thread *thr) {
+    return is_ready_for_write(smtp->socket_desc, thr);
+}
+
+message *get_message(maildir_other_server *server) {
+    message *message = NULL;
+    if (server->messages_size > 0) {
+        message = read_message(server->message_full_file_names[0]);
+    }
+    return message;
+}
+
+void connect_handler(multiplex_context *context, thread *thr) {
+    status_code status = context->response.status_code;
+    if (status == NOT_ANSWER) {
+        set_response_to_context(context, thr);
+        return;
+    }
+
+    if (is_smtp_success(status)) {
+        if (is_smtp_sender_ready(&context->smtp_context, thr)) {
+            context->response.status_code = NOT_ANSWER;
+            context->response.message = NULL;
+            smtp_send_helo(&context->smtp_context);
+        }
+    }
+}
+
+void helo_handler(multiplex_context *context, thread *thr) {
+    status_code status = context->response.status_code;
+    if (status == NOT_ANSWER) {
+        set_response_to_context(context, thr);
+        return;
+    }
+
+    if (is_smtp_success(status)) {
+        if (is_smtp_sender_ready(&context->smtp_context, thr)) {
+            context->response.status_code = NOT_ANSWER;
+            context->response.message = NULL;
+            smtp_send_mail(&context->smtp_context, context->select_message->from[0]);
+            context->iteration++;
+        }
+    }
+}
+
+void mail_handler(multiplex_context *context, thread *thr) {
+    status_code status = context->response.status_code;
+    if (status == NOT_ANSWER) {
+        set_response_to_context(context, thr);
+        return;
+    }
+
+    if (is_smtp_success(status)) {
+        if (is_smtp_sender_ready(&context->smtp_context, thr)) {
+            context->response.status_code = NOT_ANSWER;
+            context->response.message = NULL;
+            if (context->iteration < context->select_message->from_size) {
+                smtp_send_mail(&context->smtp_context, context->select_message->from[context->iteration]);
+                context->iteration++;
+            } else {
+                context->iteration = 0;
+                smtp_send_rcpt(&context->smtp_context, context->select_message->to[0]);
+                context->iteration++;
+            }
+        }
+    }
+}
+
+void rcpt_handler(multiplex_context *context, thread *thr) {
+    status_code status = context->response.status_code;
+    if (status == NOT_ANSWER) {
+        set_response_to_context(context, thr);
+        return;
+    }
+
+    if (is_smtp_success(status)) {
+        if (is_smtp_sender_ready(&context->smtp_context, thr)) {
+            context->response.status_code = NOT_ANSWER;
+            context->response.message = NULL;
+            if (context->iteration < context->select_message->to_size) {
+                smtp_send_rcpt(&context->smtp_context,
+                               context->select_message->to[context->iteration]);
+                context->iteration++;
+            } else {
+                context->iteration = 0;
+                smtp_send_data(&context->smtp_context);
+            }
+        }
+    }
+}
+
+void data_handler(multiplex_context *context, thread *thr) {
+    status_code status = context->response.status_code;
+    if (status == NOT_ANSWER) {
+        set_response_to_context(context, thr);
+        return;
+    }
+
+    if (is_smtp_success(status)) {
+        if (is_smtp_sender_ready(&context->smtp_context, thr)) {
+            smtp_send_message(&context->smtp_context,
+                              context->select_message->strings[context->iteration]);
+            context->iteration++;
+        }
+    }
+}
+
+void message_handler(multiplex_context *context, thread *thr) {
+    status_code status = context->response.status_code;
+    if (status == NOT_ANSWER) {
+        set_response_to_context(context, thr);
+        return;
+    }
+
+    if (is_smtp_success(status)) {
+        if (context->iteration < context->select_message->strings_size) {
+            smtp_send_message(&context->smtp_context,
+                              context->select_message->strings[context->iteration]);
+            context->iteration++;
         } else {
-            return false;
+            context->response.status_code = NOT_ANSWER;
+            context->response.message = NULL;
+            context->iteration = 0;
+            smtp_send_end_message(&context->smtp_context);
+        }
+    }
+}
+
+void end_message_handler(multiplex_context *context, thread *thr) {
+    status_code status = context->response.status_code;
+    if (status == NOT_ANSWER) {
+        set_response_to_context(context, thr);
+        return;
+    }
+
+    if (is_smtp_success(status)) {
+        if (is_smtp_sender_ready(&context->smtp_context, thr)) {
+            context->response.status_code = NOT_ANSWER;
+            context->response.message = NULL;
+            if (context->server->messages_size > 1) {
+                smtp_send_rset(&context->smtp_context);
+                context->smtp_context.state_code = SMTP_HELO;
+            } else {
+                smtp_send_quit(&context->smtp_context);
+                remove_socket_from_context(context->smtp_context.socket_desc, thr);
+                remove_message_server(context->server, context->select_message);
+                free_multiplex_context(*context);
+                for (int i = 0; i < thr->multiplex_context_size; i++) {
+                    if (&thr->multiplex_context[i] == context) {
+                        for (int j = i; j < thr->multiplex_context_size - 1; j++) {
+                            thr->multiplex_context[j] = thr->multiplex_context[j + 1];
+                        }
+                    }
+                }
+                thr->multiplex_context_size--;
+                return;
+            }
+            context->select_message = NULL;
+            remove_message_server(context->server, context->select_message);
+        }
+    }
+}
+
+bool is_contains(maildir_other_server server, thread *thr) {
+    for (int i = 0; i < thr->multiplex_context_size; i++) {
+        if (strcmp(server.server, thr->multiplex_context[i].server->server) == 0) {
+            return true;
         }
     }
     return false;
-}
-
-bool is_smtp_sender_ready(smtp_context *smtp) {
-    return is_ready_for_write(smtp->socket_desc);
-}
-
-message **get_messages(maildir_other_server *server) {
-    pthread_mutex_lock(&mutex_pselect);
-    message **messages = callocate_memory(server->messages_size, sizeof(**messages));
-    for (int i = 0; i < server->messages_size; i++) {
-        messages[i] = read_message(server->message_full_file_names[i]);
-    }
-    pthread_mutex_unlock(&mutex_pselect);
-    return messages;
 }
 
 void *start_thread(thread *thr) {
@@ -87,10 +236,14 @@ void *start_thread(thread *thr) {
 
     while (true) {
 
-        int ret = pselect(app_context.fdmax, &app_context.read_fds,
-                          &app_context.write_fds, NULL, &thr->tv, &orig_mask);
+        reset_socket_to_context(thr);
+
+        int ret = pselect(thr->fdmax, &thr->read_fds,
+                          &thr->write_fds, NULL, &thr->tv, &orig_mask);
 
         if (is_interrupt()) {
+            free(thr->multiplex_context);
+            thr->is_stopped = true;
             break;
         }
 
@@ -103,11 +256,7 @@ void *start_thread(thread *thr) {
             LOG_ERROR("Ошибка в мультиплексировании", NULL);
             break;
         } else if (ret == 0) {
-            LOG_INFO("Таймаут подключения", NULL);
-
-            pthread_mutex_lock(&mutex_pselect);
             update_maildir(maildir);
-            output_maildir(maildir);
 
             for (int j = 0, i = 0; j < maildir->servers_size; j++) {
                 if (maildir->servers[j].messages_size > 0) {
@@ -115,101 +264,46 @@ void *start_thread(thread *thr) {
                         smtp_context *cont = smtp_connect(maildir->servers[j].server, "25", NULL);
                         thr->multiplex_context = reallocate_memory(thr->multiplex_context,
                                                                    sizeof(*thr->multiplex_context) * (i + 1));
-                        thr->multiplex_context[i].smtp_context = *cont;
+                        thr->multiplex_context[i].smtp_context.socket_desc = cont->socket_desc;
+                        thr->multiplex_context[i].smtp_context.state_code = cont->state_code;
                         thr->multiplex_context[i].server = &maildir->servers[j];
                         thr->multiplex_context[i].iteration = 0;
                         thr->multiplex_context[i].select_message = NULL;
-                        add_socket_to_context(thr->multiplex_context[i].smtp_context.socket_desc);
+                        thr->multiplex_context[i].response.status_code = NOT_ANSWER;
                         thr->multiplex_context_size++;
                         i++;
+                        add_socket_to_context(cont->socket_desc, thr);
                         free(cont);
                     }
                 }
             }
-            pthread_mutex_unlock(&mutex_pselect);
         } else {
             for (int i = 0; i < thr->multiplex_context_size; i++) {
                 if (thr->multiplex_context[i].select_message == NULL) {
-                    thr->multiplex_context->select_message = get_messages(thr->multiplex_context[i].server)[0];
+                    thr->multiplex_context[i].select_message = get_message(thr->multiplex_context[i].server);
                 }
-                message *mess = thr->multiplex_context->select_message;
+
                 switch (thr->multiplex_context[i].smtp_context.state_code) {
                     case SMTP_CONNECT:
-                        if (is_success_response(&thr->multiplex_context[i].smtp_context) &&
-                            is_smtp_sender_ready(&thr->multiplex_context[i].smtp_context)) {
-                            smtp_send_helo(&thr->multiplex_context[i].smtp_context);
-                        }
+                        connect_handler(&thr->multiplex_context[i], thr);
                         break;
                     case SMTP_HELO:
-                        if (is_success_response(&thr->multiplex_context[i].smtp_context) &&
-                            is_smtp_sender_ready(&thr->multiplex_context[i].smtp_context)) {
-                            smtp_send_mail(&thr->multiplex_context[i].smtp_context, mess->from[0]);
-                            thr->multiplex_context[i].iteration++;
-                        }
+                        helo_handler(&thr->multiplex_context[i], thr);
                         break;
                     case SMTP_MAIL:
-                        if (is_success_response(&thr->multiplex_context[i].smtp_context) &&
-                            is_smtp_sender_ready(&thr->multiplex_context[i].smtp_context)) {
-                            if (thr->multiplex_context[i].iteration < mess->from_size) {
-                                smtp_send_mail(&thr->multiplex_context[i].smtp_context, mess->from[thr->multiplex_context[i].iteration]);
-                                thr->multiplex_context[i].iteration++;
-                            } else {
-                                thr->multiplex_context[i].iteration = 0;
-                                smtp_send_rcpt(&thr->multiplex_context[i].smtp_context, mess->to[0]);
-                                thr->multiplex_context[i].iteration++;
-                            }
-                        }
+                        mail_handler(&thr->multiplex_context[i], thr);
                         break;
                     case SMTP_RCPT:
-                        if (is_success_response(&thr->multiplex_context[i].smtp_context) &&
-                            is_smtp_sender_ready(&thr->multiplex_context[i].smtp_context)) {
-                            if (thr->multiplex_context[i].iteration < mess->to_size) {
-                                smtp_send_rcpt(&thr->multiplex_context[i].smtp_context, mess->to[thr->multiplex_context[i].iteration]);
-                                thr->multiplex_context[i].iteration++;
-                            } else {
-                                thr->multiplex_context[i].iteration = 0;
-                                smtp_send_data(&thr->multiplex_context[i].smtp_context);
-                            }
-                        }
+                        rcpt_handler(&thr->multiplex_context[i], thr);
                         break;
                     case SMTP_DATA:
-                        if (is_success_response(&thr->multiplex_context[i].smtp_context) &&
-                            is_smtp_sender_ready(&thr->multiplex_context[i].smtp_context)) {
-                            smtp_send_message(&thr->multiplex_context[i].smtp_context, mess->strings[thr->multiplex_context[i].iteration]);
-                            thr->multiplex_context[i].iteration++;
-                        }
+                        data_handler(&thr->multiplex_context[i], thr);
                         break;
                     case SMTP_MESSAGE:
-                        if (is_smtp_sender_ready(&thr->multiplex_context[i].smtp_context)) {
-                            if (thr->multiplex_context[i].iteration < mess->strings_size) {
-                                smtp_send_message(&thr->multiplex_context[i].smtp_context, mess->strings[thr->multiplex_context[i].iteration]);
-                                thr->multiplex_context[i].iteration++;
-                            } else {
-                                thr->multiplex_context[i].iteration = 0;
-                                smtp_send_end_message(&thr->multiplex_context[i].smtp_context);
-                            }
-                        }
+                        message_handler(&thr->multiplex_context[i], thr);
                         break;
                     case SMTP_END_MESSAGE:
-                        if (is_success_response(&thr->multiplex_context[i].smtp_context) &&
-                            is_smtp_sender_ready(&thr->multiplex_context[i].smtp_context)) {
-                            if (thr->multiplex_context[i].server->messages_size > 1) {
-                                smtp_send_rset(&thr->multiplex_context[i].smtp_context);
-                                thr->multiplex_context[i].smtp_context.state_code = SMTP_HELO;
-                            } else {
-                                smtp_send_quit(&thr->multiplex_context[i].smtp_context);
-                                remove_socket_from_context(thr->multiplex_context[i].smtp_context.socket_desc);
-                                remove_message_server(thr->multiplex_context[i].server, mess);
-                                thr->multiplex_context_size--;
-                                free_multiplex_context(thr->multiplex_context[i]);
-                                for (int k = i; k < thr->multiplex_context_size; k++) {
-                                    thr->multiplex_context[k] = thr->multiplex_context[k + 1];
-                                }
-                                continue;
-                            }
-                            thr->multiplex_context[i].select_message = NULL;
-                            remove_message_server(thr->multiplex_context[i].server, mess);
-                        }
+                        end_message_handler(&thr->multiplex_context[i], thr);
                         break;
                     case SMTP_RSET:
                     case SMTP_QUIT:
@@ -218,7 +312,6 @@ void *start_thread(thread *thr) {
                         LOG_WARN("undefined SMTP state", NULL);
                         break;
                 }
-                reset_socket_to_context(thr->multiplex_context[i].smtp_context.socket_desc);
             }
         }
     }
@@ -233,48 +326,68 @@ void free_multiplex_context(multiplex_context multiplex_cont) {
     free(multiplex_cont.server->server);
 }
 
-int add_socket_to_context(int socket) {
-    FD_ZERO(&app_context.master);
-    FD_SET(socket, &app_context.master);
-    app_context.read_fds = app_context.master;
-    app_context.write_fds = app_context.master;
+int add_socket_to_context(int socket, thread *thr) {
+    pthread_mutex_lock(&thr->mutex);
+    FD_ZERO(&thr->master);
+    FD_SET(socket, &thr->master);
+    thr->read_fds = thr->master;
+    thr->write_fds = thr->master;
 
     if (socket > 0) {
-        app_context.fdmax = socket + 1;
+        thr->fdmax = socket + 1;
     }
-    app_context.fd_size++;
+    thr->fd_size++;
+    pthread_mutex_unlock(&thr->mutex);
     return 0;
 }
 
-int reset_socket_to_context(int socket) {
-    FD_ZERO(&app_context.master);
-    FD_SET(socket, &app_context.master);
-    app_context.read_fds = app_context.master;
-    app_context.write_fds = app_context.master;
-
-    if (socket > 0) {
-        app_context.fdmax = socket + 1;
+int reset_socket_to_context(thread *thr) {
+    pthread_mutex_lock(&thr->mutex);
+    FD_ZERO(&thr->master);
+    FD_ZERO(&thr->read_fds);
+    FD_ZERO(&thr->write_fds);
+    for (int i = 0; i < thr->multiplex_context_size; i++) {
+        FD_SET(thr->multiplex_context[i].smtp_context.socket_desc, &thr->master);
     }
-
+    thr->read_fds = thr->master;
+    thr->write_fds = thr->master;
+    pthread_mutex_unlock(&thr->mutex);
     return 0;
 }
 
-int remove_socket_from_context(int socket) {
-    FD_CLR(socket, &app_context.master);
-    FD_ZERO(&app_context.master);
-    app_context.read_fds = app_context.master;
-    app_context.write_fds = app_context.master;
-    app_context.fd_size--;
-    app_context.fdmax--;
+int remove_socket_from_context(int socket, thread *thr) {
+    pthread_mutex_lock(&thr->mutex);
+    FD_CLR(socket, &thr->master);
+    FD_ZERO(&thr->master);
+    thr->read_fds = thr->master;
+    thr->write_fds = thr->master;
+    thr->fd_size--;
+    thr->fdmax--;
     shutdown(socket, SHUT_RDWR);
     close(socket);
+    pthread_mutex_unlock(&thr->mutex);
     return 0;
 }
 
-bool is_ready_for_read(int socket) {
-    return FD_ISSET(socket, &app_context.read_fds);
+bool is_ready_for_read(int socket, thread *thr) {
+    return FD_ISSET(socket, &thr->read_fds);
 }
 
-bool is_ready_for_write(int socket) {
-    return FD_ISSET(socket, &app_context.write_fds);
+bool is_ready_for_write(int socket, thread *thr) {
+    return FD_ISSET(socket, &thr->write_fds);
+}
+
+int destroy_context() {
+    int count_threads_stopped = 0;
+    while (true) {
+        if (count_threads_stopped == app_context.threads_size) {
+            free(app_context.threads);
+            break;
+        }
+        for (int i = 0; i < app_context.threads_size; i++) {
+            if (app_context.threads[i].is_stopped) {
+                count_threads_stopped++;
+            }
+        }
+    }
 }

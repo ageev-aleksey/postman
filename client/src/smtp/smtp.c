@@ -64,8 +64,7 @@ smtp_context* smtp_connect(char *server, char *port, smtp_context *context) {
             context->socket_desc = server_socket;
             context->state_code = SMTP_CONNECT;
 
-            LOG_INFO("Успешное подключение к %s по адресу: %s:", server, get_addr_by_socket(server_socket),
-                     config_context.server_port);
+            LOG_INFO("Успешное подключение к %s по адресу: %s:%s", server, ips.ip[0], port);
         }
     } else {
         char *mxs[MAX_MX_ADDRS];
@@ -79,8 +78,9 @@ smtp_context* smtp_connect(char *server, char *port, smtp_context *context) {
                 context->socket_desc = server_socket;
                 context->state_code = SMTP_CONNECT;
 
-                LOG_INFO("Успешное подключение к %s по адресу: %s:%s", server,
-                         get_addr_by_socket(context->socket_desc), port);
+                char *addr = get_addr_by_socket(server_socket);
+                LOG_INFO("Успешное подключение к %s по адресу: %s", server, addr);
+                free(addr);
 
                 break;
             }
@@ -108,7 +108,9 @@ state_code smtp_send_helo(smtp_context *context) {
 
         buffer_send[strlen(buffer_send) - 1] = 0;
         buffer_send[strlen(buffer_send) - 1] = 0;
-        LOG_INFO("Request <%s>: %s", get_addr_by_socket(context->socket_desc), buffer_send);
+        char *addr = get_addr_by_socket(context->socket_desc);
+        LOG_INFO("Request <%s>: %s", addr, buffer_send);
+        free(addr);
     }
     free(buffer_send);
     return context->state_code;
@@ -123,7 +125,9 @@ state_code smtp_send_ehlo(smtp_context *context) {
 
         buffer_send[strlen(buffer_send) - 1] = 0;
         buffer_send[strlen(buffer_send) - 1] = 0;
-        LOG_INFO("Request <%s>: %s", get_addr_by_socket(context->socket_desc), buffer_send);
+        char *addr = get_addr_by_socket(context->socket_desc);
+        LOG_INFO("Request <%s>: %s", addr, buffer_send);
+        free(addr);
     }
     free(buffer_send);
     return context->state_code;
@@ -138,7 +142,9 @@ state_code smtp_send_mail(smtp_context *context, char *from_email) {
 
         buffer_send[strlen(buffer_send) - 1] = 0;
         buffer_send[strlen(buffer_send) - 1] = 0;
-        LOG_INFO("Request <%s>: %s", get_addr_by_socket(context->socket_desc), buffer_send);
+        char *addr = get_addr_by_socket(context->socket_desc);
+        LOG_INFO("Request <%s>: %s", addr, buffer_send);
+        free(addr);
     }
 
     free(buffer_send);
@@ -154,7 +160,9 @@ state_code smtp_send_rcpt(smtp_context *context, char *to_email) {
 
         buffer_send[strlen(buffer_send) - 1] = 0;
         buffer_send[strlen(buffer_send) - 1] = 0;
-        LOG_INFO("Request <%s>: %s", get_addr_by_socket(context->socket_desc), buffer_send);
+        char *addr = get_addr_by_socket(context->socket_desc);
+        LOG_INFO("Request <%s>: %s", addr, buffer_send);
+        free(addr);
     }
 
     free(buffer_send);
@@ -164,7 +172,9 @@ state_code smtp_send_rcpt(smtp_context *context, char *to_email) {
 state_code smtp_send_data(smtp_context *context) {
     if (send_smtp_request(context, "DATA\r\n") != SMTP_INVALID) {
         context->state_code = SMTP_DATA;
-        LOG_INFO("Request <%s>: %s", get_addr_by_socket(context->socket_desc), "DATA");
+        char *addr = get_addr_by_socket(context->socket_desc);
+        LOG_INFO("Request <%s>: %s", addr, "DATA");
+        free(addr);
     }
 
     return context->state_code;
@@ -185,7 +195,9 @@ state_code smtp_send_message(smtp_context *context, char *message) {
             body_request[strlen(body_request) - 1] = 0;
         }
 
-        LOG_INFO("Request <%s>: %s", get_addr_by_socket(context->socket_desc), body_request);
+        char *addr = get_addr_by_socket(context->socket_desc);
+        LOG_INFO("Request <%s>: %s", addr, body_request);
+        free(addr);
         free(body_request);
     }
 
@@ -195,7 +207,9 @@ state_code smtp_send_message(smtp_context *context, char *message) {
 state_code smtp_send_end_message(smtp_context *context) {
     if (send_smtp_request(context, "\r\n.\r\n") != SMTP_INVALID) {
         context->state_code = SMTP_END_MESSAGE;
-        LOG_INFO("Request <%s>: %s", get_addr_by_socket(context->socket_desc), ".");
+        char *addr = get_addr_by_socket(context->socket_desc);
+        LOG_INFO("Request <%s>: %s", addr, ".");
+        free(addr);
     }
 
     return context->state_code;
@@ -204,7 +218,9 @@ state_code smtp_send_end_message(smtp_context *context) {
 state_code smtp_send_rset(smtp_context *context) {
     if (send_smtp_request(context, "RSET\r\n") != SMTP_INVALID) {
         context->state_code = SMTP_CONNECT;
-        LOG_INFO("Request <%s>: %s", get_addr_by_socket(context->socket_desc), "RSET");
+        char *addr = get_addr_by_socket(context->socket_desc);
+        LOG_INFO("Request <%s>: %s", addr, "RSET");
+        free(addr);
     }
 
     return context->state_code;
@@ -213,7 +229,9 @@ state_code smtp_send_rset(smtp_context *context) {
 state_code smtp_send_quit(smtp_context *context) {
     if (send_smtp_request(context, "QUIT\r\n") != SMTP_INVALID) {
         context->state_code = SMTP_QUIT;
-        LOG_INFO("Request <%s>: %s", get_addr_by_socket(context->socket_desc), "QUIT");
+        char *addr = get_addr_by_socket(context->socket_desc);
+        LOG_INFO("Request <%s>: %s", addr, "QUIT");
+        free(addr);
     }
 
     return context->state_code;
@@ -230,9 +248,11 @@ state_code send_smtp_request(smtp_context *smtp_cont, char *str) {
 smtp_response get_smtp_response(smtp_context *context) {
     smtp_response smtp_response;
     char *buffer = NULL;
+    size_t size_str = 0;
 
+    char *addr = get_addr_by_socket(context->socket_desc);
     if ((buffer = receive_line(context->socket_desc)) == NULL) {
-        LOG_WARN("Не удалось прочитать данные из входного буфера", NULL);
+        LOG_WARN("Не удалось прочитать данные из входного буфера (%s)", addr);
         smtp_response.message = "error";
         smtp_response.status_code = UNDEFINED_ERROR;
         return smtp_response;
@@ -240,7 +260,6 @@ smtp_response get_smtp_response(smtp_context *context) {
 
     int i = 0;
     char code[3];
-    size_t size_str = strlen(buffer);
     for (; i < 3; i++) {
         if (buffer[i] == ' ') {
             break;
@@ -259,15 +278,30 @@ smtp_response get_smtp_response(smtp_context *context) {
 
     smtp_response.status_code = convert_string_to_long_int(code);
 
-    LOG_INFO("Response <%s>: %d %s", get_addr_by_socket(context->socket_desc),
+    LOG_INFO("Response <%s>: %d %s", addr,
              smtp_response.status_code, smtp_response.message);
 
+    free(addr);
     free(buffer);
     return smtp_response;
 }
 
 bool is_smtp_success(status_code status_code) {
     if ((status_code - 200) / 100 == 0 || (status_code - 300) / 100 == 0) {
+        return true;
+    }
+    return false;
+}
+
+bool is_smtp_4xx_error(status_code status_code) {
+    if ((status_code - 400) / 100 == 0) {
+        return true;
+    }
+    return false;
+}
+
+bool is_smtp_5xx_error(status_code status_code) {
+    if ((status_code - 500) / 100 == 0) {
         return true;
     }
     return false;

@@ -11,26 +11,30 @@
 
 typedef struct multiplex_context {
     smtp_context smtp_context;
+    smtp_response response;
     maildir_other_server *server;
     message *select_message;
     int iteration;
 } multiplex_context;
 
 typedef struct thread {
-    int id_thread;
-    pthread_t pthread;
-    multiplex_context *multiplex_context;
-    int multiplex_context_size;
-    struct timespec tv;
-} thread;
-
-typedef struct context {
     fd_set master;
     fd_set read_fds;
     fd_set write_fds;
     int fdmax;
     int fd_size;
 
+    int id_thread;
+    pthread_t pthread;
+    multiplex_context *multiplex_context;
+    int multiplex_context_size;
+    struct timespec tv;
+    bool is_stopped;
+
+    pthread_mutex_t mutex;
+} thread;
+
+typedef struct context {
     thread *threads;
     int threads_size;
 } context;
@@ -38,10 +42,11 @@ typedef struct context {
 static context app_context = { 0 };
 
 int init_context();
-int start_pselect(struct timespec tv);
-int add_socket_to_context(int socket);
-int remove_socket_from_context(int socket);
-int reset_socket_to_context(int socket);
+int add_socket_to_context(int socket, thread *thr);
+int remove_socket_from_context(int socket, thread *thr);
+int reset_socket_to_context(thread *thr);
 void exit_handler(int sig);
-bool is_ready_for_read(int socket);
-bool is_ready_for_write(int socket);
+bool is_ready_for_read(int socket, thread *thr);
+bool is_ready_for_write(int socket, thread *thr);
+
+int destroy_context();

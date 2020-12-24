@@ -7,18 +7,15 @@
 char *receive_line(int socket_d) {
     int end_chars_count = 0;
 
-    size_t size = 100;
+    size_t size = 4;
 
-    char *dist_buffer = allocate_memory(size);
+    char *dist_buffer = allocate_memory(sizeof(*dist_buffer) * size);
+    memset(dist_buffer, 0, size);
     char *ptr = dist_buffer;
     int count_size = 0;
 
     int bytes;
     while ((bytes = recv(socket_d, ptr, 1, 0)) > 0) {
-        if (bytes <= 0) {
-            return NULL;
-        }
-
         count_size++;
 
         if (*ptr == '\0') {
@@ -41,6 +38,10 @@ char *receive_line(int socket_d) {
             ptr = dist_buffer + count_size;
         }
     }
+    if (bytes <= 0) {
+        return NULL;
+    }
+
     return dist_buffer;
 }
 
@@ -59,7 +60,7 @@ int send_line(int socket_d, char *message) {
 }
 
 char *get_addr_by_socket(int socket) {
-    struct sockaddr_in client_addr;
+    struct sockaddr_in client_addr = { 0 };
     socklen_t s_len = sizeof(struct sockaddr);
     if (getpeername(socket, (struct sockaddr *) &client_addr, &s_len) == -1) {
         LOG_ERROR("Невозможно получить имя по сокету", NULL);

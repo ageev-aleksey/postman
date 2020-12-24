@@ -47,7 +47,8 @@ typedef enum smtp_status_code {
     SMTP_ACTION_WAS_ABORTED_DUE_TO_EXCEEDED_STORAGE_ALLOCATION = 552,
     SMTP_MAILBOX_NAME_IS_INVALID = 553,
     SMTP_MAILBOX_DISABLED = 554,
-    UNDEFINED_ERROR
+    UNDEFINED_ERROR = 0,
+    NOT_ANSWER = 1
 } status_code;
 
 typedef struct smtp_address {
@@ -85,3 +86,5 @@ state_code send_smtp_request(smtp_context *context, char *str);
 smtp_response get_smtp_response(smtp_context *context);
 
 bool is_smtp_success(status_code);
+bool is_smtp_4xx_error(status_code status_code);
+bool is_smtp_5xx_error(status_code status_code);

@@ -192,6 +192,8 @@ void read_maildir_servers(maildir_main *maildir) {
 
     maildir->servers = servers;
     maildir->servers_size = servers_count;
+
+    free(path_other_servers);
 }
 
 void read_maildir_servers_new(maildir_other_server *server) {
@@ -245,6 +247,7 @@ message *read_message(char *filepath) {
             trim(string);
 
             if (strcmp(string, "\n") == 0 || strcmp(string, "\r\n") == 0) {
+                free(string);
                 break;
             }
 
@@ -255,16 +258,16 @@ message *read_message(char *filepath) {
                     mes->from_size = tokens.count_tokens;
                     mes->from = callocate_memory(mes->from_size, sizeof(*mes->from));
                     for (size_t i = 0; i < mes->from_size; i++) {
-                        mes->from[i] = tokens.tokens[i].chars;
+                        asprintf(&mes->from[i], "%s", tokens.tokens[i].chars);
                     }
-                    free(tokens.tokens);
+                    free_string_tokens(&tokens);
                 } else if (strcmp(p->first, "X-POSTMAN-TO") == 0) {
                     string_tokens tokens = split(p->second, ",");
                     mes->to_size = tokens.count_tokens;
                     mes->to = callocate_memory(mes->to_size, sizeof(*mes->to));
                     mes->addresses = callocate_memory(1, sizeof(*mes->addresses));
                     for (size_t i = 0; i < mes->to_size; i++) {
-                        mes->to[i] = tokens.tokens[i].chars;
+                        asprintf(&mes->to[i], "%s", tokens.tokens[i].chars);
                         string_tokens ts = split(p->second, "@");
                         if (ts.count_tokens == 2) {
                             bool flag = true;
@@ -275,18 +278,22 @@ message *read_message(char *filepath) {
                             }
                             if (flag) {
                                 mes->addresses = reallocate_memory(mes->addresses,sizeof(*mes->addresses) * (mes->addresses_size + 1));
-                                mes->addresses[mes->addresses_size++] = ts.tokens[1].chars;
+                                asprintf(&mes->addresses[mes->addresses_size++], "%s", ts.tokens[1].chars);
                             }
                         }
+                        free_string_tokens(&ts);
                     }
-                    free(tokens.tokens);
+                    free_string_tokens(&tokens);
                 } else if (strcmp(p->first, "X-POSTMAN-DATE") == 0) {
                     // mes->date = p->second;
                     // TODO: пока игнорирую дату, а нужна ли она вообще?
                 }
-                LOG_INFO("%s/%s", p->first, p->second);
             }
-            free(p);
+            if (p != NULL) {
+                free(p->first);
+                free(p->second);
+                free(p);
+            }
             free(string);
         }
 
@@ -440,10 +447,8 @@ void remove_message_server(maildir_other_server *server, message *mes) {
         if (server->message_full_file_names != NULL) {
             for (int i = 0; i < server->messages_size; i++) {
                 if (strcmp(server->message_full_file_names[i], mes->directory) == 0) {
-                    int j = i;
-                    while (j < server->messages_size - 1) {
+                    for (int j = i; j < server->messages_size - 1; j++) {
                         server->message_full_file_names[j] = server->message_full_file_names[j + 1];
-                        j++;
                     }
                     server->messages_size--;
                 }

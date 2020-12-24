@@ -18,6 +18,7 @@ int main(int argc, char **argv) {
             destroy_configuration();
             LOG_INFO("Сервер остановлен", NULL);
             logger_finalize();
+            destroy_context();
             return 0;
         }
     }
