@@ -175,7 +175,7 @@ void read_maildir_servers(maildir_main *maildir) {
             servers_count++;
             servers = reallocate_memory(servers, sizeof(*servers) * servers_count);
 
-            maildir_other_server server = { 0 };
+            maildir_other_server server = {0};
 
             asprintf(&server.server, "%s", entry->d_name);
             asprintf(&server.directory, "%s/%s", path_other_servers, server.server);
@@ -222,8 +222,8 @@ void read_maildir_servers_new(maildir_other_server *server) {
         if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0 && strcmp(entry->d_name, "tmp") != 0) {
             messages_count++;
             server->message_full_file_names = reallocate_memory(server->message_full_file_names,
-                                                                         sizeof(server->message_full_file_names)
-                                                                         * messages_count);
+                                                                sizeof(server->message_full_file_names)
+                                                                * messages_count);
             asprintf(&server->message_full_file_names[messages_count - 1], "%s/%s", server->directory, entry->d_name);
         }
         entry = readdir(dir);
@@ -274,7 +274,8 @@ message *read_message(char *filepath) {
                                 }
                             }
                             if (flag) {
-                                mes->addresses = reallocate_memory(mes->addresses,sizeof(*mes->addresses) * (mes->addresses_size + 1));
+                                mes->addresses = reallocate_memory(mes->addresses,
+                                                                   sizeof(*mes->addresses) * (mes->addresses_size + 1));
                                 asprintf(&mes->addresses[mes->addresses_size++], "%s", ts.tokens[1].chars);
                             }
                         }
@@ -421,6 +422,31 @@ void output_maildir(maildir_main *maildir) {
     }
 }
 
+void remove_all_message_server(maildir_other_server *server) {
+    if (server == NULL || server->directory == NULL) {
+        LOG_ERROR("Невозможно удалить сообщение: mes = NULL || mes->directory == NULL", NULL);
+        return;
+    }
+
+    struct stat stat_info;
+    if (!stat(server->directory, &stat_info)) {
+        if (!S_ISDIR(stat_info.st_mode)) {
+            LOG_ERROR("Ошибка удаления письма: %s - не каталог", server->directory);
+            return;
+        }
+    }
+
+    if (strstr(server->directory, DIRECTORY_OTHER_SERVERS) != NULL) {
+        if (server->message_full_file_names != NULL) {
+            for (int i = 0; i < server->messages_size; i++) {
+                if (remove(server->message_full_file_names[i]) != 0) {
+                    LOG_ERROR("Не удалось удалить письмо %s", server->message_full_file_names[i]);
+                }
+            }
+        }
+    }
+}
+
 void remove_message_server(maildir_other_server *server, message *mes) {
     if (mes == NULL || mes->directory == NULL) {
         LOG_ERROR("Невозможно удалить сообщение: mes = NULL || mes->directory == NULL", NULL);
@@ -437,17 +463,19 @@ void remove_message_server(maildir_other_server *server, message *mes) {
 
     if (strstr(mes->directory, DIRECTORY_OTHER_SERVERS) != NULL) {
         if (remove(mes->directory) != 0) {
-            LOG_ERROR("Не удалось удалить письмо", NULL);
+            LOG_ERROR("Не удалось удалить письмо %s", mes->directory);
             return;
         }
 
         if (server->message_full_file_names != NULL) {
             for (int i = 0; i < server->messages_size; i++) {
                 if (strcmp(server->message_full_file_names[i], mes->directory) == 0) {
+                    free(server->message_full_file_names[i]);
                     for (int j = i; j < server->messages_size - 1; j++) {
                         server->message_full_file_names[j] = server->message_full_file_names[j + 1];
                     }
                     server->messages_size--;
+                    break;
                 }
             }
         }
@@ -474,24 +502,26 @@ void remove_message_server(maildir_other_server *server, message *mes) {
 }
 
 void finalize_maildir(maildir_main *maildir) {
-    for (int i = 0; i < maildir->servers_size; i++) {
-        free(maildir->servers[i].server);
-        free(maildir->servers[i].directory);
-        for (int k = 0; k < maildir->servers[i].messages_size; k++) {
-            free(maildir->servers[i].message_full_file_names[k]);
+    if (maildir != NULL) {
+        for (int i = 0; i < maildir->servers_size; i++) {
+            free(maildir->servers[i].server);
+            free(maildir->servers[i].directory);
+            for (int k = 0; k < maildir->servers[i].messages_size; k++) {
+                free(maildir->servers[i].message_full_file_names[k]);
+            }
+            free(maildir->servers[i].message_full_file_names);
         }
-        free(maildir->servers[i].message_full_file_names);
-    }
-    free(maildir->servers);
-    for (int i = 0; i < maildir->users_size; i++) {
-        free(maildir->users[i].username);
-        free(maildir->users[i].directory);
-        for (int k = 0; k < maildir->users[i].messages_size; k++) {
-            free(maildir->users[i].message_full_file_names[k]);
+        free(maildir->servers);
+        for (int i = 0; i < maildir->users_size; i++) {
+            free(maildir->users[i].username);
+            free(maildir->users[i].directory);
+            for (int k = 0; k < maildir->users[i].messages_size; k++) {
+                free(maildir->users[i].message_full_file_names[k]);
+            }
+            free(maildir->users[i].message_full_file_names);
         }
-        free(maildir->users[i].message_full_file_names);
+        free(maildir->users);
+        free(maildir->directory);
     }
-    free(maildir->users);
-    free(maildir->directory);
     free(maildir);
 }

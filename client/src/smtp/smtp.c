@@ -42,10 +42,10 @@ int server_connect(ips ips, char *port) {
 }
 
 smtp_context* smtp_connect(char *server, char *port, smtp_context *context) {
-    LOG_INFO("Попытка соединения с сервером", NULL);
+    LOG_INFO("Попытка соединения с сервером %s", server);
 
     if (context == NULL) {
-        LOG_INFO("Выделяем память под SMTP-контекст", NULL);
+        LOG_INFO("Выделяем память под SMTP-контекст <%s>", server);
         context = allocate_memory(sizeof(*context));
     }
 
@@ -69,6 +69,11 @@ smtp_context* smtp_connect(char *server, char *port, smtp_context *context) {
     } else {
         char *mxs[MAX_MX_ADDRS];
         int len = resolvmx(server, mxs, MAX_MX_ADDRS);
+
+        if (len == -1) {
+            LOG_WARN("MX-запись для данного домена %s не найдена", server);
+            return context;
+        }
 
         for (int i = 0; i < len; i++) {
             ips = get_ips_by_hostname(mxs[i]);
@@ -282,7 +287,7 @@ smtp_response get_smtp_response(smtp_context *context) {
 
     smtp_response.status_code = convert_string_to_long_int(code);
 
-    LOG_DEBUG("Response <%s>: %d %s", addr,
+    LOG_INFO("Response <%s>: %d %s", addr,
              smtp_response.status_code, smtp_response.message);
 
     free(addr);

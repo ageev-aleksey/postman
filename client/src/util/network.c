@@ -99,7 +99,7 @@ int resolvmx(const char *name, char **mxs, int limit) {
     int mx_index, ns_index, len;
     char dispbuf[4096];
 
-    if ((len = res_search(name, C_IN, T_MX, response, sizeof(response))) < 0) {
+    if ((len = res_search(name, C_IN, T_MX, response, NS_PACKETSZ + 1)) < 0) {
         /* WARN: res_search failed */
         return -1;
     }

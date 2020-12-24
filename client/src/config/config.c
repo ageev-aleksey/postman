@@ -10,6 +10,10 @@ bool loading_config() {
     config_t cfg;
     config_init(&cfg);
 
+    config_context.maildir.path = NULL;
+    config_context.hostname = NULL;
+    config_context.server_port = NULL;
+
     LOG_INFO("Загрузка конфигурации SMTP-клиента", NULL);
     if (!(config_read_file(&cfg, APPLICATION_CONFIG))) {
         config_destroy(&cfg);
@@ -76,5 +80,4 @@ bool destroy_configuration() {
     free(config_context.hostname);
     free(config_context.server_port);
     free(config_context.maildir.path);
-    LOG_INFO("Освобождение ресурсов, выделенных под конфигурацию", NULL);
 }

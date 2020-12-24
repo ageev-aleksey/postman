@@ -30,8 +30,6 @@ typedef struct thread {
     int multiplex_context_size;
     struct timespec tv;
     bool is_stopped;
-
-    pthread_mutex_t mutex;
 } thread;
 
 typedef struct context {
@@ -49,4 +47,4 @@ void exit_handler(int sig);
 bool is_ready_for_read(int socket, thread *thr);
 bool is_ready_for_write(int socket, thread *thr);
 
-int destroy_context();
+void destroy_context();

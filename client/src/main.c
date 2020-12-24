@@ -5,9 +5,10 @@
 
 int main(int argc, char **argv) {
     start_logger();
-    loading_config();
-    LOG_INFO("Начало работы SMTP-клиента", NULL);
+    LOG_INFO("Начало работы MDA", NULL);
     if (!loading_config()) {
+        destroy_configuration();
+        logger_finalize();
         return -1;
     }
     init_signals_handler();
@@ -15,10 +16,10 @@ int main(int argc, char **argv) {
 
     while (true) {
         if (is_interrupt()) {
-            destroy_configuration();
-            LOG_INFO("Сервер остановлен", NULL);
-            logger_finalize();
+            LOG_INFO("Остановка MDA", NULL);
             destroy_context();
+            destroy_configuration();
+            logger_finalize();
             return 0;
         }
     }

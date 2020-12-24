@@ -14,8 +14,8 @@ int init_signals_handler() {
 
     sigemptyset(&act.sa_mask);
     sigaddset(&act.sa_mask, SIGINT);
-    sigaddset(&act.sa_mask, SIGKILL);
     sigaddset(&act.sa_mask, SIGTERM);
+    sigaction(SIGINT, &act, 0);
     sigaction(SIGTERM, &act, 0);
     LOG_INFO("Инициализация обработчиков сигналов", NULL);
 }

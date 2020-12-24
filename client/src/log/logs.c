@@ -11,7 +11,7 @@ typedef struct node {
 } node;
 
 int interrupt_thread_local = 0;
-pthread_t thread_logger = { 0 };
+pthread_t thread_logger = {0};
 pthread_mutex_t mutex_queue;
 
 TAILQ_HEAD(logs_queue, node) head;
@@ -28,11 +28,11 @@ void push_log(log *value) {
     pthread_mutex_unlock(&mutex_queue);
 }
 
-log* pop_log() {
+log *pop_log() {
     pthread_mutex_lock(&mutex_queue);
     node *old = TAILQ_FIRST(&head);
     TAILQ_REMOVE(&head, old, nodes);
-    log* data = old->data;
+    log *data = old->data;
     free(old);
     pthread_mutex_unlock(&mutex_queue);
     return data;
@@ -55,22 +55,22 @@ void print_message(log *l) {
     switch (l->type) {
         case LOG_INFO:
             printf(COLOR_MAGENTA "[%s] " COLOR_BLUE "%s    " COLOR_CYAN " [%s] [%s:%d]: " " %s\n",
-                    buffer, "INFO", l->thread, l->filename, l->line, l->message);
+                   buffer, "INFO", l->thread, l->filename, l->line, l->message);
             break;
         case LOG_ERROR:
             printf(COLOR_MAGENTA "[%s] " COLOR_RED "%s   " COLOR_CYAN " [%s] [%s:%d]: " " %s\n",
-                    buffer, "ERROR", l->thread, l->filename, l->line, l->message);
+                   buffer, "ERROR", l->thread, l->filename, l->line, l->message);
             break;
         case LOG_DEBUG:
             printf(COLOR_MAGENTA "[%s] " COLOR_GREEN "%s   " COLOR_CYAN " [%s] [%s:%d]: " " %s\n",
-                    buffer, "DEBUG", l->thread, l->filename, l->line, l->message);
+                   buffer, "DEBUG", l->thread, l->filename, l->line, l->message);
             break;
         case LOG_WARN:
             printf(COLOR_MAGENTA "[%s] " COLOR_YELLOW "%s " COLOR_CYAN " [%s] [%s:%d]: " " %s\n",
-                    buffer, "WARNING", l->thread, l->filename, l->line, l->message);
+                   buffer, "WARNING", l->thread, l->filename, l->line, l->message);
             break;
         case LOG_ADDINFO:
-            printf( COLOR_CYAN "\t%s\n", l->message);
+            printf(COLOR_CYAN "\t%s\n", l->message);
             break;
     }
 
@@ -85,7 +85,6 @@ void *logs_queue_func() {
     sigset_t set, orig;
     sigemptyset(&set);
     sigaddset(&set, SIGINT);
-    sigaddset(&set, SIGKILL);
     sigaddset(&set, SIGTERM);
     sigemptyset(&orig);
     pthread_sigmask(SIG_BLOCK, &set, &orig);
@@ -100,18 +99,17 @@ void *logs_queue_func() {
     ts.tv_nsec = 500000;
 
     while (true) {
-        nanosleep(&ts, &ts);
+        if (is_interrupt() && is_logs_queue_empty()) {
+            pthread_sigmask(SIG_SETMASK, &orig, 0);
+            break;
+        }
+
         if (!is_logs_queue_empty()) {
             log *l = pop_log();
             print_message(l);
             free(l->message);
             free(l->thread);
             free(l);
-        }
-
-        if (is_interrupt() && is_logs_queue_empty()) {
-            pthread_sigmask(SIG_SETMASK, &orig, 0);
-            break;
         }
     }
 
@@ -121,7 +119,7 @@ void *logs_queue_func() {
 void log_debug(char *message, char *filename, int line, ...) {
     if (config_context.debug == 0) {
         return;
-    } 
+    }
 
     va_list args;
     va_start(args, line);
@@ -216,6 +214,14 @@ void start_logger() {
 }
 
 void logger_finalize() {
+    LOG_INFO("Остановка логгера", NULL);
+    while (!is_logs_queue_empty()) {
+        log *l = pop_log();
+        print_message(l);
+        free(l->message);
+        free(l->thread);
+        free(l);
+    }
     pthread_join(thread_logger, NULL);
 }
 
