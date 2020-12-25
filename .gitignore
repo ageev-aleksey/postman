@@ -13,4 +13,4 @@ server/test_report/
 *.pdf
 CMakeLists.txt
 cmake-build-debug
-
+*.swp
