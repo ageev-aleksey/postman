@@ -2,6 +2,7 @@ import test_suite
 import time
 import sys
 import traceback
+from multiprocessing import Pool
 
 
 class AssertException(Exception):
@@ -72,10 +73,22 @@ class TestRunner:
             test.after()
 
 
-class ParallelTestRunner(TestRunner):
-    def __init__(self, max_threads):
-        TestRunner.__init__(self)
-        self.max_threads = max_threads
+# class ParallelTestRunner(TestRunner):
+#     def __init__(self, max_process):
+#         TestRunner.__init__(self)
+#         self.max_process = max_process
+#         self.proc_pool = Pool(self.max_process)
+#
+#     def run(self):
+#         for test in self.tests:
+#             print("-==ParallelTestSuite: " + test.test_name + "==-")
+#             sys.stdout.flush()
+#             test.before()
+#             time.sleep(2)
+#             test_cases = list(test.test_cases.keys())
+#             self.proc_pool.map(executor, [test])
+#             test.after()
+#
+# def executor(self, arg):
+#     print(type(arg))
 
-    def run(self):
-        pass

@@ -89,6 +89,13 @@ bool users_list__add(users_list *users, user_context **user);
  */
 bool users_list__user_find_by_sock(users_list *users, user_accessor *accessor, int sock);
 /**
+ * Проверка существование контекста пользователя по сокету
+ * @param users список пользователей
+ * @param sock сокет
+ * @return существование пользователя. true - существует. false - отсутствует
+ */
+bool users_list__is_exist(users_list *users, int sock);
+/**
  * Особождение контекста из под уникального доступа.
  * После вызова accessor становится не валидный. Для доступа к данным
  * необходимо воспользоваться соответсвующей функцией получения доступа к

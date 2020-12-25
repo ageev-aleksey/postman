@@ -372,11 +372,52 @@ smtp_command pr_smtp_command_parse(smtp_state *smtp, const char *message) {
     return command;
 }
 
+void pr_smtp_command_hello_free(smtp_state *smtp, smtp_command *command) {
+    smtp_address *addr = command->arg;
+    if (addr != NULL) {
+        free(addr->address);
+        addr->address = NULL;
+        free(addr);
+        addr = NULL;
+    }
+}
+
+void pr_smtp_command_mailfrom_free(smtp_state *smtp, smtp_command *command) {
+    struct smtp_mailbox *mailbox = command->arg;
+    if (mailbox != NULL) {
+        free(mailbox->server_name);
+        mailbox->server_name = NULL;
+        free(mailbox->user_name);
+        mailbox->user_name = NULL;
+        free(mailbox);
+        mailbox = NULL;
+    }
+}
+
+void pr_smtp_command_rcpto_free(smtp_state *smtp, smtp_command *command) {
+    smtp_mailbox *rcpt = command->arg;
+    if (rcpt != NULL) {
+        free(rcpt->user_name);
+        rcpt->user_name = NULL;
+        free(rcpt->server_name);
+        rcpt->server_name = NULL;
+        free(rcpt);
+        rcpt = NULL;
+    }
+}
+
 
 
 smtp_status pr_smtp_command_hello(smtp_state *smtp, smtp_command *command) {
     if (command->status == true) {
         smtp_make_response(smtp, SMTP_CODE_OK, SMTP_CODE_OK_MSG);
+        // очистка от предыдущей команды hello
+        if (smtp->pr_hello_addr != NULL) {
+            free(smtp->pr_hello_addr->address);
+            smtp->pr_hello_addr->address = NULL;
+            free(smtp->pr_hello_addr);
+            smtp->pr_hello_addr = NULL;
+        }
         smtp->pr_hello_addr = (smtp_address*) command->arg;
         command->arg = NULL;
         return SMTP_STATUS_OK;
@@ -392,11 +433,27 @@ smtp_status pr_smtp_command_hello(smtp_state *smtp, smtp_command *command) {
 smtp_status pr_smtp_command_mailfrom(smtp_state *smtp, smtp_command *command) {
     if (command->status == true) {
         // выполняем сброс данных из предудущей транзакции
+        for (int j = 0; j < VECTOR_SIZE(&smtp->pr_rcpt_list); j++) {
+            free(VECTOR(&smtp->pr_rcpt_list)[j].server_name);
+            VECTOR(&smtp->pr_rcpt_list)[j].server_name = NULL;
+
+            free(VECTOR(&smtp->pr_rcpt_list)[j].user_name);
+            VECTOR(&smtp->pr_rcpt_list)[j].user_name = NULL;
+        }
         VECTOR_CLEAR(&smtp->pr_rcpt_list);
         VECTOR_CLEAR(&smtp->pr_mail_data);
-        smtp_make_response(smtp, SMTP_CODE_OK, SMTP_CODE_OK_MSG);
+        if (smtp->pr_mail_from != NULL) {
+            free(smtp->pr_mail_from->user_name);
+            free(smtp->pr_mail_from->server_name);
+            smtp->pr_mail_from->user_name = NULL;
+            smtp->pr_mail_from->server_name = NULL;
+            free(smtp->pr_mail_from);
+            smtp->pr_mail_from = NULL;
+        }
+
         smtp->pr_mail_from = (smtp_mailbox*) command->arg;
         command->arg = NULL;
+        smtp_make_response(smtp, SMTP_CODE_OK, SMTP_CODE_OK_MSG);
         return SMTP_STATUS_OK;
     } else {
 //        smtp_mailbox *mailbox = (smtp_mailbox*) command->arg;
@@ -444,33 +501,7 @@ char *smtp_make_response(smtp_state *smtp, size_t code, const char* msg) {
     return smtp->pr_buffer;
 }
 
-void pr_smtp_command_hello_free(smtp_state *smtp, smtp_command *command) {
-    smtp_address *addr = command->arg;
-    free(addr->address);
-    addr->address = NULL;
-    free(addr);
-    addr = NULL;
-}
 
-void pr_smtp_command_mailfrom_free(smtp_state *smtp, smtp_command *command) {
-    struct smtp_mailbox *mailbox = command->arg;
-    free(mailbox->server_name);
-    mailbox->server_name = NULL;
-    free(mailbox->user_name);
-    mailbox->user_name = NULL;
-    free(mailbox);
-    mailbox = NULL;
-}
-
-void pr_smtp_command_rcpto_free(smtp_state *smtp, smtp_command *command) {
-    smtp_mailbox *rcpt = command->arg;
-    free(rcpt->user_name);
-    rcpt->user_name = NULL;
-    free(rcpt->server_name);
-    rcpt->server_name = NULL;
-    free(rcpt);
-    rcpt = NULL;
-}
 
 smtp_status smtp_parse(smtp_state *smtp, const char *message, char **buffer_reply, err_t *error) {
     CHECK_PTR(smtp, error, SMTP_DESCRIPTOR_IS_NULL);

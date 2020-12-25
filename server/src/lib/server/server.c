@@ -306,6 +306,12 @@ void handler_timer(event_loop* el, int sock, struct timer_event_entry *descripto
     if (!timers_is_exist_for_socket(&server_config.timers, sock)) {
         el_timer_free(el, descriptor);
     } else if (timers_is_elapsed_for_socket(&server_config.timers, sock, server_config.timer_period)) {
+        // Проверяем наличие пользователя в списке, если его нет, это означает, что он обрабатывается,
+        // соответственно таймер не должен срабатывать
+        if (!users_list__is_exist(&server_config.users, sock)) {
+            return;
+        }
+
         LOG_INFO("%s", "таймер истек, закрываем сокет");
         el_timer_free(el, descriptor);
         err_t err;

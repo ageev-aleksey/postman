@@ -60,6 +60,23 @@ bool users_list__user_find_by_sock(users_list *users, user_accessor *accessor, i
     return is_found;
 }
 
+bool users_list__is_exist(users_list *users, int sock) {
+    if (users == NULL) {
+        return false;
+    }
+    bool ret = false;
+    pthread_mutex_lock(&users->pr_mutex);
+    user_context_entry *ptr = NULL;
+    TAILQ_FOREACH(ptr, &users->pr_list, pr_entries) {
+        if (ptr->pr_context->socket == sock) {
+            ret = true;
+            break;
+        }
+    }
+    pthread_mutex_unlock(&users->pr_mutex);
+    return ret;
+}
+
 void user_accessor_release(user_accessor *accessor) {
     if (accessor != NULL && accessor->user != NULL &&
         accessor->pr_users_list != NULL && accessor->pr_list_entry != NULL)
