@@ -362,7 +362,7 @@ void *start_thread(thread *thr) {
                             break;
                         }
 
-                        thr->multiplex_context = reallocate_memory(thr->multiplex_context,
+                        thr->multiplex_context = reallocate_memory(thr->multiplex_context, sizeof(multiplex_context) * i,
                                                                    sizeof(multiplex_context) * (i + 1));
                         thr->multiplex_context[i].smtp_context.socket_desc = cont->socket_desc;
                         thr->multiplex_context[i].smtp_context.state_code = cont->state_code;

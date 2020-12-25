@@ -21,13 +21,13 @@ CLEAN_DIR = $(BIN_DIR) $(BUILD_DIR) $(ROOT)main.gcno
 
 include $(SRC_DIR)/Makefile
 include $(TEST_DIR)/Makefile
-include $(REPORT_DIR)/Makefile
+# include $(REPORT_DIR)/Makefile
 
 prepare: clean mkdir
 
-all: prepare build # ut build_report
+all: prepare build ut_run # build_report
 
-unit_tests: ut
+ut_run: ut
 
 report: build_report
 
@@ -38,3 +38,5 @@ mkdir: build_mkdir
 
 clean:
 	rm -R $(CLEAN_DIR) -f
+
+.PHONY: prepare all ut_run report mkdir clean

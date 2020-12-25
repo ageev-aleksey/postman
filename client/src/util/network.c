@@ -33,8 +33,9 @@ char *receive_line(int socket_d) {
         }
 
         if (count_size == size - 2) {
+            size_t prev_size = size;
             size += (size / 2);
-            dist_buffer = reallocate_memory(dist_buffer, sizeof(char) * size);
+            dist_buffer = reallocate_memory(dist_buffer, sizeof(char) * prev_size, sizeof(char) * size);
             ptr = dist_buffer + count_size;
         }
     }
@@ -88,7 +89,8 @@ ips get_ips_by_hostname(char *hostname) {
 
     ips.ip_array = allocate_memory(sizeof(char*));
     for (int i = 0; addr_list[i] != NULL; i++) {
-        ips.ip_array = reallocate_memory(ips.ip_array, sizeof(char*) * (ips.ips_size + 1));
+        ips.ip_array = reallocate_memory(ips.ip_array, sizeof(char*) * ips.ips_size,
+                                         sizeof(char*) * (ips.ips_size + 1));
         ips.ip_array[i] = strdup(inet_ntoa(*addr_list[i]));
         ips.ips_size++;
     }

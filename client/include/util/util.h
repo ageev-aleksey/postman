@@ -33,7 +33,7 @@ void free_string(string *str);
 void trim(char *str);
 
 void* allocate_memory(size_t bytes);
-void* reallocate_memory(void* buffer, size_t bytes);
+void* reallocate_memory(void* buffer, size_t prev_size, size_t new_size);
 void* callocate_memory(size_t size, size_t bytes);
 
 char* file_readline(FILE *fp);

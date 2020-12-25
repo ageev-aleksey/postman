@@ -47,7 +47,8 @@ string_tokens split(const char *const str, const char *const delim) {
                 token = allocate_memory(sizeof(*token));
                 token->chars = NULL;
                 token->length = 0;
-                tokens = reallocate_memory(tokens, sizeof(string) * (count_tokens + 1));
+                tokens = reallocate_memory(tokens,sizeof(string) * count_tokens,
+                                           sizeof(string) * (count_tokens + 1));
                 continue;
             }
         }
@@ -79,8 +80,9 @@ string *add_character(string *str, char character) {
     str->chars[(str->length)++] = character;
 
     if (str->length >= capacity) {
+        size_t prev_size = capacity;
         capacity *= 2; // увеличиваем ёмкость строки в два раза
-        str->chars = reallocate_memory(str->chars, sizeof(char) * capacity); // создаём новую строку с увеличенной ёмкостью
+        str->chars = reallocate_memory(str->chars, prev_size, sizeof(char) * capacity); // создаём новую строку с увеличенной ёмкостью
     }
 
     str->chars[str->length] = '\0';
@@ -103,11 +105,13 @@ void *allocate_memory(size_t bytes) {
     exit(-1);
 }
 
-void *reallocate_memory(void *buffer, size_t bytes) {
-    buffer = realloc(buffer, bytes);
+void *reallocate_memory(void *buffer, size_t prev_size, size_t new_size) {
+    void *new_buffer = malloc(new_size);
 
-    if (buffer != NULL) {
-        return buffer;
+    if (new_buffer != NULL) {
+        memcpy(new_buffer, buffer, prev_size);
+        free(buffer);
+        return new_buffer;
     }
 
     exit(-1);
@@ -156,8 +160,9 @@ char* file_readline(FILE *fp) {
     char *string = allocate_memory(sizeof(char) * 256);
     while ((fgets(read_string, 256, fp)) != NULL) {
         if (offset >= size - 1) {
+            size_t prev_size = size;
             size = offset * 2 + 1;
-            string = reallocate_memory(string, sizeof(char) * size);
+            string = reallocate_memory(string, sizeof(char) * prev_size, sizeof(char) * size);
         }
 
         strcpy(string + offset, read_string);

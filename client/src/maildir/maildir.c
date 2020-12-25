@@ -66,7 +66,8 @@ void update_maildir(maildir_main *maildir) {
                 read_maildir_servers(maildir);
             } else {
                 users_count++;
-                users = reallocate_memory(users, sizeof(maildir_user) * users_count);
+                users = reallocate_memory(users, sizeof(maildir_user) * (users_count - 1),
+                                          sizeof(maildir_user) * users_count);
                 asprintf(&users[users_count - 1].username, "%s", entry->d_name);
                 asprintf(&users[users_count - 1].directory, "%s/%s", maildir->directory,
                          users[users_count - 1].username);
@@ -136,7 +137,8 @@ void read_new_messages_list(maildir_user *user) {
     while (entry != NULL) {
         if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
             messages_count++;
-            user->message_full_file_names = reallocate_memory(user->message_full_file_names,sizeof(char*) * messages_count);
+            user->message_full_file_names = reallocate_memory(user->message_full_file_names, sizeof(char*) * (messages_count - 1),
+                                                              sizeof(char*) * messages_count);
             asprintf(&user->message_full_file_names[messages_count - 1], "%s/%s", user_fulldir_new, entry->d_name);
         }
         entry = readdir(dir);
@@ -176,7 +178,8 @@ void read_maildir_servers(maildir_main *maildir) {
     while (entry != NULL) {
         if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
             servers_count++;
-            servers = reallocate_memory(servers, sizeof(maildir_other_server) * servers_count);
+            servers = reallocate_memory(servers, sizeof(maildir_other_server) * (servers_count - 1),
+                                        sizeof(maildir_other_server) * servers_count);
 
             maildir_other_server server = {0};
 
@@ -225,6 +228,7 @@ void read_maildir_servers_new(maildir_other_server *server) {
         if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0 && strcmp(entry->d_name, "tmp") != 0) {
             messages_count++;
             server->message_full_file_names = reallocate_memory(server->message_full_file_names,
+                                                                sizeof(char*) * (messages_count - 1),
                                                                 sizeof(char*) * messages_count);
             asprintf(&server->message_full_file_names[messages_count - 1], "%s/%s", server->directory, entry->d_name);
         }
@@ -277,6 +281,7 @@ message *read_message(char *filepath) {
                             }
                             if (flag) {
                                 mes->addresses = reallocate_memory(mes->addresses,
+                                                                   sizeof(char*) * mes->addresses_size,
                                                                    sizeof(char*) * (mes->addresses_size + 1));
                                 asprintf(&mes->addresses[mes->addresses_size++], "%s", ts.tokens[1].chars);
                             }
@@ -301,7 +306,8 @@ message *read_message(char *filepath) {
         mes->strings = allocate_memory(sizeof(char*));
         while ((string = file_readline(fp)) != NULL) {
             if (mes->strings != NULL) {
-                mes->strings = reallocate_memory(mes->strings, sizeof(char*) * (strings_count + 1));
+                mes->strings = reallocate_memory(mes->strings, sizeof(char*) * strings_count,
+                                                 sizeof(char*) * (strings_count + 1));
             }
             asprintf(&mes->strings[strings_count], "%s", string);
             strings_count++;
