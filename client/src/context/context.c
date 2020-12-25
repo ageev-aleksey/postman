@@ -253,20 +253,17 @@ void end_message_handler(multiplex_context *context, thread *thr) {
 
     if (is_smtp_success(status)) {
         if (is_smtp_sender_ready(&context->smtp_context, thr)) {
-            context->response.status_code = NOT_ANSWER;
-            context->response.message = NULL;
-            if (context->server.messages_size > 1) {
-                smtp_send_rset(&context->smtp_context);
+            remove_message_server(&context->server, context->select_message);
+            if (context->server.messages_size > 0) {
                 context->smtp_context.state_code = SMTP_HELO;
             } else {
+                context->response.status_code = NOT_ANSWER;
+                context->response.message = NULL;
                 smtp_send_quit(&context->smtp_context);
-                remove_message_server(&context->server, context->select_message);
                 remove_multiplex_context(context, thr);
                 return;
             }
             context->select_message = NULL;
-            pthread_mutex_lock(&maildir_mutex);
-            pthread_mutex_unlock(&maildir_mutex);
         }
     } else if (is_smtp_4xx_error(status) || status == UNDEFINED_ERROR) {
         smtp_send_quit(&context->smtp_context);
