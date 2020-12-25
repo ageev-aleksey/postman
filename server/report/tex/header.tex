@@ -4,6 +4,7 @@
 \usepackage[T2A]{fontenc} %корректное отображение русских шрифтов
 \usepackage[english, russian]{babel} %переносы слов
 \usepackage{fancyvrb}
+\usepackage{lmodern}
 
 %for lcov
 \usepackage{lscape} %landspace
@@ -44,17 +45,15 @@
 
 %\renewcommand{\labelenumii}{\arabic{enumi}.\arabic{enumii}.} %стиль нумерованных списокв
 
-%Приложение 
-\makeatletter
-\def\redeflsection{\def\l@section{\@dottedtocline{1}{0em}{10em}}}
-\renewcommand{\appendix}{\par%
-  \setcounter{section}{0}%
-  \setcounter{subsection}{0}%
-  \renewcommand{\appendixname}{ПРИЛОЖЕНИЕ}%
-  \def\sectionname{\appendixname}%
-  \addtocontents{toc}{\protect\redeflsection}%
-  \gdef\thesection{\appendixname\hspace{0.2cm}\@Asbuk\c@section}%
-}
+\usepackage[parentracker=true,%
+  backend=biber,%
+  language=auto,%
+  autolang=other,%
+  %citestyle=gost-numeric,%
+  defernumbers=true,%
+  %bibstyle=gost-numeric,%
+]{biblatex}
+\addbibresource{bibliography.bib}
 
 %НАСТРОЙКИ ДЛЯ DOXYGEN
 
@@ -64,8 +63,6 @@
 \usepackage{calc}
 \usepackage{doxygen}
 \usepackage[export]{adjustbox} % also loads graphicx
-\usepackage{graphicx}
-\usepackage[utf8]{inputenc}
 \usepackage{makeidx}
 \usepackage{multicol}
 \usepackage{multirow}
@@ -74,12 +71,10 @@
 \usepackage[nointegrals]{wasysym}
 \usepackage[table]{xcolor}
 
-% NLS support packages
-\usepackage[T2A]{fontenc}
-\usepackage[russian]{babel}
+
 
 % Font selection
-\usepackage[T1]{fontenc}
+%\usepackage[T1]{fontenc}
 \usepackage[scaled=.90]{helvet}
 \usepackage{courier}
 \usepackage{amssymb}
@@ -96,14 +91,14 @@
 \newcommand{\+}{\discretionary{\mbox{\scriptsize$\hookleftarrow$}}{}{}}
 
 % Page & text layout
-\usepackage{geometry}
-\geometry{%
-  a4paper,%
-  top=2.5cm,%
-  bottom=2.5cm,%
-  left=2.5cm,%
-  right=2.5cm%
-}
+%\usepackage{geometry}
+%\geometry{%
+%  a4paper,%
+%  top=2.5cm,%
+%  bottom=2.5cm,%
+%  left=2.5cm,%
+%  right=2.5cm%
+%}
 \tolerance=750
 \hfuzz=15pt
 \hbadness=750
@@ -144,7 +139,7 @@
 }
 
 % Indices & bibliography
-\usepackage{natbib}
+%\usepackage{natbib}
 \usepackage[titles]{tocloft}
 \setcounter{tocdepth}{3}
 \setcounter{secnumdepth}{5}
@@ -153,9 +148,9 @@
 % Hyperlinks (required, but should be loaded last)
 \usepackage{ifpdf}
 \ifpdf
-  \usepackage[pdftex,pagebackref=true]{hyperref}
+  \usepackage[pdftex,pagebackref=false]{hyperref}
 \else
-  \usepackage[ps2pdf,pagebackref=true]{hyperref}
+  \usepackage[ps2pdf,pagebackref=false]{hyperref}
 \fi
 \hypersetup{%
   colorlinks=true,%

@@ -28,5 +28,6 @@ all: server unit_tests $(SYSTEM_TEST_TARGETS) report
 
 ut: unit_tests
 
-clean:
-	rm $(CLEAN_FILES)
+clean: report_clean 
+	rm -R ./bin
+	rm -R ./build
