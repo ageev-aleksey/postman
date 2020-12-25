@@ -2,10 +2,6 @@
 #include "log/logs.h"
 #include "config.h"
 
-// TODO: внимательно все проверить
-// TODO: добавить сборку тестов и gitlab
-// TODO: добавить обработку ошибок, где это возможно
-
 bool loading_config() {
     config_t cfg;
     config_init(&cfg);

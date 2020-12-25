@@ -5,7 +5,7 @@
 
 int main(int argc, char **argv) {
     start_logger();
-    LOG_INFO("Начало работы MDA", NULL);
+    LOG_INFO("Начало работы SMTP-клиента", NULL);
     if (!loading_config()) {
         destroy_configuration();
         logger_finalize();
@@ -16,7 +16,7 @@ int main(int argc, char **argv) {
 
     while (true) {
         if (is_interrupt()) {
-            LOG_INFO("Остановка MDA", NULL);
+            LOG_INFO("Остановка SMTP-клиента", NULL);
             destroy_context();
             destroy_configuration();
             logger_finalize();
