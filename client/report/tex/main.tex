@@ -250,7 +250,7 @@
 	
 	Далее производится инициализация основного контекста работы программы в файле \textit{context.c} в функции \textit{init\_context}. На данном шаге создаются потоки исполнения и выделяются основные ресурсы для выполнения мультиплексирования, чтения \textit{Maildir} и отправки письма.
 
-	Вся основная логика, реализующая конечный автомат находится в файле \textit{context.c}. Процесс отправки писем производится в функции \textit{start_thread}. Здесь же реализовано использование мультиплексирования при помощи вызова pselect. Для каждого потока выделяется свой набор дескрипторов. Конечный автомат реализуется при помощи проверки состояния в блоке \textit{switch case}. Сама отправка SMTP-команд и письма реализуется в файле \textit{smtp.c}, который базируется на файле \textit{network.c}, где производится примитивная отправка и получение сообщений.
+	Вся основная логика, реализующая конечный автомат, находится в файле \textit{context.c}. Процесс отправки писем производится в функции \textit{start\_thread}. Здесь же реализовано использование мультиплексирования при помощи вызова pselect. Для каждого потока выделяется свой набор дескрипторов. Конечный автомат реализуется при помощи проверки состояния в блоке \textit{switch case}. Сама отправка SMTP-команд и письма реализуется в файле \textit{smtp.c}, который базируется на файле \textit{network.c}, где производится примитивная отправка и получение сообщений.
 
 	Структура проекта была построена на базе Makefile с помощью утилит \textit{make2graph} и \textit{dot} и представлена на рис. \ref{fig:makeclient}. Схема структуры проекта содержит связи между компонентами при сборке проекта.
 
@@ -272,19 +272,13 @@
 
 	\section{Тестирование}
 	
-	Для тестирования отдельных модулей сервера, было написаны unit-тесты с использованием библиотеки cunit. Результат работы тестиованяи представлен в листинге 
+	Для тестирования отдельных модулей клиента были написаны юнит-тесты с использованием библиотеки CUNIT. Ниже представлен результат юнит-тестирования с использованием valgrind. 
 	\VerbatimInput{./include/ut_out.tex}
 	\VerbatimInput{./include/valgrind_out.tex}
-		
-	Так же было реализовано системное тестирование, на языке программирования python.
-	%\begin{landscape}
-	%\input{./include/lcov/index}
-	%\end{landscape}
-	%Отчет по покрытию тестами не строится в  gitlab!
 
 	\section{Основные функции программы}
 
-	Данный раздел  создан с помощью программы doxygen.
+	Основные функции программы представлены ниже.
 
 	\input{./include/doxygen/config.h.tex}
 	\input{./include/doxygen/context.h.tex}
@@ -302,12 +296,13 @@
 
 	\section{Список источников и литературы}
 	\begin{enumerate}
-		\item http://rfc.com.ru/rfc2821.htm
-		\item http://rfc.com.ru/rfc1123
-		\item https://www.protocols.ru/WP/rfc5322/
-		\item RFC 1035 DOMAIN NAMES — IMPLEMENTATION AND SPECIFICATION  https://www.protocols.ru/WP/rfc1035/
-		\item dovecot maildir https://wiki.dovecot.org/MailLocation/Maildir
-		\item qmail maildir https://cr.yp.to/proto/maildir.html
+		\item RFC.COM.RU. Simple Mail Transfer Protocol [Электронный ресурс]. URL: http://rfc.com.ru/rfc2821.htm (дата обращения 20.12.2020).
+		\item Wikipedia.org. SMTP [Электронный ресурс]. URL: https://ru.wikipedia.org/wiki/SMTP (дата обращения 20.12.2020).
+		\item CUnit. A unit testing framework for C [Электронный ресурс]. URL: http://cunit.sourceforge.net/ (дата обращения 21.12.2020).
+		\item Valgrind. Documentation [Электронный ресурс]. URL: https://www.valgrind.org/docs/manual/index.html (дата обращения 21.12.2020).
+		\item Wikibooks.org. LaTeX [Электронный ресурс]. URL: https://ru.wikibooks.org/wiki/LaTeX (дата обращения 21.12.2020).
+		\item RSDN. Программирование сокетов в Linux [Электронный ресурс]. URL: https://rsdn.org/article/unix/sockets.xml (дата обращения 21.12.2020).
+		\item Хабр. select / poll / epoll: практическая разница [Электронный ресурс]. URL: https://habr.com/ru/company/infopulse/blog/415259/ (дата обращения 19.12.2020).
 	\end{enumerate}
 	
 	\newpage	
