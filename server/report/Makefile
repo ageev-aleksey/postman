@@ -96,7 +96,7 @@ $(PATH_INCLUDE_TEX)/doxygen/maildir.h.tex: $(DOXYGEN_LATEX_PATH)/maildir_8h.tex
 $(PATH_INCLUDE_TEX)/doxygen/maildir_message.h.tex: $(DOXYGEN_LATEX_PATH)/message_8h.tex
 	cp $< $@
 
-$(PATH_INCLUDE_TEX)/doxygen/maildir_server.h.tex: $(DOXYGEN_LATEX_PATH)/server_8h.tex
+$(PATH_INCLUDE_TEX)/doxygen/maildir_server.h.tex: $(DOXYGEN_LATEX_PATH)/maildir_2server_8h.tex
 	cp $< $@
 
 $(PATH_INCLUDE_TEX)/doxygen/maildir_user.h.tex: $(DOXYGEN_LATEX_PATH)/user_8h.tex

@@ -1,6 +1,6 @@
 digraph server {
-rankdir = LR;
-size="10,20";
+#rankdir = LR;
+#size="10,20";
   subgraph cluster_s1 {
     label="Бесконечный цикл в отдельном потоке";
     event_wait_client[shape="rect", label="Событие\n'Ожидание подключения нового клиента'"];
