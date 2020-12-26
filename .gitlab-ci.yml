@@ -1,15 +1,14 @@
 image: ubuntu:16.04
 stages:
-  - server_build
+  - build
   - server_unit_testing
   - server_system_testing
   - server_report
-  - client_build
   - client_unit_testing
   - client_report
   
 server_build:
-  stage: server_build
+  stage: build
   before_script:
     - apt-get update --yes
     - apt-get install -y software-properties-common
@@ -104,7 +103,7 @@ server_report:
       - server/report
       
 client_build:
-  stage: client_build
+  stage: build
   before_script:
     - apt-get update --yes
     - apt-get install -y software-properties-common
