@@ -44,7 +44,6 @@ def make_x_header(sender, recivers):
 
 def send_outer_mail(sender, recivers):
 	"""
-
 	sender - email отправителя
 	recivers - спиосок email'ов получателей
 	"""
