@@ -28,7 +28,6 @@ string_tokens split(const char *const str, const char *const delim);
 void free_string_tokens(string_tokens *tokens);
 
 string* get_string_from_characters(string *str, char *characters);
-string* add_character(string *str, char character);
 void free_string(string *str);
 void trim(char *str);
 

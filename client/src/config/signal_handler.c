@@ -18,5 +18,7 @@ int init_signals_handler() {
     sigaction(SIGINT, &act, 0);
     sigaction(SIGTERM, &act, 0);
     LOG_INFO("Инициализация обработчиков сигналов", NULL);
+
+    return 0;
 }
 

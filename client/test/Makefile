@@ -14,7 +14,7 @@ $(BUILD_DIR)/test/%.o: $(TEST_SRC_PATH)/%.c
 	$(CC) $(CCFLAGS) $< $(TEST_INCLUDES) -o $@ -c
 
 $(UNIT_TEST_OUT): $(TEST_OBJ) $(CONFIG_OBJ) $(LOG_OBJ) $(SMTP_OBJ) $(UTIL_OBJ) $(CONTEXT_OBJ) $(MAILDIR_OBJ)
-	$(CC) $(CCFLAGS) $(INCLUDES) $^ $(TEST_DIR)/main.c $(LIBS) -lcunit -o $@
+	$(CC) $(CCFLAGS) $(INCLUDES) $(TEST_INCLUDES) $^ $(TEST_DIR)/main.c $(LIBS) -lcunit -o $@
 
 CLEAN_DIR += $(BUILD_DIR)/test
 CLEAN_DIR += $(BIN_DIR)/unit_tests.out

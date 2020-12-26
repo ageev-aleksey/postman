@@ -45,23 +45,34 @@ typedef enum log_type {
     LOG_ADDINFO
 } log_type;
 
-typedef struct log {
+typedef struct log_message {
     char *message;
     char *filename;
     char *thread;
     int line;
     log_type type;
     struct tm time;
-} log;
+} log_message;
 
 extern int interrupt_thread_local;
 
+void init_logs();
+
+void push_log(log_message *value);
+
+log_message *pop_log();
+
 void log_debug(char *message, char *filename, int line, ...);
+
 void log_info(char *message, char *filename, int line, ...);
+
 void log_error(char *message, char *filename, int line, ...);
+
 void log_warn(char *message, char *filename, int line, ...);
+
 void log_addinfo(char *message, ...);
 
 void start_logger();
+
 void logger_finalize();
 

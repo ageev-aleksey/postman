@@ -1,4 +1,4 @@
-ROOT= $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
+ROOT=./
 
 CONFIG_INCLUDES = -I$(ROOT)include/config
 LOG_INCLUDES = -I$(ROOT)include/log
@@ -16,16 +16,16 @@ BUILD_DIR = $(ROOT)build
 REPORT_DIR = $(ROOT)report
 RESOURCES_DIR = $(ROOT)resources
 CC = gcc
-CCFLAGS = -std=gnu99 -DDEBUG -D_GNU_SOURCE -g # -Wall -Werror
-CLEAN_DIR = $(BIN_DIR) $(BUILD_DIR) $(ROOT)main.gcno
+CCFLAGS = -std=gnu99 -DDEBUG -D_GNU_SOURCE -g --coverage -Wall -Werror
+CLEAN_DIR = $(BIN_DIR) $(BUILD_DIR) $(ROOT)main.gcno $(ROOT)doxygen $(ROOT)report/tex/include
 
 include $(SRC_DIR)/Makefile
 include $(TEST_DIR)/Makefile
-# include $(REPORT_DIR)/Makefile
+include $(REPORT_DIR)/Makefile
 
 prepare: clean mkdir
 
-all: prepare build ut_run # build_report
+all: prepare build ut_run report
 
 ut_run: ut
 

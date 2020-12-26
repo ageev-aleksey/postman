@@ -1,6 +1,5 @@
-CWD_REPORT = $(ROOT)report
-UTILS = $(CWD_REPORT)/utils
-PATH_TEX = $(CWD_REPORT)/tex
+UTILS = $(REPORT_DIR)/utils
+PATH_TEX = $(REPORT_DIR)/tex
 PATH_INCLUDE_TEX = $(PATH_TEX)/include
 COV_REPORT = coverage_report.info
 COV_TEXGEN = perl $(UTILS)/lcov-latex/gentex
@@ -14,16 +13,16 @@ MAKE2DOT = $(UTILS)/makefile2graph/make2graph
 RE2TEX = python $(UTILS)/re2tex
 DOT = dot
 DOXYGEN_LATEX_PATH = $(ROOT)doxygen/latex
-DOXYGEN_FILES = $(PATH_INCLUDE_TEX)/doxygen/event_loop.h.tex $(PATH_INCLUDE_TEX)/doxygen/smtp_state.h.tex \
-				$(PATH_INCLUDE_TEX)/doxygen/maildir.h.tex $(PATH_INCLUDE_TEX)/doxygen/maildir_server.h.tex \
-				$(PATH_INCLUDE_TEX)/doxygen/maildir_user.h.tex $(PATH_INCLUDE_TEX)/doxygen/maildir_user.h.tex
+DOXYGEN_FILES = $(PATH_INCLUDE_TEX)/doxygen/config.h.tex $(PATH_INCLUDE_TEX)/doxygen/context.h.tex \
+				$(PATH_INCLUDE_TEX)/doxygen/logs.h.tex $(PATH_INCLUDE_TEX)/doxygen/maildir.h.tex \
+				$(PATH_INCLUDE_TEX)/doxygen/util.h.tex $(PATH_INCLUDE_TEX)/doxygen/network.h.tex \
+				$(PATH_INCLUDE_TEX)/doxygen/smtp.h.tex
 
 #find src -name "*.c"
 
 
-report: $(PATH_INCLUDE_TEX)/unit_test_out.tex $(PATH_INCLUDE_TEX)/smtp_fsm.pdf \
-		$(PATH_INCLUDE_TEX)/cflow.pdf $(PATH_INCLUDE_TEX)/make.pdf regex_to_tex doxygen_tex
-	cd $(PATH_TEX) && $(PDF) main.tex
+build_report: mkdir_report $(PATH_INCLUDE_TEX)/ut_out.tex $(PATH_INCLUDE_TEX)/smtp_states.pdf \
+		$(PATH_INCLUDE_TEX)/cflow.pdf $(PATH_INCLUDE_TEX)/make.pdf $(DOXYGEN_FILES)
 	cd $(PATH_TEX) && $(PDF) main.tex
 
 #lcov_tex: $(ROOT)/$(COV_REPORT)
@@ -33,11 +32,11 @@ $(ROOT)/$(COV_REPORT):
 	lcov -t "server testing code coverage" -o $@ -c -d .
 
 
-$(PATH_INCLUDE_TEX)/unit_test_out.tex: $(UNIT_TEST_EXE)
+$(PATH_INCLUDE_TEX)/ut_out.tex: $(UNIT_TEST_OUT)
 	valgrind --log-file=$(PATH_INCLUDE_TEX)/valgrind_out.tex $< > $@
 
-#unit_tests_tex: $(UNIT_TEST_EXE)
-#	valgrind --log-file=$(PATH_INCLUDE_TEX)/valgrind_out.tex $< > $(PATH_INCLUDE_TEX)/unit_test_out.tex
+unit_tests_tex: $(UNIT_TEST_OUT)
+	valgrind --log-file=$(PATH_INCLUDE_TEX)/valgrind_out.tex $< > $(PATH_INCLUDE_TEX)/unit_test_out.tex
 
 $(PATH_INCLUDE_TEX)/cflow.dot: $(CFLOWFILES)
 	$(CFLOW) $^ | $(CFLOW2DOT) > $@ 
@@ -45,15 +44,11 @@ $(PATH_INCLUDE_TEX)/cflow.dot: $(CFLOWFILES)
 $(PATH_INCLUDE_TEX)/cflow.pdf: $(PATH_INCLUDE_TEX)/cflow.dot
 	$(DOT) -Tpdf -o $@ $<
 
-#cflow: $(PATH_INCLUDE_TEX)/cflow.pdf
+$(PATH_INCLUDE_TEX)/smtp_states.dot: $(SRC_DIR)/smtp/smtp-states.def
+	 $(FSM2DOT) $(SRC_DIR)/smtp/smtp-states.def > $@
 
-$(PATH_INCLUDE_TEX)/smtp_fsm.dot: $(SMTP_FSM_DEF)
-	 $(FSM2DOT) $(SMTP_FSM_DEF) > $@
-
-$(PATH_INCLUDE_TEX)/smtp_fsm.pdf: $(PATH_INCLUDE_TEX)/smtp_fsm.dot
+$(PATH_INCLUDE_TEX)/smtp_states.pdf: $(PATH_INCLUDE_TEX)/smtp_states.dot
 	$(DOT) -Tpdf -o $@ $< 
-
-#smtp_fsm_pdf: $(PATH_INCLUDE_TEX)/smtp_fsm.pdf
 
 $(PATH_INCLUDE_TEX)/make.dot: Makefile
 	export LC_ALL=C && make -Bnd all | $(MAKE2DOT) > $(PATH_INCLUDE_TEX)/make.dot
@@ -63,56 +58,53 @@ $(PATH_INCLUDE_TEX)/make.pdf: $(PATH_INCLUDE_TEX)/make.dot
 
 #doxygen
 
-$(DOXYGEN_LATEX_PATH)/event__loop_8h.tex: 
+$(DOXYGEN_LATEX_PATH)/config_8h.tex: 
+	doxygen Doxyfile
+
+$(DOXYGEN_LATEX_PATH)/context_8h.tex:
 	doxygen Doxyfile
 
 $(DOXYGEN_LATEX_PATH)/maildir_8h.tex:
 	doxygen Doxyfile
 
-$(DOXYGEN_LATEX_PATH)/message_8h.tex:
+$(DOXYGEN_LATEX_PATH)/logs_8h.tex:
 	doxygen Doxyfile
 
-$(DOXYGEN_LATEX_PATH)/server_8h.tex:
+$(DOXYGEN_LATEX_PATH)/util_8h.tex:
 	doxygen Doxyfile
 
-$(DOXYGEN_LATEX_PATH)/user_8h.tex:
+$(DOXYGEN_LATEX_PATH)/network_8h.tex:
 	doxygen Doxyfile
 
-$(DOXYGEN_LATEX_PATH)/state_8h.tex:
+$(DOXYGEN_LATEX_PATH)/smtp_8h.tex:
 	doxygen Doxyfile
 
 
-
-$(PATH_INCLUDE_TEX)/doxygen/event_loop.h.tex: $(DOXYGEN_LATEX_PATH)/event__loop_8h.tex
+$(PATH_INCLUDE_TEX)/doxygen/config.h.tex: $(DOXYGEN_LATEX_PATH)/config_8h.tex
 	cp $< $@
 
-$(PATH_INCLUDE_TEX)/doxygen/smtp_state.h.tex: $(DOXYGEN_LATEX_PATH)/state_8h.tex
+$(PATH_INCLUDE_TEX)/doxygen/context.h.tex: $(DOXYGEN_LATEX_PATH)/context_8h.tex
 	cp $< $@
 
 $(PATH_INCLUDE_TEX)/doxygen/maildir.h.tex: $(DOXYGEN_LATEX_PATH)/maildir_8h.tex
 	cp $< $@
 
-$(PATH_INCLUDE_TEX)/doxygen/maildir_server.h.tex: $(DOXYGEN_LATEX_PATH)/message_8h.tex
+$(PATH_INCLUDE_TEX)/doxygen/logs.h.tex: $(DOXYGEN_LATEX_PATH)/logs_8h.tex
 	cp $< $@
 
-$(PATH_INCLUDE_TEX)/doxygen/maildir_server.h.tex: $(DOXYGEN_LATEX_PATH)/server_8h.tex
+$(PATH_INCLUDE_TEX)/doxygen/util.h.tex: $(DOXYGEN_LATEX_PATH)/util_8h.tex
 	cp $< $@
 
-$(PATH_INCLUDE_TEX)/doxygen/maildir_user.h.tex: $(DOXYGEN_LATEX_PATH)/user_8h.tex
+$(PATH_INCLUDE_TEX)/doxygen/network.h.tex: $(DOXYGEN_LATEX_PATH)/network_8h.tex
 	cp $< $@
 
-$(PATH_INCLUDE_TEX)/doxygen/smtp_state.h.tex: $(DOXYGEN_LATEX_PATH)/state_8h.tex
+$(PATH_INCLUDE_TEX)/doxygen/smtp.h.tex: $(DOXYGEN_LATEX_PATH)/smtp_8h.tex
 	cp $< $@
 
-$(PATH_INCLUDE_TEX)/doxygen/maildir_user.h.tex: $(DOXYGEN_LATEX_PATH)/user_8h.tex
-	cp $< $@
-
-	
-
-doxygen_tex: $(DOXYGEN_FILES)
-
-regex_to_tex: 
-	 $(RE2TEX) $(ROOT)/include/smtp/regex.h $(PATH_INCLUDE_TEX)
+# smtp_pdf: $(PATH_INCLUDE_TEX)/smtp_states.pdf
+# test_make_dot: $(PATH_INCLUDE_TEX)/make.pdf
+# cflow: $(PATH_INCLUDE_TEX)/cflow.pdf
+# doxygen_tex: $(DOXYGEN_FILES)
 
 mkdir_report:
 	mkdir -p $(PATH_TEX)/include

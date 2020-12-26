@@ -4,9 +4,7 @@
 #include "log/logs.h"
 #include "smtp.h"
 
-#define MAX_MX_ADDRS 10
-
-// TODO: все внимательно проверить, написать тесты и отрефакторить
+#define MAX_MX_ADDRS 30
 
 int server_connect(ips ips, char *port) {
     int server_socket = socket(PF_INET, SOCK_STREAM, 0);

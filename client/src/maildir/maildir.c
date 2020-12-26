@@ -133,12 +133,13 @@ void read_new_messages_list(maildir_user *user) {
     DIR *dir = opendir(user_fulldir_new);
     int messages_count = 0;
     struct dirent *entry = readdir(dir);
-    user->message_full_file_names = allocate_memory(sizeof(char*));
+    user->message_full_file_names = allocate_memory(sizeof(char *));
     while (entry != NULL) {
         if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
             messages_count++;
-            user->message_full_file_names = reallocate_memory(user->message_full_file_names, sizeof(char*) * (messages_count - 1),
-                                                              sizeof(char*) * messages_count);
+            user->message_full_file_names = reallocate_memory(user->message_full_file_names,
+                                                              sizeof(char *) * (messages_count - 1),
+                                                              sizeof(char *) * messages_count);
             asprintf(&user->message_full_file_names[messages_count - 1], "%s/%s", user_fulldir_new, entry->d_name);
         }
         entry = readdir(dir);
@@ -223,13 +224,13 @@ void read_maildir_servers_new(maildir_other_server *server) {
     DIR *dir = opendir(server->directory);
     struct dirent *entry = readdir(dir);
     int messages_count = 0;
-    server->message_full_file_names = allocate_memory(sizeof(char*));
+    server->message_full_file_names = allocate_memory(sizeof(char *));
     while (entry != NULL) {
         if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0 && strcmp(entry->d_name, "tmp") != 0) {
             messages_count++;
             server->message_full_file_names = reallocate_memory(server->message_full_file_names,
-                                                                sizeof(char*) * (messages_count - 1),
-                                                                sizeof(char*) * messages_count);
+                                                                sizeof(char *) * (messages_count - 1),
+                                                                sizeof(char *) * messages_count);
             asprintf(&server->message_full_file_names[messages_count - 1], "%s/%s", server->directory, entry->d_name);
         }
         entry = readdir(dir);
@@ -239,13 +240,35 @@ void read_maildir_servers_new(maildir_other_server *server) {
     server->messages_size = messages_count;
 }
 
+message *get_first_message(maildir_other_server *server) {
+    message *message = NULL;
+    time_t min_time;
+    time(&min_time);
+    int min = 0;
+    if (server != NULL && server->messages_size) {
+        for (int i = 0; i < server->messages_size; i++) {
+            struct stat stat_info;
+            if (!stat(server->directory, &stat_info)) {
+                struct tm *timeinfo = localtime(&stat_info.st_ctime);
+                time_t select_time = mktime(timeinfo);
+                if (select_time < min_time) {
+                    min_time = select_time;
+                    min = 0;
+                }
+            }
+        }
+        message = read_message(server->message_full_file_names[min]);
+    }
+    return message;
+}
+
 message *read_message(char *filepath) {
     FILE *fp;
     if ((fp = fopen(filepath, "r")) != NULL) {
         message *mes = allocate_memory(sizeof(message));
         memset(mes, 0, sizeof(message));
 
-        char *string;
+        char *string = NULL;
         while ((string = file_readline(fp)) != NULL) {
             trim(string);
 
@@ -257,18 +280,12 @@ message *read_message(char *filepath) {
             pair *p = check_message_header(string);
             if (p != NULL) {
                 if (strcmp(p->first, "X-POSTMAN-FROM") == 0) {
-                    string_tokens tokens = split(p->second, ",");
-                    mes->from_size = tokens.count_tokens;
-                    mes->from = callocate_memory(mes->from_size, sizeof(char*));
-                    for (size_t i = 0; i < mes->from_size; i++) {
-                        asprintf(&mes->from[i], "%s", tokens.tokens[i].chars);
-                    }
-                    free_string_tokens(&tokens);
+                    asprintf(&mes->from, "%s", p->second);
                 } else if (strcmp(p->first, "X-POSTMAN-TO") == 0) {
                     string_tokens tokens = split(p->second, ",");
                     mes->to_size = tokens.count_tokens;
-                    mes->to = callocate_memory(mes->to_size, sizeof(char*));
-                    mes->addresses = callocate_memory(1, sizeof(char*));
+                    mes->to = callocate_memory(mes->to_size, sizeof(char *));
+                    mes->addresses = callocate_memory(1, sizeof(char *));
                     for (size_t i = 0; i < mes->to_size; i++) {
                         asprintf(&mes->to[i], "%s", tokens.tokens[i].chars);
                         string_tokens ts = split(p->second, "@");
@@ -281,8 +298,8 @@ message *read_message(char *filepath) {
                             }
                             if (flag) {
                                 mes->addresses = reallocate_memory(mes->addresses,
-                                                                   sizeof(char*) * mes->addresses_size,
-                                                                   sizeof(char*) * (mes->addresses_size + 1));
+                                                                   sizeof(char *) * mes->addresses_size,
+                                                                   sizeof(char *) * (mes->addresses_size + 1));
                                 asprintf(&mes->addresses[mes->addresses_size++], "%s", ts.tokens[1].chars);
                             }
                         }
@@ -293,21 +310,21 @@ message *read_message(char *filepath) {
                     // mes->date = p->second;
                     // TODO: пока игнорирую дату, а нужна ли она вообще?
                 }
-            }
-            if (p != NULL) {
                 free(p->first);
                 free(p->second);
                 free(p);
+            } else {
+                return NULL;
             }
             free(string);
         }
 
         int strings_count = 0;
-        mes->strings = allocate_memory(sizeof(char*));
+        mes->strings = allocate_memory(sizeof(char *));
         while ((string = file_readline(fp)) != NULL) {
             if (mes->strings != NULL) {
-                mes->strings = reallocate_memory(mes->strings, sizeof(char*) * strings_count,
-                                                 sizeof(char*) * (strings_count + 1));
+                mes->strings = reallocate_memory(mes->strings, sizeof(char *) * strings_count,
+                                                 sizeof(char *) * (strings_count + 1));
             }
             asprintf(&mes->strings[strings_count], "%s", string);
             strings_count++;
@@ -499,9 +516,6 @@ void free_message(message *mess) {
         free(mess->to[i]);
     }
     free(mess->to);
-    for (int i = 0; i < mess->from_size; i++) {
-        free(mess->from[i]);
-    }
     free(mess->from);
     for (int i = 0; i < mess->addresses_size; i++) {
         free(mess->addresses[i]);

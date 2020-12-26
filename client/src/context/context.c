@@ -4,15 +4,15 @@
 #include "log/logs.h"
 #include "context.h"
 
-sigset_t orig_mask;
+context app_context = { 0 };
 
-pthread_mutex_t maildir_mutex;
 pthread_mutex_t server_thread_mutex;
 
 void *start_thread();
 
 void free_multiplex_context(multiplex_context *multiplex_cont) {
     if (multiplex_cont != NULL) {
+        multiplex_cont->select_message = NULL;
         for (int i = 0; i < multiplex_cont->server.messages_size; i++) {
             free(multiplex_cont->server.message_full_file_names[i]);
         }
@@ -61,20 +61,8 @@ bool is_smtp_sender_ready(smtp_context *smtp, thread *thr) {
     return is_ready_for_write(smtp->socket_desc, thr);
 }
 
-message *get_message(maildir_other_server *server) {
-    pthread_mutex_lock(&maildir_mutex);
-    message *message = NULL;
-    if (server->messages_size > 0) {
-        message = read_message(server->message_full_file_names[0]);
-    }
-    pthread_mutex_unlock(&maildir_mutex);
-    return message;
-}
-
 void remove_multiplex_context(multiplex_context *context, thread *thr) {
     remove_socket_from_context(context->smtp_context.socket_desc, thr);
-    pthread_mutex_lock(&maildir_mutex);
-    pthread_mutex_unlock(&maildir_mutex);
     for (int i = 0; i < thr->multiplex_context_size; i++) {
         if (&thr->multiplex_context[i] == context) {
             for (int j = i; j < thr->multiplex_context_size - 1; j++) {
@@ -101,6 +89,7 @@ void connect_handler(multiplex_context *context, thread *thr) {
         }
     } else if (is_smtp_4xx_error(status) || status == UNDEFINED_ERROR) {
         smtp_send_quit(&context->smtp_context);
+        free_message(context->select_message);
         remove_multiplex_context(context, thr);
     } else if (is_smtp_5xx_error(status)) {
         smtp_send_quit(&context->smtp_context);
@@ -120,11 +109,12 @@ void helo_handler(multiplex_context *context, thread *thr) {
         if (is_smtp_sender_ready(&context->smtp_context, thr)) {
             context->response.status_code = NOT_ANSWER;
             context->response.message = NULL;
-            smtp_send_mail(&context->smtp_context, context->select_message->from[0]);
+            smtp_send_mail(&context->smtp_context, context->select_message->from);
             context->iteration++;
         }
     } else if (is_smtp_4xx_error(status) || status == UNDEFINED_ERROR) {
         smtp_send_quit(&context->smtp_context);
+        free_message(context->select_message);
         remove_multiplex_context(context, thr);
     } else if (is_smtp_5xx_error(status)) {
         smtp_send_quit(&context->smtp_context);
@@ -144,17 +134,13 @@ void mail_handler(multiplex_context *context, thread *thr) {
         if (is_smtp_sender_ready(&context->smtp_context, thr)) {
             context->response.status_code = NOT_ANSWER;
             context->response.message = NULL;
-            if (context->iteration < context->select_message->from_size) {
-                smtp_send_mail(&context->smtp_context, context->select_message->from[context->iteration]);
-                context->iteration++;
-            } else {
-                context->iteration = 0;
-                smtp_send_rcpt(&context->smtp_context, context->select_message->to[0]);
-                context->iteration++;
-            }
+            context->iteration = 0;
+            smtp_send_rcpt(&context->smtp_context, context->select_message->to[0]);
+            context->iteration++;
         }
     } else if (is_smtp_4xx_error(status) || status == UNDEFINED_ERROR) {
         smtp_send_quit(&context->smtp_context);
+        free_message(context->select_message);
         remove_multiplex_context(context, thr);
     } else if (is_smtp_5xx_error(status)) {
         smtp_send_quit(&context->smtp_context);
@@ -185,6 +171,7 @@ void rcpt_handler(multiplex_context *context, thread *thr) {
         }
     } else if (is_smtp_4xx_error(status) || status == UNDEFINED_ERROR) {
         smtp_send_quit(&context->smtp_context);
+        free_message(context->select_message);
         remove_multiplex_context(context, thr);
     } else if (is_smtp_5xx_error(status)) {
         smtp_send_quit(&context->smtp_context);
@@ -208,6 +195,7 @@ void data_handler(multiplex_context *context, thread *thr) {
         }
     } else if (is_smtp_4xx_error(status) || status == UNDEFINED_ERROR) {
         smtp_send_quit(&context->smtp_context);
+        free_message(context->select_message);
         remove_multiplex_context(context, thr);
     } else if (is_smtp_5xx_error(status)) {
         smtp_send_quit(&context->smtp_context);
@@ -236,6 +224,7 @@ void message_handler(multiplex_context *context, thread *thr) {
         }
     } else if (is_smtp_4xx_error(status) || status == UNDEFINED_ERROR) {
         smtp_send_quit(&context->smtp_context);
+        free_message(context->select_message);
         remove_multiplex_context(context, thr);
     } else if (is_smtp_5xx_error(status)) {
         smtp_send_quit(&context->smtp_context);
@@ -267,6 +256,7 @@ void end_message_handler(multiplex_context *context, thread *thr) {
         }
     } else if (is_smtp_4xx_error(status) || status == UNDEFINED_ERROR) {
         smtp_send_quit(&context->smtp_context);
+        free_message(context->select_message);
         remove_multiplex_context(context, thr);
     } else if (is_smtp_5xx_error(status)) {
         smtp_send_quit(&context->smtp_context);
@@ -309,6 +299,7 @@ void *start_thread(thread *thr) {
 
     sigset_t mask = {0};
     struct sigaction act = {0};
+    sigset_t orig_mask;
 
     memset(&act, 0, sizeof(act));
     act.sa_handler = exit_handler;
@@ -359,7 +350,8 @@ void *start_thread(thread *thr) {
                             break;
                         }
 
-                        thr->multiplex_context = reallocate_memory(thr->multiplex_context, sizeof(multiplex_context) * i,
+                        thr->multiplex_context = reallocate_memory(thr->multiplex_context,
+                                                                   sizeof(multiplex_context) * i,
                                                                    sizeof(multiplex_context) * (i + 1));
                         thr->multiplex_context[i].smtp_context.socket_desc = cont->socket_desc;
                         thr->multiplex_context[i].smtp_context.state_code = cont->state_code;
@@ -390,7 +382,7 @@ void *start_thread(thread *thr) {
             for (int i = 0; i < thr->multiplex_context_size; i++) {
                 if (thr->multiplex_context[i].select_message == NULL) {
                     message *mess;
-                    if ((mess = get_message(&thr->multiplex_context[i].server)) == NULL) {
+                    if ((mess = get_first_message(&thr->multiplex_context[i].server)) == NULL) {
                         smtp_send_quit(&thr->multiplex_context[i].smtp_context);
                         remove_message_server(&thr->multiplex_context[i].server, mess);
                         remove_multiplex_context(&thr->multiplex_context[i], thr);

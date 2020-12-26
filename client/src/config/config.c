@@ -2,6 +2,8 @@
 #include "log/logs.h"
 #include "config.h"
 
+config config_context = { 0 };
+
 bool loading_config() {
     config_t cfg;
     config_init(&cfg);
@@ -72,8 +74,9 @@ bool loading_config() {
     return true;
 }
 
-bool destroy_configuration() {
+void destroy_configuration() {
     free(config_context.hostname);
     free(config_context.server_port);
     free(config_context.maildir.path);
+    memset(&config_context, 0, sizeof(config));
 }

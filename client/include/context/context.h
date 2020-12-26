@@ -37,7 +37,7 @@ typedef struct context {
     int threads_size;
 } context;
 
-static context app_context = { 0 };
+extern context app_context;
 
 int init_context();
 int add_socket_to_context(int socket, thread *thr);

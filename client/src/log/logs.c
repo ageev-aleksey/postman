@@ -6,7 +6,7 @@
 // TODO: внимательно все проверить, отрефакторить, написать тесты
 
 typedef struct node {
-    log *data;
+    log_message *data;
     TAILQ_ENTRY(node) nodes;
 } node;
 
@@ -20,7 +20,7 @@ void init_logs() {
     TAILQ_INIT(&head);
 }
 
-void push_log(log *value) {
+void push_log(log_message *value) {
     pthread_mutex_lock(&mutex_queue);
     node *new = allocate_memory(sizeof(node));
     new->data = value;
@@ -28,11 +28,14 @@ void push_log(log *value) {
     pthread_mutex_unlock(&mutex_queue);
 }
 
-log *pop_log() {
+log_message *pop_log() {
     pthread_mutex_lock(&mutex_queue);
     node *old = TAILQ_FIRST(&head);
+    if (old == NULL) {
+        return NULL;
+    }
     TAILQ_REMOVE(&head, old, nodes);
-    log *data = old->data;
+    log_message *data = old->data;
     free(old);
     pthread_mutex_unlock(&mutex_queue);
     return data;
@@ -48,7 +51,7 @@ struct tm get_time() {
     return *tm;
 }
 
-void print_message(log *l) {
+void print_message(log_message *l) {
     char buffer[26];
     strftime(buffer, 26, "%Y-%m-%d %H:%M:%S", &l->time);
 
@@ -94,18 +97,20 @@ void *logs_queue_func() {
         pthread_exit((void *) 0);
     }
 
-    struct timespec ts;
+    struct timespec ts = { 0 };
     ts.tv_sec = 0;
     ts.tv_nsec = 500000;
 
     while (true) {
+        nanosleep(&ts, &ts);
+
         if (is_interrupt() && is_logs_queue_empty()) {
             pthread_sigmask(SIG_SETMASK, &orig, 0);
             break;
         }
 
         if (!is_logs_queue_empty()) {
-            log *l = pop_log();
+            log_message *l = pop_log();
             print_message(l);
             free(l->message);
             free(l->thread);
@@ -124,7 +129,7 @@ void log_debug(char *message, char *filename, int line, ...) {
     va_list args;
     va_start(args, line);
 
-    log *l = allocate_memory(sizeof(log));
+    log_message *l = allocate_memory(sizeof(log_message));
     l->time = get_time();
     l->filename = filename;
     l->type = LOG_DEBUG;
@@ -135,13 +140,19 @@ void log_debug(char *message, char *filename, int line, ...) {
     asprintf(&l->thread, "Thread %lu", (unsigned long int) (self));
     vasprintf(&l->message, message, args);
 
-    push_log(l);
+    if (config_context.logs_on) {
+        push_log(l);
+    } else {
+        free(l->message);
+        free(l->thread);
+        free(l);
+    }
 }
 
 void log_info(char *message, char *filename, int line, ...) {
     va_list args;
     va_start(args, line);
-    log *l = allocate_memory(sizeof(log));
+    log_message *l = allocate_memory(sizeof(log_message));
 
     l->time = get_time();
     l->filename = filename;
@@ -153,13 +164,19 @@ void log_info(char *message, char *filename, int line, ...) {
     asprintf(&l->thread, "Thread %lu", (unsigned long int) (self));
     vasprintf(&l->message, message, args);
 
-    push_log(l);
+    if (config_context.logs_on) {
+        push_log(l);
+    } else {
+        free(l->message);
+        free(l->thread);
+        free(l);
+    }
 }
 
 void log_error(char *message, char *filename, int line, ...) {
     va_list args;
     va_start(args, line);
-    log *l = allocate_memory(sizeof(log));
+    log_message *l = allocate_memory(sizeof(log_message));
 
     l->time = get_time();
     l->filename = filename;
@@ -171,13 +188,19 @@ void log_error(char *message, char *filename, int line, ...) {
     asprintf(&l->thread, "Thread %lu", (unsigned long int) (self));
     vasprintf(&l->message, message, args);
 
-    push_log(l);
+    if (config_context.logs_on) {
+        push_log(l);
+    } else {
+        free(l->message);
+        free(l->thread);
+        free(l);
+    }
 }
 
 void log_warn(char *message, char *filename, int line, ...) {
     va_list args;
     va_start(args, line);
-    log *l = allocate_memory(sizeof(log));
+    log_message *l = allocate_memory(sizeof(log_message));
 
     l->time = get_time();
     l->filename = filename;
@@ -189,13 +212,19 @@ void log_warn(char *message, char *filename, int line, ...) {
     asprintf(&l->thread, "Thread %lu", (unsigned long int) (self));
     vasprintf(&l->message, message, args);
 
-    push_log(l);
+    if (config_context.logs_on) {
+        push_log(l);
+    } else {
+        free(l->message);
+        free(l->thread);
+        free(l);
+    }
 }
 
 void log_addinfo(char *message, ...) {
     va_list args;
     va_start(args, message);
-    log *l = allocate_memory(sizeof(log));
+    log_message *l = allocate_memory(sizeof(log_message));
 
     l->time = get_time();
     l->type = LOG_ADDINFO;
@@ -205,10 +234,17 @@ void log_addinfo(char *message, ...) {
     asprintf(&l->thread, "Thread %lu", (unsigned long int) (self));
     vasprintf(&l->message, message, args);
 
-    push_log(l);
+    if (config_context.logs_on) {
+        push_log(l);
+    } else {
+        free(l->message);
+        free(l->thread);
+        free(l);
+    }
 }
 
 void start_logger() {
+    config_context.logs_on = 1;
     init_logs();
     pthread_create(&thread_logger, NULL, logs_queue_func, NULL);
 }
@@ -216,7 +252,7 @@ void start_logger() {
 void logger_finalize() {
     LOG_INFO("Остановка логгера", NULL);
     while (!is_logs_queue_empty()) {
-        log *l = pop_log();
+        log_message *l = pop_log();
         print_message(l);
         free(l->message);
         free(l->thread);

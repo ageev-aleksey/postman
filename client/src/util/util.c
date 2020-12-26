@@ -2,9 +2,7 @@
 #include "log/logs.h"
 #include "util.h"
 
-// TODO: внимательно все проверить, отрефакторить, написать тесты
-
-pthread_mutex_t mutex_interrupt;
+string* add_character(string *str, char character);
 
 long int convert_string_to_long_int(const char *str) {
     char *end;
@@ -176,6 +174,8 @@ char* file_readline(FILE *fp) {
     free(string);
     return NULL;
 }
+
+pthread_mutex_t mutex_interrupt;
 
 bool is_interrupt() {
     bool interrupt = false;

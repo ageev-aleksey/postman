@@ -1,2 +1,15 @@
 int smtp_test_init();
 int smtp_test_clean();
+void smtp_connect_test();
+void smtp_send_helo_test();
+void smtp_send_mail_test();
+void smtp_send_rcpt_test();
+void smtp_send_data_test();
+void smtp_send_message_test();
+void smtp_send_end_message_test();
+void smtp_send_rset_test();
+void smtp_send_quit_test();
+void get_smtp_response_test();
+void is_smtp_success_test();
+void is_smtp_4xx_error_test();
+void is_smtp_5xx_error_test();

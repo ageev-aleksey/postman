@@ -13,11 +13,12 @@ typedef struct config {
     int threads;
     maildir_config maildir;
     int debug;
+    int logs_on;
     char *hostname;
     char *server_port;
 } config;
 
-config config_context;
+extern config config_context;
 bool loading_config();
 int init_signals_handler();
-bool destroy_configuration();
+void destroy_configuration();

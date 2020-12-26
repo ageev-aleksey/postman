@@ -43,6 +43,9 @@ $(MAILDIR_BUILD_DIR)/%.o: $(MAILDIR_SRC_PATH)/%.c
 $(BIN_DIR)/client.out: $(CONFIG_OBJ) $(LOG_OBJ) $(SMTP_OBJ) $(UTIL_OBJ) $(CONTEXT_OBJ) $(MAILDIR_OBJ)
 	$(CC) $(CCFLAGS) $(INCLUDES) $^ $(SRC_DIR)/main.c $(LIBS) -o $@
 
+$(SMTP_STATES_GENERATED_SRC): $(SMTP_STATES_DEF)
+	cd $(SMTP_STATES_GENERATED_SRC) && autogen $(SMTP_STATES_DEF)
+
 build_mkdir:
 	mkdir -p $(CONFIG_BUILD_DIR)
 	mkdir -p $(LOG_BUILD_DIR)

@@ -1,8 +1,7 @@
 #include <stdio.h>
 
 typedef struct message {
-    char **from;
-    size_t from_size;
+    char *from;
     char **to;
     size_t to_size;
     char **strings;
@@ -40,6 +39,7 @@ maildir_main *init_maildir(char *directory);
 void update_maildir(maildir_main *maildir);
 void read_maildir_servers(maildir_main *maildir);
 void output_maildir(maildir_main *maildir);
+message *get_first_message(maildir_other_server *server);
 message *read_message(char *filepath);
 void finalize_maildir(maildir_main *maildir);
 void free_message(message *mess);
