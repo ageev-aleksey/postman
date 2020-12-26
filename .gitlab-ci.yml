@@ -1,13 +1,15 @@
 image: ubuntu:16.04
 stages:
-  - build
-  - unit_testing
-  - functional_testing
-  - report
-
-
+  - server_build
+  - server_unit_testing
+  - server_system_testing
+  - server_report
+  - client_build
+  - client_unit_testing
+  - client_report
+  
 server_build:
-  stage: build
+  stage: server_build
   before_script:
     - apt-get update --yes
     - apt-get install -y software-properties-common
@@ -22,6 +24,7 @@ server_build:
   script:
     - cd server
     - make mkdir
+    - make server
     - make unit_tests
   artifacts:
     paths:
@@ -32,7 +35,7 @@ server_build:
     expire_in: 1 hrs
 
 server_unit_testig:
-  stage: unit_testing
+  stage: server_unit_testing
   before_script:
     - apt-get update --yes
     - apt-get install valgrind --yes
@@ -54,8 +57,25 @@ server_unit_testig:
       - server/main.gcno
     expire_in: 1 hrs 
 
+
+server_system_testing:
+  stage: server_system_testing
+  image: ubuntu:18.04
+  before_script:
+    - apt-get update
+    - apt-get install valgrind --yes
+    - apt-get install python3-pip --yes
+    - apt-get install aptitude --yes
+    - aptitude install libconfig-dev -y
+    - apt-get install libcunit1 libcunit1-dev --yes
+  script:
+    - cd ./server/test/server_auto_test/
+    - python3 ./main.py
+    - python3 ./main.py valgrind
+
+
 server_report:
-  stage: report
+  stage: server_report
   image: thomasweise/docker-texlive-full:latest
   before_script:
     - apt-get update --yes
@@ -69,16 +89,95 @@ server_report:
     - apt-get install python --yes
     - apt-get install perl --yes
     - apt-get install cflow --yes
+    - apt-get install doxygen --yes
   script:
     - cd server
     - make mkdir
     - ls -al
     - ls -al report
     - ls -al report/utils
-    - make report 
+    - doxygen Doxyfile
+    - ./report/make_report.sh
   artifacts:
+    when: always
     paths:
       - server/report
+      
+client_build:
+  stage: client_build
+  before_script:
+    - apt-get update --yes
+    - apt-get install -y software-properties-common
+    - add-apt-repository ppa:ubuntu-toolchain-r/test
+    - apt-get update --yes
+    - apt-get install aptitude --yes
+    - aptitude install libconfig-dev -y
+    - apt-get install libcunit1 libcunit1-dev --yes
+    - apt-get install gcc-4.8  --yes
+    - apt-get install lcov make --yes
+    - apt-get install autogen --yes
+  script:
+    - cd client
+    - make mkdir
+    - make server
+    - make unit_tests
+  artifacts:
+    paths:
+      - client/bin/
+      - client/build
+      - client/main.gcda
+      - client/main.gcno
+    expire_in: 1 hrs
+
+client_unit_testig:
+  stage: client_unit_testing
+  before_script:
+    - apt-get update --yes
+    - apt-get install valgrind --yes
+    - apt-get install aptitude --yes
+    - aptitude install libconfig-dev -y
+    - apt-get install libcunit1 libcunit1-dev --yes
+    - apt-get install lcov --yes
+  script:
+    - cd server
+    - valgrind --leak-check=full ./bin/unit_tests.out
+  artifacts:
+    paths:
+      - client/bin/
+      - client/build
+      - client/main.gcda
+      - client/main.gcno
+    expire_in: 1 hrs 
+
+
+client_report:
+  stage: client_report
+  image: thomasweise/docker-texlive-full:latest
+  before_script:
+    - apt-get update --yes
+    - apt-get install valgrind --yes
+    - apt-get install aptitude --yes
+    - aptitude install libconfig-dev -y
+    - apt-get install libcunit1 libcunit1-dev --yes
+    - apt-get install lcov --yes
+    - apt-get install autogen --yes
+    - apt-get install graphviz --yes
+    - apt-get install python --yes
+    - apt-get install perl --yes
+    - apt-get install cflow --yes
+    - apt-get install doxygen --yes
+  script:
+    - cd client
+    - make mkdir
+    - ls -al
+    - ls -al report
+    - ls -al report/utils
+    - doxygen Doxyfile
+    - ./report/make_report.sh
+  artifacts:
+    when: always
+    paths:
+      - client/report
 
 
 
