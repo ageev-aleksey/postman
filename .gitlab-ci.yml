@@ -4,8 +4,7 @@ stages:
   - unit_testing
   - system_testing
   - report
-
-
+  
 server_build:
   stage: build
   before_script:
@@ -69,7 +68,6 @@ server_system_testing:
   script:
     - cd ./server/test/server_auto_test/
     - python3 ./main.py
-    - python3 ./main.py valgrind
 
 
 server_report:
@@ -100,6 +98,82 @@ server_report:
     when: always
     paths:
       - server/report
+      
+client_build:
+  stage: build
+  before_script:
+    - apt-get update --yes
+    - apt-get install -y software-properties-common
+    - add-apt-repository ppa:ubuntu-toolchain-r/test
+    - apt-get update --yes
+    - apt-get install aptitude --yes
+    - aptitude install libconfig-dev -y
+    - apt-get install libcunit1 libcunit1-dev --yes
+    - apt-get install gcc-4.8  --yes
+    - apt-get install lcov make --yes
+    - apt-get install autogen --yes
+  script:
+    - cd client
+    - make mkdir
+    - make build
+    - make ut_run
+  artifacts:
+    paths:
+      - client/bin/
+      - client/build
+      - client/main.gcda
+      - client/main.gcno
+    expire_in: 1 hrs
+
+client_unit_testig:
+  stage: unit_testing
+  before_script:
+    - apt-get update --yes
+    - apt-get install valgrind --yes
+    - apt-get install aptitude --yes
+    - aptitude install libconfig-dev -y
+    - apt-get install libcunit1 libcunit1-dev --yes
+    - apt-get install lcov --yes
+  script:
+    - cd client
+    - valgrind --leak-check=full ./bin/unit_tests.out
+  artifacts:
+    paths:
+      - client/bin/
+      - client/build
+      - client/main.gcda
+      - client/main.gcno
+    expire_in: 1 hrs 
+
+
+client_report:
+  stage: report
+  image: thomasweise/docker-texlive-full:latest
+  before_script:
+    - apt-get update --yes
+    - apt-get install valgrind --yes
+    - apt-get install aptitude --yes
+    - aptitude install libconfig-dev -y
+    - apt-get install libcunit1 libcunit1-dev --yes
+    - apt-get install lcov --yes
+    - apt-get install autogen --yes
+    - apt-get install graphviz --yes
+    - apt-get install python --yes
+    - apt-get install perl --yes
+    - apt-get install cflow --yes
+    - apt-get install doxygen --yes
+  script:
+    - cd client
+    - make mkdir
+    - ls -al
+    - ls -al report
+    - ls -al report/utils
+    - doxygen Doxyfile
+    - ./report/make_report.sh
+  artifacts:
+    when: always
+    paths:
+      - client/report
 
 
 

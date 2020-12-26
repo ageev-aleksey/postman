@@ -1,0 +1,23 @@
+autogen definitions fsm;
+
+event = CONNECT, HELO, MAIL, RCPT, DATA, SEND_MESSAGE, SEND_END_MESSAGE, QUIT;
+
+state = invalid, connection, start_transaction, transaction, send_data, close;
+
+type = reentrant;
+method = case;
+prefix = autofsm;
+cookie = "void* cookie";
+
+transition = 
+	{tst = invalid; tev = CONNECT; next = connection;},
+	{tst = connection; tev = HELO; next = start_transaction;},
+	{tst = connection; tev = QUIT; next = close;},
+	{tst = start_transaction; tev = MAIL; next = transaction;},
+	{tst = start_transaction; tev = QUIT; next = close;},
+	{tst = transaction; tev = RCTP; next = transaction;},
+	{tst = transaction; tev = DATA; next = send_data;},
+	{tst = transaction; tev = QUIT; next = close;},
+	{tst = send_data; tev = SEND_MESSAGE; next = send_data;},
+	{tst = send_data; tev = QUIT; next = close;},
+	{tst = send_data; tev = SEND_END_MESSAGE; next = start_transaction;};

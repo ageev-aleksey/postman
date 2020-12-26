@@ -1,0 +1,8 @@
+\babel@toc {russian}{}
+\contentsline {chapter}{Введение}{1}%
+\contentsline {chapter}{\numberline {1}Аналитический раздел}{3}%
+\contentsline {section}{\numberline {1.1}Основные понятия протокола SMTP}{3}%
+\contentsline {section}{\numberline {1.2}SMTP сеанс}{4}%
+\contentsline {section}{\numberline {1.3}Синтаксис команд}{6}%
+\contentsline {section}{\numberline {1.4}Тестирование}{7}%
+\contentsline {section}{\numberline {1.5}Список источников и литературы}{11}%
