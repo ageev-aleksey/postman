@@ -116,8 +116,8 @@ client_build:
   script:
     - cd client
     - make mkdir
-    - make server
-    - make unit_tests
+    - make build
+    - make ut_run
   artifacts:
     paths:
       - client/bin/
@@ -136,7 +136,7 @@ client_unit_testig:
     - apt-get install libcunit1 libcunit1-dev --yes
     - apt-get install lcov --yes
   script:
-    - cd server
+    - cd client
     - valgrind --leak-check=full ./bin/unit_tests.out
   artifacts:
     paths:
