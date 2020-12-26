@@ -1,11 +1,9 @@
 image: ubuntu:16.04
 stages:
   - build
-  - server_unit_testing
-  - server_system_testing
-  - server_report
-  - client_unit_testing
-  - client_report
+  - unit_testing
+  - system_testing
+  - report
   
 server_build:
   stage: build
@@ -34,7 +32,7 @@ server_build:
     expire_in: 1 hrs
 
 server_unit_testig:
-  stage: server_unit_testing
+  stage: unit_testing
   before_script:
     - apt-get update --yes
     - apt-get install valgrind --yes
@@ -58,7 +56,7 @@ server_unit_testig:
 
 
 server_system_testing:
-  stage: server_system_testing
+  stage: system_testing
   image: ubuntu:18.04
   before_script:
     - apt-get update
@@ -74,7 +72,7 @@ server_system_testing:
 
 
 server_report:
-  stage: server_report
+  stage: report
   image: thomasweise/docker-texlive-full:latest
   before_script:
     - apt-get update --yes
@@ -129,7 +127,7 @@ client_build:
     expire_in: 1 hrs
 
 client_unit_testig:
-  stage: client_unit_testing
+  stage: unit_testing
   before_script:
     - apt-get update --yes
     - apt-get install valgrind --yes
@@ -150,7 +148,7 @@ client_unit_testig:
 
 
 client_report:
-  stage: client_report
+  stage: report
   image: thomasweise/docker-texlive-full:latest
   before_script:
     - apt-get update --yes
