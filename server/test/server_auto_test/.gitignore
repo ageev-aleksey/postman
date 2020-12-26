@@ -1,0 +1,4 @@
+maildir/
+__pycache__/
+*.pyi
+*.cfg

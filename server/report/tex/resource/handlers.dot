@@ -1,0 +1,28 @@
+digraph handlers {
+  main[label="main()"]
+  handler_acccept
+  handler_hellow_write
+  handler_write
+  handler_read
+  handler_close_socket
+  handler_timer
+  user_disconnect
+  handler_write_msg_close
+
+  main->handler_acccept
+  handler_acccept->handler_hellow_write
+  handler_acccept->handler_timer
+  handler_hellow_write->handler_read
+  handler_hellow_write->user_disconnect[color="red", label="user close conenction"]
+  handler_read->handler_write
+  handler_read->handler_read
+  handler_write->handler_read
+  handler_timer->handler_write_msg_close
+  handler_write_msg_close->handler_close_socket
+  handler_write_msg_close->user_disconnect[color="red", label="user close conenction"]
+  handler_close_socket->user_disconnect[color="green", label="timeout"]
+  handler_write->user_disconnect[color="red", label="user close conenction"]
+  handler_write->user_disconnect[color="green", label="smtp_quit"]
+  handler_read->user_disconnect[color="red", label="user close conenction"]
+
+}
