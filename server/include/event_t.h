@@ -14,6 +14,7 @@ typedef enum _event_type {
     SOCK_ACCEPT,
     SOCK_READ,
     SOCK_WRITE,
+    SOCK_CLOSE,
 } event_type;
 
 typedef enum _client_status {
@@ -29,6 +30,7 @@ typedef void (*sock_accept_handler)(struct _event_loop*, int acceptor, int clien
 typedef void (*sock_read_handler)(struct _event_loop* loop, int socket, char *buffer, int size, client_status, err_t);
 typedef void (*sock_write_handler)(struct _event_loop*, int socket, char* buffer, int size, int writing, client_status, err_t);
 typedef void (*sock_timer_handler)(struct _event_loop*, int socket, struct timer_event_entry *descriptor);
+typedef void (*sock_close_handler)(struct _event_loop*, int sock, err_t *err);
 //typedef void (*buff_deleter)(void *buffer, int bsize);
 
 typedef struct _sock_event {
@@ -83,6 +85,11 @@ typedef struct _event_sock_write {
     char *buffer;
     client_status status;
 } event_sock_write;
+
+typedef struct _event_sock_close {
+    sock_event event;
+    sock_close_handler handler;
+} event_sock_close;
 
 
 

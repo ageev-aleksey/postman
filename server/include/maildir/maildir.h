@@ -10,6 +10,7 @@
 
 #include <stdbool.h>
 #include <sys/queue.h>
+#include <dirent.h>
 
 #define SERVERS_ROOT_NAME ".OTHER_SERVERS"
 #define SERVERS_ROOT_NAME_PART "/.OTHER_SERVERS/"
@@ -38,7 +39,7 @@ struct maildir_log_handlers {
 
 typedef struct d_maildir {
    char *pr_path;
-    struct maildir_log_handlers pr_log;
+   struct maildir_log_handlers pr_log;
 } maildir;
 
 
@@ -51,9 +52,9 @@ bool maildir_release(maildir *md, err_t *error);
 //bool maildir_create_user(maildir *md, maildir_user *user);
 //bool maildir_delete_user(maildir *md, maildir_user *user);
 // SERVERS
-bool maildir_server_list(maildir *md, maildir_servers_list *servers_list, err_t *error);
+//bool maildir_server_list(maildir *md, maildir_servers_list *servers_list, err_t *error);
 bool maildir_get_self_server(maildir *md, maildir_server *server, err_t *error);
-bool maildir_get_server_by_name(maildir *md, maildir_server *server, const char *name, err_t *error);
+bool maildir_get_server(maildir *md, maildir_server *server, char *server_name, err_t *error);
 bool maildir_create_server(maildir *md, maildir_server *server, char *server_name, err_t *error);
 bool maildir_delete_server(maildir *md, maildir_server *server, err_t *error);
 // LOGGING

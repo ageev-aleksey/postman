@@ -12,6 +12,7 @@
 #include <pthread.h>
 #include <sys/queue.h>
 #include <time.h>
+#include <stdio.h>
 
 
 
@@ -20,6 +21,8 @@ typedef enum d_log_level {
     WARNING_LEVEL = 1,
     INFO_LEVEL = 2,
     DEBUG_LEVEL = 3,
+    OFF = 4,
+    INVALID_LEVEL = 5,
 } log_level;
 
 typedef struct d_log_message {
@@ -32,12 +35,33 @@ typedef struct d_log_message {
     TAILQ_ENTRY(d_log_message) entries;
 } log_message;
 
-typedef void (*log_handler)(log_message);
+typedef void (*log_console_handler)(log_message);
+typedef void (*log_file_handler)(log_message, FILE *file_path);
+
+enum printer_type {
+    LOG_PRINTER_CONSOLE, LOG_PRINTER_FILE
+};
 
 typedef struct d_printer_t {
     log_level  level;
-    log_handler handler;
+    enum printer_type type;
+    char zero1[sizeof(void*)];
+    char zero2[sizeof(void*)];
 } printer_t;
+
+typedef struct d_console_printer {
+    log_level  level;
+    enum printer_type type;
+    log_console_handler handler;
+    char zero2[sizeof(void*)];
+} log_console_printer;
+
+typedef struct d_file_printer {
+    log_level  level;
+    enum printer_type type;
+    log_file_handler handler;
+    FILE *file;
+} log_file_printer;
 
 VECTOR_DECLARE(log_vector_printers, printer_t);
 
@@ -65,13 +89,14 @@ typedef struct d_log_context {
 log_context GLOBAL_LOG_CONTEXT;
 
 bool log_init(log_context *context);
-//bool log_file_writer(log_context *context, log_level level, const char *path);
-//bool log_console_writer(log_context *context, log_level level);
+bool log_file_writer(log_context *context, log_level level, const char *path);
+bool log_console_set_level(log_context *context, log_level level);
 //bool log_timeout(log_context *context, size_t ms);
 bool log_make_message(log_message *message, log_level level, const char *pattern, const char *ptr, ...);
 bool log_write(log_context *context, log_message *message);
 log_level log_get_level(log_context *context);
 void log_free(log_context *context);
+log_level log_char_to_level(const char *level);
 
 
 #define LOG_MAKE_MESSAGE(log_level_, format_, ...) \

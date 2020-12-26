@@ -28,6 +28,15 @@ void* s_malloc(size_t size, err_t *error);
  */
 int make_server_socket(const char *ip, int port, err_t *error);
 
+/**
+ * Получить имя сервера по ip адресу (извлечение PTR записи из DNS)
+ * @param ip - ipv4
+ * @return строка с именем сервера. Строка удаляется через free
+ */
+char* dns_get_ptr(const char *ip);
+
+char* dns_get_mx(const char *domain);
+
 
 typedef struct client_addr {
     char ip[IP_BUFFER_LEN];

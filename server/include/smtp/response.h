@@ -14,6 +14,9 @@
 #define SMTP_CODE_MAIL_INPUT 354
 #define SMTP_CODE_MAIL_INPUT_MSG "Start mail input; end with <CRLF>.<CRLF>"
 
+#define SMTP_CODE_CLOSE_CONNECTION_BY_TIMEOUT 421
+#define SMTP_CODE_CLOSE_CONNECTION_BY_TIMEOUT_MSG "timeout error; close connection"
+
 #define SMTP_CODE_ERROR_IN_PROCESSING 451
 #define SMTP_CODE_ERROR_IN_PROCESSING_MSG "Requested action aborted: error in processing"
 

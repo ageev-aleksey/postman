@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <stdarg.h>
+#include <string.h>
 
 #define MS_TO_NS 1000000;
 
@@ -41,6 +42,8 @@ static const char *debug_level_str[] = {
 
 VECTOR_DECLARE(vector_messages, log_message);
 
+
+
 void pr_printer_in_console(log_message msg) {
     char buf[16];
     struct tm *time = localtime (&msg.time);
@@ -55,6 +58,21 @@ void pr_printer_in_console(log_message msg) {
            buf, debug_level_color[msg.level], debug_level_str[msg.level],
            msg.file, msg.function, msg.line,
            msg.message);
+}
+
+void pr_printer_in_file(log_message msg, FILE *file) {
+    char buf[16];
+    struct tm *time = localtime (&msg.time);
+    if (time == NULL) {
+        fprintf(stderr, "FATAL ERROR IN LOGGER: error converting time_t in struct tm");
+        return;
+    }
+    size_t len = strftime(buf, sizeof(buf), "%H:%M:%S", time);
+    buf[len] = '\0';
+
+    fprintf(file, "%s %s [%s:%s:%zu]: %s\n", buf, debug_level_str[msg.level],
+            msg.file, msg.function, msg.line,msg.message);
+    fflush(file);
 }
 
 int pr_log_message_comparator(const void *first, const void *second) {
@@ -139,7 +157,16 @@ void pr_messages_print(log_context *context, log_message_queue *messages, size_t
         for (size_t i = 0; i < VECTOR_SIZE(msgv); ++i) {
             for (size_t j = 0; j < VECTOR_SIZE(context->printers); ++j) {
                 if (VECTOR(context->printers)[j].level <= context->enabled_level) {
-                    VECTOR(context->printers)[j].handler(VECTOR(msgv)[i]);
+                    if (VECTOR(context->printers)[j].level >= VECTOR(msgv)[i].level) {
+                        printer_t  *ptr = &VECTOR(context->printers)[j];
+                        if  (ptr->type == LOG_PRINTER_CONSOLE) {
+                            ((log_console_printer*)ptr)->handler(VECTOR(msgv)[i]);
+                        } else if (ptr->type == LOG_PRINTER_FILE){
+                            log_file_printer* fprinter = (log_file_printer *)ptr;
+                            fprinter->handler(VECTOR(msgv)[i], fprinter->file);
+                        }
+                    }
+
                 }
             }
         }
@@ -207,10 +234,12 @@ bool log_init(log_context *context) {
         goto error;
     }
     context->timeout = 500;
-    printer_t stderr_printer;
+    log_console_printer stderr_printer;
     stderr_printer.level = DEBUG_LEVEL;
     stderr_printer.handler = pr_printer_in_console;
-    VECTOR_PUSH_BACK(printer_t, context->printers, stderr_printer, err);
+    stderr_printer.type = LOG_PRINTER_CONSOLE;
+    printer_t *ptr = (printer_t*)&stderr_printer;
+    VECTOR_PUSH_BACK(printer_t, context->printers, *ptr, err);
     if (err.error) {
         goto error;
     }
@@ -238,11 +267,39 @@ error:
 }
 
 
+bool log_file_writer(log_context *context, log_level level, const char *path) {
+    log_file_printer file_printer = {0};
+    file_printer.level = level;
+    file_printer.handler = pr_printer_in_file;
+    file_printer.file = fopen(path, "w");
+    file_printer.type = LOG_PRINTER_FILE;
+    if (file_printer.file == NULL) {
+        return false;
+    }
+    printer_t *ptr = (printer_t*)  &file_printer;
+    pthread_mutex_lock(&context->mutex_property);
+    err_t err;
+    VECTOR_PUSH_BACK(printer_t, context->printers, *ptr ,err);
+    pthread_mutex_unlock(&context->mutex_property);
+    if (err.error) {
+        return false;
+    }
+    return true;
+}
+
+bool log_console_set_level(log_context *context, log_level level) {
+    pthread_mutex_lock(&context->mutex_property);
+    VECTOR(context->printers)[0].level = level;
+    pthread_mutex_unlock(&context->mutex_property);
+    return true;
+}
+
+
 bool log_make_message(log_message *message, log_level level, const char *pattern, const char *ptr, ...) {
     va_list vl;
 
     va_start(vl, ptr);
-    int buffer_size = sprintf(message->message, pattern, vl);
+    sprintf(message->message, pattern, vl);
     return true;
 }
 
@@ -279,6 +336,27 @@ void log_free(log_context *context) {
     pthread_mutex_destroy(&context->mutex_messages);
     pthread_cond_destroy(&context->cv);
     pthread_mutex_destroy(&context->mutex_property);
+    for (int j = 0; j < VECTOR_SIZE(context->printers); j++) {
+        if (VECTOR(context->printers)[j].type == LOG_PRINTER_FILE) {
+            log_file_printer *ptr = (log_file_printer*)&VECTOR(context->printers)[j];
+            fclose(ptr->file);
+        }
+    }
     VECTOR_FREE(context->printers);
     free(context->printers);
+}
+
+log_level log_char_to_level(const char *level) {
+    if (strcmp(level, "ERROR") == 0) {
+        return ERROR_LEVEL;
+    } else if (strcmp(level, "WARNING") == 0) {
+        return WARNING_LEVEL;
+    } else if (strcmp(level, "INFO") == 0) {
+        return INFO_LEVEL;
+    } else if (strcmp(level, "DEBUG") == 0) {
+        return DEBUG_LEVEL;
+    } else if (strcmp(level, "OFF") == 0) {
+        return OFF;
+    }
+    return INVALID_LEVEL;
 }

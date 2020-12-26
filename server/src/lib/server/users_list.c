@@ -35,6 +35,7 @@ bool users_list__add(users_list *users, user_context **user) {
     TAILQ_INSERT_TAIL(&users->pr_list, entry, pr_entries);
     pthread_mutex_unlock(&users->pr_mutex);
     *user = NULL;
+    return true;
 }
 
 bool users_list__user_find_by_sock(users_list *users, user_accessor *accessor, int sock) {
@@ -57,6 +58,23 @@ bool users_list__user_find_by_sock(users_list *users, user_accessor *accessor, i
     }
 
     return is_found;
+}
+
+bool users_list__is_exist(users_list *users, int sock) {
+    if (users == NULL) {
+        return false;
+    }
+    bool ret = false;
+    pthread_mutex_lock(&users->pr_mutex);
+    user_context_entry *ptr = NULL;
+    TAILQ_FOREACH(ptr, &users->pr_list, pr_entries) {
+        if (ptr->pr_context->socket == sock) {
+            ret = true;
+            break;
+        }
+    }
+    pthread_mutex_unlock(&users->pr_mutex);
+    return ret;
 }
 
 void user_accessor_release(user_accessor *accessor) {
