@@ -11,6 +11,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <stdarg.h>
+#include <netdb.h>
+
 #define ERROR (-1)
 #define UTIL_MAX_NUMBER_OF_VARIANT_PARAMETERS 50
 
@@ -86,8 +88,8 @@ int make_server_socket(const char *ip, int port, err_t *error) {
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(struct sockaddr_in));
     addr.sin_family = AF_INET;
-    addr.sin_port = htons(8080);
-    int res = inet_aton("127.0.0.1", &addr.sin_addr);
+    addr.sin_port = htons(port);
+    int res = inet_aton(ip, &addr.sin_addr);
     if (res == -1) {
         message = UTIL_ERROR_CONVERT_IP;
         goto exit_error;
@@ -113,8 +115,36 @@ int make_server_socket(const char *ip, int port, err_t *error) {
     return ERROR;
 }
 
+char* dns_get_ptr(const char *ip) {
+    if (ip != NULL) {
+        struct sockaddr_in addr;
+        memset(&addr, 0, sizeof(struct sockaddr_in));
+        addr.sin_family = AF_INET;
+        if(!inet_aton(ip, &addr.sin_addr)) {
+            return NULL;
+        }
+
+
+        char *hbuf = malloc(NI_MAXHOST);
+        if (hbuf == NULL) {
+            return NULL;
+        }
+
+        if (getnameinfo((const struct sockaddr*)&addr, sizeof(struct sockaddr_in),
+                        hbuf, NI_MAXHOST,
+                        NULL, 0, NI_NAMEREQD))
+        {
+            free(hbuf);
+            return NULL;
+        }
+        return hbuf;
+    }
+    return NULL;
+}
+
+
 client_addr get_addr(struct sockaddr_in* addr, err_t *error) {
-    client_addr ret = {0};
+    client_addr ret = {{0}};
     if (addr == NULL) {
         if (error != NULL) {
             error->error = FATAL;
@@ -172,7 +202,6 @@ bool sub_str(const char* const src, char * const dst, size_t begin, size_t end) 
 bool char_make_buf_concat(char **buffer, size_t *bsize, size_t nargs, const char *str, ...) {
     size_t result_size = 0;
     size_t size_array[UTIL_MAX_NUMBER_OF_VARIANT_PARAMETERS];
-    size_t length_size_array = nargs;
 
     va_list va;
     va_start(va, str);

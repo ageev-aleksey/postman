@@ -2,11 +2,13 @@
 // Created by nrx on 23.10.2020.
 //
 
-#include "server/global_context.h"
+#include "server/server.h"
 #include "log/context.h"
 #include "event_loop/event_loop.h"
 #include <stdio.h>
 #include <unistd.h>
+#include "server/args.h"
+
 #define ERROR (-1)
 #define OK_FLAG 0
 #define BUFFER_READ 5
@@ -22,14 +24,19 @@ void *worker_thread (void *args) {
             LOG_ERROR("el_run: %s", error.message);
             return NULL;
         }
-        sleep(1);
+       // sleep(1);
     }
 
     LOG_INFO("%s", "thread stop");
     return NULL;
 }
 
-int main() {
+int main(int argc, char **argv) {
+    if (!args_parse(argc, argv, &server_config)) {
+        printf("%s", "exit\n");
+        return OK_FLAG;
+    }
+
     int status = OK_FLAG;
     int master_socket = ERROR;
     LOG_INIT();
@@ -38,7 +45,7 @@ int main() {
     thread_pool_init(&threads);
 
     LOG_INFO("%s", "server start init...");
-    if (!server_config_init("./config.cfg")) {
+    if (!server_config_init(server_config.conf_path)) {
         status = ERROR;
         return ERROR;
     }
@@ -58,6 +65,7 @@ int main() {
         LOG_ERROR("el_async_accept: %s", error.message);
         goto exit;
     }
+
     LOG_INFO("%s", "Server init");
 
     /////////////////////////
@@ -80,7 +88,6 @@ exit:
     if (master_socket != ERROR) {
         close(master_socket);
     }
-   // el_close(el);
     server_config_free();
     smtp_lib_free();
 

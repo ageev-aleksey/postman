@@ -142,6 +142,7 @@ bool el_async_read(event_loop* loop, int sock, char *buffer, int size, sock_read
 bool el_async_write(event_loop* loop, int sock, void *output_buffer, int bsize,
                     sock_write_handler, err_t *error);
 
+bool el_socket_close(event_loop* loop, int sock, sock_close_handler, err_t *error);
 /**
  * Регистрация обработчика события "Для соекта истек таймер"
  * @param loop

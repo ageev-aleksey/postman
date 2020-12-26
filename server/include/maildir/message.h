@@ -13,7 +13,7 @@
 typedef struct d_maildir_user maildir_user;
 
 typedef enum d_message_type {
-    NEW, TMP, NONE,
+    NEW, TMP, SERVER, NONE,
 } message_type;
 
 typedef struct d_maildir_message {

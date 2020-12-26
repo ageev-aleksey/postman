@@ -119,7 +119,7 @@ sock_accept_handler sq_get(sockets_queue *queue, int socket, err_t *error) {
 }
 
 bool sq_delete(sockets_queue *queue, int socket) {
-
+    return true;
 }
 
 

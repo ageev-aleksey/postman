@@ -1,5 +1,5 @@
 #include "server/users_list.h"
-#include "server/global_context.h"
+#include "server/server.h"
 #include "server_test.h"
 #include "log/context.h"
 #include <string.h>
@@ -30,6 +30,8 @@ void server_handler_smtp_test() {
     handler_smtp(&user, "ehlo [127.0.0.1]\r\n");
     handler_smtp(&user, "mail from: <test@test.ru>\r\n");
     handler_smtp(&user, "rcpt to: <user@test.ru>\r\n");
+    handler_smtp(&user, "rcpt to: <client@yandex.ru>\r\n");
+    handler_smtp(&user, "rcpt to: <mail@mail.ru>\r\n");
     handler_smtp(&user, "rcpt to: <client@postman.local>\r\n");
     handler_smtp(&user, "data\r\n");
     handler_smtp(&user, "Subject: test mail\r\n");

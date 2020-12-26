@@ -54,12 +54,12 @@ typedef struct _new_type_ {                         \
 do {                                                \
     if ((_vector_) == NULL) {                       \
         (_error_).error = FATAL;                    \
-        (_error_).message = VECTOR_PARAMETER_IS_NULL;\
-    } else {                                        \
+        (_error_).message = VECTOR_PARAMETER_IS_NULL;                   \
+    } else {                                                            \
         (_vector_)->array = s_malloc(sizeof(_type_name_)*5, &(_error_)); \
-        if ((_vector_)->array != NULL) {            \
-            (_vector_)->size = 0;                   \
-            (_vector_)->allocated = 5;\
+        if ((_vector_)->array != NULL) {                                \
+            (_vector_)->size = 0;                                       \
+            (_vector_)->allocated = 5;                                  \
         } \
     }\
 } while(0)
@@ -112,23 +112,23 @@ do {\
         (_error_).message =  VECTOR_INVALID_SIZE_VALUE;                  \
         break;\
     }\
-    (_vector_)->array = s_malloc(sizeof(_type_name_)*(_size_), &(_error_));   \
+    (_vector_)->array = s_malloc(sizeof(_type_name_)*(_size_)+1, &(_error_));   \
     (_vector_)->size = 0;                                               \
-    (_vector_)->allocated = (_size_);                                                                          \
+    (_vector_)->allocated = (_size_);                                    \
 } while (0);
 
 
 #define VECTOR_PUSH_BACK(_type_name_, _vector_, _element_, _error_)                     \
 do {                                                                                    \
     VECTOR_SUCCESS_ERROR(_error_);                                                      \
-    if ((_vector_)->size == (_vector_)->allocated) {                                  \
+    if (((_vector_)->size+1) == (_vector_)->allocated) {                                  \
         (_vector_)->allocated =  (_vector_)->allocated * 1.5;                               \
         _type_name_ *tmp = s_malloc(sizeof(_type_name_)*(_vector_)->allocated, &(_error_));  \
         for (int i =0; i < (_vector_)->size; i++) {                                         \
             tmp[i] = (_vector_)->array[i];                                                  \
         }                                                                               \
         free((_vector_)->array);                                                            \
-        (_vector_)->array = tmp;                                                            \
+        (_vector_)->array = tmp;                                                        \
     }                                                                                   \
     (_vector_)->array[(_vector_)->size] = (_element_);                                              \
     (_vector_)->size++;                                                                     \

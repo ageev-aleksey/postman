@@ -1,5 +1,7 @@
 #include "maildir/message.h"
 #include "maildir/maildir.h"
+#include "maildir/server.h"
+#include "maildir/user.h"
 #include "util.h"
 
 
@@ -42,6 +44,10 @@ bool pr_maildir_message_make_full_path(maildir_message *msg, message_type path_t
         }
     } else if (path_type == TMP) {
         if (!char_make_buf_concat(result_path, &size, 5, user_path, "/", USER_PATH_TMP, "/", msg->pr_filename)) {
+            goto exit;
+        }
+    } else if (path_type == SERVER) {
+        if (!char_make_buf_concat(result_path, &size, 3, user_path, "/", msg->pr_filename)) {
             goto exit;
         }
     }
@@ -107,9 +113,19 @@ bool maildir_message_finalize(maildir_message *msg, err_t *error) {
     if (!pr_maildir_message_make_full_path(msg, TMP, &msg_path, error)) {
         goto exit;
     }
-    if (!pr_maildir_message_make_full_path(msg, NEW, &msg_new_path, error)) {
-        goto  exit;
+    bool is_self = false;
+
+    maildir_server_is_self(msg->pr_user->pr_server, &is_self, NULL);
+    if (is_self) {
+        if (!pr_maildir_message_make_full_path(msg, NEW, &msg_new_path, error)) {
+            goto  exit;
+        }
+    } else {
+        if (!pr_maildir_message_make_full_path(msg, SERVER, &msg_new_path, error)) {
+            goto  exit;
+        }
     }
+
 
     if (rename(msg_path, msg_new_path) != 0) {
         if (error != NULL) {

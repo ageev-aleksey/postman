@@ -20,6 +20,16 @@ unit_tests: $(BIN_DIR)/unit_tests.out
 test_mkdir:
 	mkdir -p $(BUILD_DIR)/test/
 
+auto_test: server
+	cd $(TEST_DIR)/server_auto_test/ && python3 main.py
+
+auto_test_valgrind: server
+	cd $(TEST_DIR)/server_auto_test/  && python3 main.py valgrind
+
+auto_test_parallel: server
+	cd $(TEST_DIR)/server_auto_test/ && python3 main.py parallel
+
+
 
 .PHONY: unit_tests test_mkdir
 

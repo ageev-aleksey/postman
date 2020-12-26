@@ -14,3 +14,8 @@ server/test_report/
 CMakeLists.txt
 cmake-build-debug
 *.swp
+test_report/	
+__pycache__/
+*.toc
+*.out
+*.idx

@@ -4,41 +4,17 @@
 
 #ifndef SERVER_USER_CONTEXT_H
 #define SERVER_USER_CONTEXT_H
-#include "sys/queue.h"
-#include "smtp/state.h"
-#include "vector_structures.h"
-#include "maildir/maildir.h"
-#include "event_loop/event_loop.h"
-#include "server/users_list.h"
+
+
+#include "server/config.h"
 #include "util.h"
 #include <pthread.h>
 #include <libconfig.h>
-
-#define POSTMAN_VERSION_MAJOR 0
-#define POSTMAN_VERSION_MINOR 1
-
+#include "event_loop/event_loop.h"
+#include "server/users_list.h"
 
 
-struct {
-    maildir md;
-    char *ip;
-    int16_t  port;
-    char *log_file_path;
-    char *self_server_name;
-    struct users_list users;
-    char *hello_msg;
-    size_t hello_msg_size;
-    event_loop *loop;
-    size_t num_worker_threads;
-} server_config;
-
-struct pair {
-    char *buffer;
-    smtp_status status;
-};
-
-bool server_config_init(const char *path);
-void server_config_free();
+#define POSTMAN_TIMEOUT_OF_TIMER 15
 
 
 void user_disconnected(int sock);
@@ -46,5 +22,6 @@ void handler_accept(event_loop *el, int acceptor, int client_socket, struct sock
 void handler_write(event_loop *el, int socket, char* buffer, int size, int writing, client_status status, err_t error);
 void handler_read(event_loop *el, int socket, char *buffer, int size, client_status status, err_t error);
 void handler_timer(event_loop*, int socket, struct timer_event_entry *descriptor);
+void handler_close_socket(event_loop*, int sock, err_t *err);
 struct pair handler_smtp(user_context *user, char *message);
 #endif //SERVER_USER_CONTEXT_H

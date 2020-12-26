@@ -21,19 +21,19 @@ void vector_test_push_with_allocating() {
     vector_int *my_vector = s_malloc(sizeof(vector_int), NULL);
     err_t error;
     VECTOR_INIT(int, my_vector, error);
-
-//    do {                                                \
-//    if ((my_vector) == NULL) {                       \
-//        (error).error = FATAL;                    \
-//        (error).message = VECTOR_PARAMETER_IS_NULL;\
-//    } else {                                        \
-//        (my_vector)->array = s_malloc(sizeof(int)*5, &(error)); \
-//        if ((my_vector)->array != NULL) {            \
-//            (my_vector)->size = 0;                   \
-//            (my_vector)->allocated = 5;\
-//        } \
-//    }\
-//} while(0);
+/*
+    do {                                                \
+    if ((my_vector) == NULL) {                       \
+        (error).error = FATAL;                    \
+        (error).message = VECTOR_PARAMETER_IS_NULL;\
+    } else {                                        \
+        (my_vector)->array = s_malloc(sizeof(int)*5, &(error)); \
+        if ((my_vector)->array != NULL) {            \
+            (my_vector)->size = 0;                   \
+            (my_vector)->allocated = 5;\
+        } \
+    }\
+} while(0);*/
 
     VECTOR_PUSH_BACK(int, my_vector, 1, error);
     VECTOR_PUSH_BACK(int, my_vector, 2, error);
